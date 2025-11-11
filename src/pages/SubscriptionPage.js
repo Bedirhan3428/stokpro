@@ -1,27 +1,20 @@
-// src/pages/SubscriptionPage.js dosyasına gidin
-
 import React, { useState } from 'react';
-import { activateLicense } from '../utils/api'; 
 import { formatDate } from '../utils/helpers';
-import { IconLoader } from '../components/Icons'; 
+import { IconLoader } from '../components/Icons';
 
-const SubscriptionPage = ({ userId, userProfile, isSubscriptionActive, onActivateLicense }) => { 
+// Note: removed unused 'activateLicense' import to fix eslint no-unused-vars warning
+
+const SubscriptionPage = ({ userId, userProfile, isSubscriptionActive, onActivateLicense }) => {
     const [licenseKey, setLicenseKey] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    // Abonelik Bitiş Tarihini Düzgün Formatlama
-    const subscriptionEndDate = userProfile?.subscriptionEndDate?.toDate ? 
-                                userProfile.subscriptionEndDate.toDate() : 
-                                null;
+    const subscriptionEndDate = userProfile?.subscriptionEndDate?.toDate ?
+        userProfile.subscriptionEndDate.toDate() :
+        null;
 
-    // Lisans anahtarını formatla: Her 4 karakterde bir tire ekle
     const formatLicenseKey = (value) => {
-        // Sadece harf ve rakamları al, boşluk ve tire gibi karakterleri kaldır
         const cleaned = value.replace(/[^A-Z0-9]/g, '');
-        
-        // Her 4 karakterde bir tire ekle
         const formatted = cleaned.match(/.{1,4}/g)?.join('-') || cleaned;
-        
         return formatted;
     };
 
@@ -41,30 +34,25 @@ const SubscriptionPage = ({ userId, userProfile, isSubscriptionActive, onActivat
         }
 
         try {
-            // Tireleri kaldırarak backend'e gönder
             const cleanKey = licenseKey.replace(/-/g, '');
-            await onActivateLicense(cleanKey); 
-
-            // Başarılıysa formu temizle
+            await onActivateLicense(cleanKey);
             setLicenseKey('');
-            
         } catch (error) {
-            // Hata mesajı App.js Hook'u tarafından Toast olarak gösterilir.
+            // Hata yönetimi App.js tarafından Toast ile yapılır
         } finally {
             setIsLoading(false);
         }
     };
 
     const isTrial = userProfile?.subscriptionStatus === 'trial';
-    const currentStatusText = isSubscriptionActive 
-        ? (isTrial ? 'DENEME SÜRÜMÜ (Aktif)' : 'PREMIUM (Aktif)') 
+    const currentStatusText = isSubscriptionActive
+        ? (isTrial ? 'DENEME SÜRÜMÜ (Aktif)' : 'PREMIUM (Aktif)')
         : 'STANDART (Sona Erdi)';
 
     return (
         <div className="page-container subscription-page-grid">
             <h1 className="page-title">Üyelik ve Lisans Yönetimi</h1>
 
-            {/* MEVCUT DURUM KARTI */}
             <div className="card-wrapper status-card-wrapper">
                 <div className="summary-card status-card">
                     <h2 className="card-title status-title">Mevcut Üyelik Durumu</h2>
@@ -88,7 +76,6 @@ const SubscriptionPage = ({ userId, userProfile, isSubscriptionActive, onActivat
                 </div>
             </div>
 
-            {/* LİSANS AKTİVASYON FORMU */}
             <form onSubmit={handleActivation} className="form-card form-activation">
                 <h2 className="card-title form-title">Ürün Anahtarı Aktivasyonu</h2>
 
@@ -102,7 +89,7 @@ const SubscriptionPage = ({ userId, userProfile, isSubscriptionActive, onActivat
                         placeholder="ABCD-EFGH-IJKL-MNOP"
                         required
                         className="form-input"
-                        maxLength={24} // 20 karakter + 4 tire = 24
+                        maxLength={24}
                     />
                 </div>
 

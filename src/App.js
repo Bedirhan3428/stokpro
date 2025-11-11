@@ -2,16 +2,14 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
     auth,
     db,
-    app,
     appId,
     onAuthStateChanged,
     signOut,
-    signInWithCustomToken,
     collection,
     query,
     onSnapshot
 } from './utils/firebase';
-import { formatCurrency, normalizeSalesData } from './utils/helpers'; // formatCurrency import edildi
+import { formatCurrency, normalizeSalesData } from './utils/helpers';
 import AuthScreen from './components/AuthScreen';
 import {
     addProduct,
@@ -24,16 +22,12 @@ import {
     updateProductDetails,
     getUserProfile,
     activateLicense,
-    // YENİ GELİR API İMPORTLARI
-    addIncome, 
+    addIncome,
     deleteIncome
 } from './utils/api';
 
-// Kütüphane Toast Importları
-import { ToastContainer, toast } from 'react-toastify'; 
-import 'react-toastify/dist/ReactToastify.css';// Stil dosyası
+import { ToastContainer, toast } from 'react-toastify';
 
-// Bileşen İçe Aktarmaları
 import Navbar from './components/Navbar';
 import LoadingScreen from './components/LoadingScreen';
 import Dashboard from './pages/Dashboard';
@@ -44,62 +38,44 @@ import ExpenseManager from './pages/ExpenseManager';
 import CategoryManager from './pages/CategoryManager';
 import AccountingPage from './pages/AccountingPage';
 import SubscriptionPage from './pages/SubscriptionPage';
-import EmailVerificationScreen from './components/EmailVerificationScreen'; 
-
+import EmailVerificationScreen from './components/EmailVerificationScreen';
 
 function App() {
-    // ----------------------------------------------------------------------
-    // 1. STATE VE MEMO HOOK'LARI (KOŞULSUZ)
-    // ----------------------------------------------------------------------
     const [page, setPage] = useState('dashboard');
     const [userId, setUserId] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [currentUser, setCurrentUser] = useState(null); 
-    
-    // Kullanıcı Profil Yönetimi State'leri
+    const [currentUser, setCurrentUser] = useState(null);
+
     const [userProfile, setUserProfile] = useState(null);
-    
-    // Veri State'leri
+
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
     const [sales, setSales] = useState([]);
     const [expenses, setExpenses] = useState([]);
-    const [incomes, setIncomes] = useState([]); // <-- YENİ GELİRLER STATE'İ EKLENDİ
+    const [incomes, setIncomes] = useState([]);
 
     const normalizedSales = useMemo(() => normalizeSalesData(sales), [sales]);
 
-    // ABONELİK DURUMU KONTROLÜ
     const isSubscriptionActive = useMemo(() => {
-        if (!userProfile) return false; 
-        
+        if (!userProfile) return false;
         const status = userProfile.subscriptionStatus;
-        const endDate = userProfile.subscriptionEndDate?.toDate ? userProfile.subscriptionEndDate.toDate() : null; 
-
+        const endDate = userProfile.subscriptionEndDate?.toDate ? userProfile.subscriptionEndDate.toDate() : null;
         if (status !== 'premium') return false;
         if (endDate && endDate < new Date()) return false;
-        
         return true;
     }, [userProfile]);
 
-    // ----------------------------------------------------------------------
-    // 2. CRUD/API CALLBACK HOOK'LARI (KOŞULSUZ)
-    // ----------------------------------------------------------------------
-    
-    // Abonelik kontrolünü yapan yardımcı fonksiyon (HATA FIRLATIR)
-    const checkActive = () => {
+    const checkActive = useCallback(() => {
         if (!isSubscriptionActive) {
             throw new Error("Aboneliğiniz sona ermiştir. Yalnızca okuma modundasınız.");
         }
-    };
-    
-    // Kullanıcı Profilini Firestore'dan çekme fonksiyonu
+    }, [isSubscriptionActive]);
+
     const loadUserProfile = useCallback(async (uid) => {
         const profile = await getUserProfile(uid);
         setUserProfile(profile);
     }, []);
-    
-    // TÜM YAZMA İŞLEMLERİ (Try/Catch ve Toast ile güncellendi)
 
     const handleAddProduct = useCallback(async (productData) => {
         try {
@@ -109,17 +85,17 @@ function App() {
         } catch (e) {
             toast.error(`${e.message}`);
         }
-    }, [userId, isSubscriptionActive]);
-    
+    }, [userId, checkActive]);
+
     const handleUpdateStock = useCallback(async (product, amountToAdd) => {
         try {
             checkActive();
-            await updateStock(userId, product, amountToAdd); 
+            await updateStock(userId, product, amountToAdd);
             toast.success(`Stok güncellendi: ${product.name} +${amountToAdd} adet`);
         } catch (e) {
             toast.error(`${e.message}`);
         }
-    }, [userId, isSubscriptionActive]);
+    }, [userId, checkActive]);
 
     const handleDeleteProduct = useCallback(async (productId) => {
         const productName = products.find(p => p.id === productId)?.name || 'Ürün';
@@ -130,17 +106,17 @@ function App() {
         } catch (e) {
             toast.error(`${e.message}`);
         }
-    }, [userId, isSubscriptionActive, products]);
+    }, [userId, products, checkActive]);
 
     const handleAddCategory = useCallback(async (categoryName) => {
         try {
             checkActive();
-            await addCategory(userId, categories, categoryName); 
+            await addCategory(userId, categories, categoryName);
             toast.success(`Kategori "${categoryName}" başarıyla eklendi!`);
         } catch (e) {
             toast.error(`${e.message}`);
         }
-    }, [userId, categories, isSubscriptionActive]);
+    }, [userId, categories, checkActive]);
 
     const handleMakeSale = useCallback(async (cart) => {
         try {
@@ -150,7 +126,7 @@ function App() {
         } catch (e) {
             toast.error(`${e.message}`);
         }
-    }, [userId, isSubscriptionActive]);
+    }, [userId, checkActive]);
 
     const handleAddExpense = useCallback(async (expenseData) => {
         try {
@@ -160,7 +136,7 @@ function App() {
         } catch (e) {
             toast.error(`${e.message}`);
         }
-    }, [userId, isSubscriptionActive]);
+    }, [userId, checkActive]);
 
     const handleDeleteExpense = useCallback(async (expenseId) => {
         try {
@@ -170,7 +146,7 @@ function App() {
         } catch (e) {
             toast.error(`${e.message}`);
         }
-    }, [userId, isSubscriptionActive]);
+    }, [userId, checkActive]);
 
     const handleUpdateProduct = useCallback(async (productId, newData) => {
         try {
@@ -180,12 +156,11 @@ function App() {
         } catch (e) {
             toast.error(`${e.message}`);
         }
-    }, [userId, isSubscriptionActive]);
-    
+    }, [userId, checkActive]);
+
     const handleActivateLicense = useCallback(async (licenseKey) => {
         try {
             const result = await activateLicense(userId, licenseKey);
-            
             if (result.success) {
                 toast.success(`Aboneliğiniz başarıyla aktive edildi! ${result.duration} ay Premium üyeliğiniz başladı.`);
             }
@@ -194,35 +169,28 @@ function App() {
         }
     }, [userId]);
 
-    // YENİ GELİR EKLEME HOOK'LARI
+    // formatCurrency import is a module-level helper (immutable). Exclude it from deps to avoid unnecessary ESLint warning.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     const handleAddIncome = useCallback(async (incomeData) => {
         try {
             checkActive();
-            // addIncome API'si kullanılır
-            await addIncome(userId, incomeData); 
+            await addIncome(userId, incomeData);
             toast.success(`Gelir (${formatCurrency(incomeData.amount)}) başarıyla kaydedildi.`);
         } catch (e) {
             toast.error(`${e.message}`);
         }
-    }, [userId, isSubscriptionActive]);
-    
+    }, [userId, checkActive]);
+
     const handleDeleteIncome = useCallback(async (incomeId) => {
         try {
             checkActive();
-            // deleteIncome API'si kullanılır
             await deleteIncome(userId, incomeId);
             toast.success(`Gelir kaydı başarıyla silindi.`);
         } catch (e) {
             toast.error(`${e.message}`);
         }
-    }, [userId, isSubscriptionActive]);
+    }, [userId, checkActive]);
 
-
-    // ----------------------------------------------------------------------
-    // 3. AUTH VE VERİ DİNLEYİCİLERİ (KOŞULSUZ useEffect'ler)
-    // ----------------------------------------------------------------------
-
-    // useEffect 1: AUTH Dinleyicisi (E-posta Doğrulama Kontrolü)
     useEffect(() => {
         if (!auth) {
             setError("Firebase düzgün başlatılamadı.");
@@ -232,122 +200,108 @@ function App() {
 
         const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
             if (user) {
-                setCurrentUser(user); 
-                setUserId(user.uid); 
-                
+                setCurrentUser(user);
+                setUserId(user.uid);
                 if (user.emailVerified) {
-                    loadUserProfile(user.uid); 
+                    loadUserProfile(user.uid);
                 } else {
                     setUserProfile(null);
                 }
             } else {
                 setCurrentUser(null);
-                setUserId(null); 
-                setUserProfile(null); 
+                setUserId(null);
+                setUserProfile(null);
             }
             setIsLoading(false);
         });
 
         return () => unsubscribeAuth();
-    }, [loadUserProfile]); 
+    }, [loadUserProfile]);
 
-    // useEffect 2: Firestore Veri Dinleyicileri (user ID'ye bağlı çalışır)
+    // appId is a module-level constant (imported); exclude it from deps to avoid the "outer scope" eslint warning.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
-        // Veri çekme sadece userId varsa VE emailVerified ise çalışmalı
-        if (!userId || (currentUser && !currentUser.emailVerified)) return; 
+        if (!userId || (currentUser && !currentUser.emailVerified)) return;
 
-        setIsLoading(true); 
+        setIsLoading(true);
 
-        // KULLANILAN GÜVENLİ FİREBASE PATH'LERİ
         const productsPath = `artifacts/${appId}/users/${userId}/products`;
         const categoriesPath = `artifacts/${appId}/users/${userId}/categories`;
         const salesPath = `artifacts/${appId}/users/${userId}/sales`;
         const expensesPath = `artifacts/${appId}/users/${userId}/expenses`;
-        const incomesPath = `artifacts/${appId}/users/${userId}/incomes`; // <-- YENİ PATH EKLENDİ
+        const incomesPath = `artifacts/${appId}/users/${userId}/incomes`;
 
-        // 1. Ürünler
         const qProducts = query(collection(db, productsPath));
         const unsubscribeProducts = onSnapshot(qProducts, (snapshot) => {
             const productsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setProducts(productsData);
-            setIsLoading(false); 
+            setIsLoading(false);
         }, (err) => {
             console.error("Ürünler çekilirken hata:", err);
             setError("Ürün verisi alınamadı.");
             setIsLoading(false);
         });
 
-        // 2. Kategoriler
         const qCategories = query(collection(db, categoriesPath));
         const unsubscribeCategories = onSnapshot(qCategories, (snapshot) => {
-             const categoriesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-             setCategories(categoriesData);
+            const categoriesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setCategories(categoriesData);
         }, (err) => {
-             console.error("Kategoriler çekilirken hata:", err);
-             setError("Kategori verisi alınamadı.");
+            console.error("Kategoriler çekilirken hata:", err);
+            setError("Kategori verisi alınamadı.");
         });
 
-        // 3. Satışlar
         const qSales = query(collection(db, salesPath));
         const unsubscribeSales = onSnapshot(qSales, (snapshot) => {
-             const salesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-             setSales(salesData);
+            const salesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setSales(salesData);
         }, (err) => {
-             console.log("Satışlar çekilirken hata:", err);
-             setError("Satış verisi alınamadı.");
+            console.log("Satışlar çekilirken hata:", err);
+            setError("Satış verisi alınamadı.");
         });
 
-        // 4. Giderler
         const qExpenses = query(collection(db, expensesPath));
         const unsubscribeExpenses = onSnapshot(qExpenses, (snapshot) => {
-             const expensesData = snapshot.docs.map(doc => ({
-                 id: doc.id, ...doc.data(), date: doc.data().date?.toDate() || new Date()
-             }));
-             setExpenses(expensesData);
+            const expensesData = snapshot.docs.map(doc => ({
+                id: doc.id, ...doc.data(), date: doc.data().date?.toDate() || new Date()
+            }));
+            setExpenses(expensesData);
         }, (err) => {
-             console.error("Giderler çekilirken hata:", err);
-             setError("Gider verisi alınamadı.");
+            console.error("Giderler çekilirken hata:", err);
+            setError("Gider verisi alınamadı.");
         });
-        
-        // 5. YENİ: Gelirler Dinleyicisi
+
         const qIncomes = query(collection(db, incomesPath));
         const unsubscribeIncomes = onSnapshot(qIncomes, (snapshot) => {
             const incomesData = snapshot.docs.map(doc => ({
-                id: doc.id, 
-                ...doc.data(), 
+                id: doc.id,
+                ...doc.data(),
                 date: doc.data().date?.toDate() || new Date()
             }));
             setIncomes(incomesData);
         }, (err) => {
-             console.error("Gelirler çekilirken hata:", err);
-             setError("Gelir verisi alınamadı.");
+            console.error("Gelirler çekilirken hata:", err);
+            setError("Gelir verisi alınamadı.");
         });
 
-
         return () => {
-             unsubscribeProducts();
-             unsubscribeCategories();
-             unsubscribeSales();
-             unsubscribeExpenses();
-             unsubscribeIncomes(); // <-- YENİ UNSUBSCRIBE
+            unsubscribeProducts();
+            unsubscribeCategories();
+            unsubscribeSales();
+            unsubscribeExpenses();
+            unsubscribeIncomes();
         };
-    }, [userId, currentUser]); 
+    }, [userId, currentUser]);
 
-
-    // Çıkış Yapma Fonksiyonu
     const handleSignOut = async () => {
         try {
             await signOut(auth);
             setPage('dashboard');
-            toast.info("Oturum başarıyla kapatıldı."); 
+            toast.info("Oturum başarıyla kapatıldı.");
         } catch (e) {
             toast.error(`Çıkış yapılırken hata: ${e.message}`);
         }
     };
-    
-    // ----------------------------------------------------------------------
-    // 4. KOŞULLU ÇIKIŞLAR (ERKEN RETURN)
-    // ----------------------------------------------------------------------
 
     if (error) {
         return (
@@ -368,27 +322,21 @@ function App() {
     if (!userId) {
         return <AuthScreen />;
     }
-    
-    // E-POSTA DOĞRULAMA KONTROLÜ
-    if (userId && currentUser && !currentUser.emailVerified) {
-        return <EmailVerificationScreen userEmail={currentUser.email} />; 
-    }
-    
-    // ----------------------------------------------------------------------
-    // 5. UYGULAMA İÇİ MANTIK VE RENDER
-    // ----------------------------------------------------------------------
 
-    // Mevcut sayfaya göre render edilecek bileşeni seç
+    if (userId && currentUser && !currentUser.emailVerified) {
+        return <EmailVerificationScreen userEmail={currentUser.email} />;
+    }
+
     const renderPage = () => {
         switch (page) {
             case 'dashboard':
-                return <Dashboard 
-                    products={products} 
-                    normalizedSales={normalizedSales} 
-                    expenses={expenses} 
-                    incomes={incomes} // <-- YENİ PROP
-                    userProfile={userProfile} 
-                    isSubscriptionActive={isSubscriptionActive} 
+                return <Dashboard
+                    products={products}
+                    normalizedSales={normalizedSales}
+                    expenses={expenses}
+                    incomes={incomes}
+                    userProfile={userProfile}
+                    isSubscriptionActive={isSubscriptionActive}
                 />;
             case 'products':
                 return <ProductList products={products} categories={categories} onUpdateStock={handleUpdateStock} onDeleteProduct={handleDeleteProduct} onUpdateProduct={handleUpdateProduct} isSubscriptionActive={isSubscriptionActive} />;
@@ -396,39 +344,39 @@ function App() {
                 return <AddProduct categories={categories} onAddProduct={handleAddProduct} onAddCategory={handleAddCategory} isSubscriptionActive={isSubscriptionActive} />;
             case 'sales':
                 return <Sales products={products} onMakeSale={handleMakeSale} isSubscriptionActive={isSubscriptionActive} />;
-            case 'expenses': // ARTIK FİNANS YÖNETİCİSİ
-                return <ExpenseManager 
-                    expenses={expenses} 
-                    incomes={incomes} // <-- YENİ PROP
-                    onAddExpense={handleAddExpense} 
-                    onDeleteExpense={handleDeleteExpense} 
-                    onAddIncome={handleAddIncome} // <-- YENİ PROP
-                    onDeleteIncome={handleDeleteIncome} // <-- YENİ PROP
-                    isSubscriptionActive={isSubscriptionActive} 
+            case 'expenses':
+                return <ExpenseManager
+                    expenses={expenses}
+                    incomes={incomes}
+                    onAddExpense={handleAddExpense}
+                    onDeleteExpense={handleDeleteExpense}
+                    onAddIncome={handleAddIncome}
+                    onDeleteIncome={handleDeleteIncome}
+                    isSubscriptionActive={isSubscriptionActive}
                 />;
             case 'categories':
                 return <CategoryManager categories={categories} onAddCategory={handleAddCategory} isSubscriptionActive={isSubscriptionActive} />;
             case 'accounting':
-                return <AccountingPage normalizedSales={normalizedSales} expenses={expenses} incomes={incomes} />; // <-- YENİ PROP
+                return <AccountingPage normalizedSales={normalizedSales} expenses={expenses} incomes={incomes} />;
             case 'subscription':
                 return <SubscriptionPage userProfile={userProfile} userId={userId} isSubscriptionActive={isSubscriptionActive} onActivateLicense={handleActivateLicense} />;
             default:
-                return <Dashboard products={products} normalizedSales={normalizedSales} expenses={expenses} userProfile={userProfile} isSubscriptionActive={isSubscriptionActive} />;
+                return <Dashboard products={products} normalizedSales={normalizedSales} expenses={expenses} incomes={incomes} userProfile={userProfile} isSubscriptionActive={isSubscriptionActive} />;
         }
     };
 
     return (
-        <div className="app-wrapper"> {/* min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white */}
+        <div className="app-wrapper">
             <Navbar currentPage={page} setPage={setPage} onSignOut={handleSignOut} />
 
-            <ToastContainer 
-                position="top-right" 
-                autoClose={4000} 
-                hideProgressBar={false} 
-                theme="colored" 
+            <ToastContainer
+                position="top-right"
+                autoClose={4000}
+                hideProgressBar={false}
+                theme="colored"
             />
 
-            <main className="main-content-container"> {/* container mx-auto px-4 sm:px-6 lg:px-8 py-6 */}
+            <main className="main-content-container">
                 {renderPage()}
             </main>
         </div>

@@ -1,6 +1,3 @@
-// src/components/Icons.js dosyasına gidin (tamamen bu kodla değiştirin)
-
-import React from 'react';
 import { FiGrid as IconDashboard } from 'react-icons/fi';
 import { FiBox as IconBox } from 'react-icons/fi';
 import { FiPlusCircle as IconPlusCircle } from 'react-icons/fi';

@@ -18,8 +18,9 @@ const getProductsPath = (userId) => `artifacts/${appId}/users/${userId}/products
 const getCategoriesPath = (userId) => `artifacts/${appId}/users/${userId}/categories`;
 const getSalesPath = (userId) => `artifacts/${appId}/users/${userId}/sales`;
 const getExpensesPath = (userId) => `artifacts/${appId}/users/${userId}/expenses`;
-const getUsersPath = (userId) => `artifacts/${appId}/users/${userId}/profile`;
 const getIncomesPath = (userId) => `artifacts/${appId}/users/${userId}/incomes`;
+const getUsersPath = (userId) => `artifacts/${appId}/users/${userId}/profile`;
+
 // --- Gider İşlemleri ---
 export const addExpense = async (userId, expenseData) => {
     if (!userId) throw new Error("Kullanıcı girişi yapılmamış.");
@@ -33,16 +34,17 @@ export const deleteExpense = async (userId, expenseId) => {
     await deleteDoc(expenseRef);
 };
 
-export const deleteIncome = async (userId, incomeId) => {
-    if (!userId) throw new Error("Kullanıcı girişi yapılmamış.");
-    const incomeRef = doc(db, getIncomesPath(userId), incomeId);
-    await deleteDoc(incomeRef);
-};
-
+// --- Gelir İşlemleri (yeni) ---
 export const addIncome = async (userId, incomeData) => {
     if (!userId) throw new Error("Kullanıcı girişi yapılmamış.");
     const incomesRef = collection(db, getIncomesPath(userId));
     await addDoc(incomesRef, incomeData);
+};
+
+export const deleteIncome = async (userId, incomeId) => {
+    if (!userId) throw new Error("Kullanıcı girişi yapılmamış.");
+    const incomeRef = doc(db, getIncomesPath(userId), incomeId);
+    await deleteDoc(incomeRef);
 };
 
 // --- LİSANS AKTİVASYON İŞLEMİ ---
@@ -116,7 +118,6 @@ export const activateLicense = async (userId, licenseKey) => {
         
     } catch (e) {
         const errorMessage = e.message.includes("Abonelik sona erdi") ? e.message : `Aktivasyon başarısız: ${e.message}`;
-        // console.error çağrısı kaldırıldı
         throw new Error(errorMessage);
     }
 };
@@ -141,7 +142,7 @@ export const createOrUpdateUserProfile = async (userId, email, displayName) => {
 export const addCategory = async (userId, categories, categoryName) => {
     if (!userId) throw new Error("Kullanıcı girişi yapılmamış.");
     const existing = categories.find(c => c.name.toLowerCase() === categoryName.toLowerCase());
-    if (existing) { console.log("Kategori zaten mevcut:", categoryName); return; } // Bu log, geliştirme amaçlı kalabilir
+    if (existing) { console.log("Kategori zaten mevcut:", categoryName); return; }
     const categoriesRef = collection(db, getCategoriesPath(userId));
     await addDoc(categoriesRef, { name: categoryName });
 };
@@ -167,17 +168,13 @@ export const updateStock = async (userId, product, amountToAdd) => {
             transaction.update(productRef, { stock: newStock });
         });
     } catch (e) {
-        // console.error kaldırıldı
         throw e;
     }
 };
 
-// 🔴 Burası HATA AYIKLAMA İÇİN GÜNCELLENDİ 🔴
 export const deleteProduct = async (userId, productId) => {
-    // 1. Kontrol
     if (!userId) throw new Error("Kullanıcı girişi yapılmamış.");
 
-    // 2. Yolun Oluşturulması ve Kontrolü
     const collectionPath = getProductsPath(userId);
     const fullDocPath = `${collectionPath}/${productId}`;
     
@@ -189,7 +186,6 @@ export const deleteProduct = async (userId, productId) => {
     console.log(`TAM DOKÜMAN YOLU: ${fullDocPath}`);
     console.log("-----------------------------------------");
 
-    // 3. Silme İşlemi
     const productRef = doc(db, collectionPath, productId);
     await deleteDoc(productRef);
 };
@@ -219,7 +215,6 @@ export const getUserProfile = async (userId) => {
         }
         return null;
     } catch (error) {
-        // console.error kaldırıldı
         return null;
     }
 };
@@ -234,12 +229,9 @@ export const makeSale = async (userId, cart) => {
 
     try {
         await runTransaction(db, async (transaction) => {
-            
-            // --- 1. AŞAMA: TÜM OKUMALARI YAP (Stok Kontrolü) ---
             const stockChecks = [];
             for (const item of cart) {
                 const productRef = doc(db, getProductsPath(userId), item.id);
-                // OKUMA İŞLEMİ
                 const productDoc = await transaction.get(productRef); 
                 
                 if (!productDoc.exists()) {
@@ -252,22 +244,16 @@ export const makeSale = async (userId, cart) => {
                     throw new Error(`Yetersiz stok! "${item.name}" için mevcut stok: ${currentStock}`);
                 }
 
-                // Stok güncelleme bilgisini bir diziye kaydet
                 stockChecks.push({
                     ref: productRef,
                     newStock: currentStock - item.quantity
                 });
             }
             
-            // --- 2. AŞAMA: TÜM YAZMALARI YAP ---
-            
-            // Stokları Güncelle
             for (const check of stockChecks) {
-                // YAZMA İŞLEMİ
                 transaction.update(check.ref, { stock: check.newStock });
             }
             
-            // Yeni Satışı Kaydet
             const saleData = {
                 items: cart.map(item => ({
                     productId: item.id,
@@ -281,14 +267,12 @@ export const makeSale = async (userId, cart) => {
                 date: new Date()
             };
             const newSaleRef = doc(salesColRef);
-            // YAZMA İŞLEMİ
             transaction.set(newSaleRef, saleData);
             
         });
 
-        console.log("Çoklu satış işlemi başarılı!"); // Bu log kalabilir
+        console.log("Çoklu satış işlemi başarılı!");
     } catch (e) {
-        // console.error kaldırıldı
         throw e;
     }
 };

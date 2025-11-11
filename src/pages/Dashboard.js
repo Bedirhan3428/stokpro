@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { formatCurrency, formatDate } from '../utils/helpers';
-import { IconLoader } from '../components/Icons'; 
+// removed: import { IconLoader } from '../components/Icons';  <-- unused import removed
 
 const Dashboard = ({ products, normalizedSales, expenses, incomes, userProfile }) => {
   const totalStockValue = useMemo(() =>
@@ -20,7 +20,6 @@ const Dashboard = ({ products, normalizedSales, expenses, incomes, userProfile }
     [normalizedSales]
   );
 
-  // Finansal Özet Hesaplamaları
   const totalSalesRevenue = useMemo(() =>
     normalizedSales.reduce((acc, sale) => acc + sale.totalPrice, 0),
     [normalizedSales]
@@ -47,7 +46,6 @@ const Dashboard = ({ products, normalizedSales, expenses, incomes, userProfile }
         👋 Hoş Geldin, {userName}!
       </p>
       
-      {/* Finansal Özet Kartları */}
       <div className="summary-grid">
         <div className="summary-card revenue-card">
           <h2 className="card-subtitle">Toplam Gelir</h2>
@@ -69,10 +67,7 @@ const Dashboard = ({ products, normalizedSales, expenses, incomes, userProfile }
         </div>
       </div>
 
-      {/* Azalan Stoklar ve Son Satışlar */}
       <div className="report-grid grid-2-columns">
-
-        {/* Azalan Stok Listesi */}
         <div className="report-card low-stock-card">
           <h2 className="report-title low-stock-title">🚨 Azalan Stok Listesi ( &le; 10)</h2>
           <div className="list-wrapper scroll-y-auto">
@@ -89,11 +84,33 @@ const Dashboard = ({ products, normalizedSales, expenses, incomes, userProfile }
           </div>
         </div>
 
-        {/* Son Satışlar */}
         <div className="report-card recent-sales-card">
           <h2 className="report-title">Son Satışlar</h2>
           <div className="table-wrapper scroll-x-auto">
-            <table className="data-table"><thead className="table-header"><tr className="header-row header-row-sales"><th className="table-th">Tarih</th><th className="table-th">Ürün Adı</th><th className="table-th">Adet</th><th className="table-th">Fiyat</th></tr></thead><tbody className="table-body">{recentSales.length === 0 ? (<tr><td colSpan="4" className="table-td-empty">Henüz satış yapılmamış.</td></tr>) : (recentSales.map(sale => (<tr key={sale.id} className="table-row"><td className="table-td table-td-date">{formatDate(sale.date)}</td><td className="table-td table-td-name">{sale.productName}</td><td className="table-td table-td-quantity">{sale.quantity}</td><td className="table-td table-td-price table-td-price-revenue">{formatCurrency(sale.totalPrice)}</td></tr>)))}</tbody></table>
+            <table className="data-table">
+              <thead className="table-header">
+                <tr className="header-row header-row-sales">
+                  <th className="table-th">Tarih</th>
+                  <th className="table-th">Ürün Adı</th>
+                  <th className="table-th">Adet</th>
+                  <th className="table-th">Fiyat</th>
+                </tr>
+              </thead>
+              <tbody className="table-body">
+                {recentSales.length === 0 ? (
+                  <tr><td colSpan="4" className="table-td-empty">Henüz satış yapılmamış.</td></tr>
+                ) : (
+                  recentSales.map(sale => (
+                    <tr key={sale.id} className="table-row">
+                      <td className="table-td table-td-date">{formatDate(sale.date)}</td>
+                      <td className="table-td table-td-name">{sale.productName}</td>
+                      <td className="table-td table-td-quantity">{sale.quantity}</td>
+                      <td className="table-td table-td-price table-td-price-revenue">{formatCurrency(sale.totalPrice)}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
