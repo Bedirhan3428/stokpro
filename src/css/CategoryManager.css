@@ -1,0 +1,21 @@
+/* CategoryManager.css - Kategori ekleme ve listeleme */
+:root{
+  --primary:#3b82f6;
+  --card:#ffffff;
+  --muted:#6b7280;
+  --radius:8px;
+}
+
+.page-container.max-w-lg{ padding:20px; max-width:720px; margin:0 auto; }
+
+.page-title{ font-size:22px; margin-bottom:12px; color:#111827; }
+
+.form-card.form-category-add{ background:var(--card); padding:12px; border-radius:10px; box-shadow:0 6px 18px rgba(2,6,23,0.04); margin-bottom:16px; }
+.form-grid.grid-gap-4{ display:flex; gap:8px; align-items:center; }
+
+.form-input{ padding:8px; border-radius:8px; border:1px solid #e5e7eb; }
+.btn-primary{ background:var(--primary); color:#fff; padding:8px 12px; border-radius:8px; }
+
+.card-list-wrapper{ background:transparent; }
+.list-group{ list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px; }
+.list-item-category{ background:var(--card); padding:10px; border-radius:8px; box-shadow: 0 4px 12px rgba(2,6,23,0.04); display:flex; align-items:center; }

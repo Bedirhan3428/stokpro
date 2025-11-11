@@ -1,0 +1,27 @@
+/* AuthScreen.css - Giriş / kayıt sayfası stili */
+:root{
+  --card:#ffffff;
+  --primary:#3b82f6;
+  --muted:#6b7280;
+  --radius:12px;
+}
+
+.auth-page-wrapper{ min-height:100vh; display:flex; align-items:center; justify-content:center; background:#f8fafc; padding:24px; }
+.auth-card{ width:100%; max-width:420px; background:var(--card); padding:20px; border-radius:12px; box-shadow:0 10px 40px rgba(2,6,23,0.06); }
+.auth-title{ font-size:20px; font-weight:800; margin-bottom:12px; color:#111827; }
+.auth-form .form-group{ margin-bottom:10px; }
+.form-label{ font-size:13px; color:var(--muted); margin-bottom:6px; display:block; }
+.form-input{ padding:10px; border-radius:8px; border:1px solid #e5e7eb; width:100%; }
+
+.btn{ padding:10px 12px; border-radius:8px; border:none; cursor:pointer; font-weight:700; }
+.btn-primary{ background:var(--primary); color:#fff; width:100%; margin-top:6px; }
+.btn-danger{ background:#ef4444; color:#fff; width:100%; margin-top:8px; }
+
+.divider-row{ display:flex; align-items:center; gap:8px; margin:10px 0; }
+.divider-line{ flex:1; height:1px; background:#eef2f7; border:none; }
+.divider-text{ font-size:12px; color:var(--muted); padding:0 6px; }
+
+.auth-switch-text{ margin-top:12px; font-size:13px; color:var(--muted); }
+.auth-switch-button{ margin-left:8px; background:none; border:none; color:var(--primary); cursor:pointer; font-weight:700; }
+.auth-alert{ margin-bottom:10px; }
+.loading-icon{ vertical-align:middle; margin-right:8px; }

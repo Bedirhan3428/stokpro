@@ -1,0 +1,30 @@
+/* SubscriptionPage.css - Üyelik kartı, form ve durum etiketleri */
+:root{
+  --primary:#3b82f6;
+  --success:#10b981;
+  --muted:#6b7280;
+  --card:#ffffff;
+  --radius:10px;
+}
+
+.page-container.subscription-page-grid{
+  padding:20px;
+  max-width:900px;
+  margin:0 auto;
+}
+
+.card-wrapper.status-card-wrapper{ margin-bottom:16px; }
+.summary-card.status-card{ padding:14px; border-radius:10px; background:var(--card); box-shadow:0 6px 18px rgba(2,6,23,0.04); }
+.status-title{ margin-bottom:8px; font-size:16px; }
+.status-text{ color:#111827; margin-bottom:6px; }
+.status-badge{ padding:6px 10px; border-radius:999px; font-weight:700; font-size:13px; }
+.badge-active{ background:linear-gradient(90deg,#10b981,#059669); color:#fff; }
+.badge-free{ background:#f3f4f6; color:var(--muted); }
+
+/* Form */
+.form-card.form-activation{ background:var(--card); padding:12px; border-radius:8px; box-shadow:0 6px 18px rgba(2,6,23,0.04); max-width:480px; }
+.form-input{ padding:8px; border-radius:8px; border:1px solid #e5e7eb; width:100%; margin-bottom:10px; }
+.btn-primary{ background:var(--primary); color:#fff; padding:10px 12px; border-radius:8px; }
+
+/* Helper */
+.end-date-text{ color:var(--muted); margin-top:6px; }

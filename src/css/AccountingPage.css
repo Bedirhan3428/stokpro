@@ -1,0 +1,39 @@
+/* AccountingPage.css - Muhasebe raporları, tablolar ve özet kartları */
+:root{
+  --card:#ffffff;
+  --muted:#6b7280;
+  --accent:#3b82f6;
+  --success:#10b981;
+  --danger:#ef4444;
+  --radius:8px;
+}
+
+.page-container{ padding:20px; max-width:1200px; margin:0 auto; background:#f8fafc; }
+
+.page-title{ font-size:24px; margin-bottom:12px; color:#111827; }
+
+/* Özet kartları */
+.summary-grid{ display:grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin-bottom:16px; }
+.summary-card{ background:var(--card); padding:12px; border-radius:var(--radius); box-shadow:0 6px 18px rgba(2,6,23,0.04); }
+
+/* Rapor tabloları */
+.report-grid{ display:grid; grid-template-columns: 1fr; gap:12px; }
+.report-card{ background:var(--card); padding:12px; border-radius:8px; }
+
+@media(min-width:1000px){
+  .report-grid{ grid-template-columns: 1fr 1fr; }
+  .report-span-2{ grid-column: span 2; }
+}
+
+/* tablolar */
+.data-table{ width:100%; border-collapse:collapse; min-width:600px; }
+.table-header th{ padding:10px; text-align:left; color:var(--muted); border-bottom:1px solid #eef2f7; }
+.table-body td{ padding:10px; border-bottom:1px solid #f3f6f9; }
+
+/* Period format helper */
+.table-td-period{ white-space:nowrap; }
+
+/* renkli değerler */
+.table-td-profit-val{ font-weight:700; }
+.table-td-revenue-val, .table-td-revenue-val-cat{ color:var(--accent); font-weight:600; }
+.table-td-expense-val{ color:#ef4444; font-weight:600; }

@@ -1,0 +1,23 @@
+/* Toast.css - Eğer Toast bileşeninde sınıf kullanmak isterseniz */
+.toast-container{
+  position:fixed;
+  top:20px;
+  right:20px;
+  z-index:9999;
+  max-width:320px;
+  font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+
+.toast{
+  padding:12px 14px;
+  border-radius:10px;
+  color:#fff;
+  box-shadow: 0 6px 20px rgba(2,6,23,0.12);
+  margin-bottom:10px;
+}
+
+.toast-success{ background: #10b981; }
+.toast-error{ background: #ef4444; }
+.toast-info{ background: #3b82f6; }
+
+.toast .close-btn{ background:none; border:none; color:inherit; font-size:18px; cursor:pointer; }

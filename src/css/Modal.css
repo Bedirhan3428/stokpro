@@ -1,0 +1,46 @@
+/* Modal.css - Genel modal overlay ve içerik */
+.modal-overlay{
+  position:fixed;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background: rgba(2,6,23,0.45);
+  z-index:10000;
+  padding:20px;
+  box-sizing:border-box;
+}
+
+.modal-wrapper{
+  width:100%;
+  max-width:640px;
+  background:#ffffff;
+  border-radius:12px;
+  box-shadow:0 10px 40px rgba(2,6,23,0.6);
+  overflow:hidden;
+  animation:modalIn .18s ease-out;
+}
+
+@keyframes modalIn{
+  from{ transform:translateY(8px); opacity:0; }
+  to{ transform:translateY(0); opacity:1; }
+}
+
+.modal-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:12px 16px;
+  border-bottom:1px solid #f3f4f6;
+}
+.modal-title{ font-size:16px; font-weight:700; color:#111827; }
+.modal-close-button{
+  border:none; background:transparent; font-size:20px; cursor:pointer; color:#374151;
+  padding:6px;
+}
+
+.modal-content{ padding:16px; }
+
+/* küçük formlar içinde kullanılacak */
+.modal-content-group .form-group{ margin-bottom:8px; }
+.modal-current-stock{ color:#374151; margin-bottom:8px; }
