@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { formatCurrency } from '../utils/helpers';
+// import { formatCurrency } from '../utils/helpers'; <-- Bu satır silindi.
 
 const AddProduct = ({ categories, onAddProduct, onAddCategory, isSubscriptionActive }) => {
     // Eski error/success state'leri kaldırıldı
@@ -59,8 +59,8 @@ const AddProduct = ({ categories, onAddProduct, onAddCategory, isSubscriptionAct
             {/* ABONELİK DURUMU UYARISI */}
             {!isSubscriptionActive && (
                  <div className="alert-message alert-restricted mb-4">
-                    Üyelik süreniz dolduğu için **yeni ürün ekleyemezsiniz**. Lütfen üyeliğinizi yenileyin.
-                </div>
+                     Üyelik süreniz dolduğu için **yeni ürün ekleyemezsiniz**. Lütfen üyeliğinizi yenileyin.
+                 </div>
             )}
 
             <form onSubmit={handleSubmit} className="form-card form-product-add">
