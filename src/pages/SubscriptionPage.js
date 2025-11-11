@@ -86,7 +86,7 @@ const SubscriptionPage = ({ userId, userProfile, isSubscriptionActive, onActivat
                         type="text"
                         value={licenseKey}
                         onChange={handleLicenseChange}
-                        placeholder="ABCD-EFGH-IJKL-MNOP"
+                        placeholder="PREM-XXXX-XXXX-XXXX"
                         required
                         className="form-input"
                         maxLength={24}
