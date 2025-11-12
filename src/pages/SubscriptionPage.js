@@ -92,6 +92,7 @@ const SubscriptionPage = ({ userId, userProfile, isSubscriptionActive, onActivat
                         maxLength={24}
                     />
                 </div>
+                
 
                 <button
                     type="submit"
@@ -100,7 +101,27 @@ const SubscriptionPage = ({ userId, userProfile, isSubscriptionActive, onActivat
                 >
                     {isLoading ? <IconLoader width="24" height="24" className="icon-loader" /> : 'Anahtarı Aktive Et'}
                 </button>
+                <h4>Ürün Anahtarını aktive ettikten sonra sayfayı yenileyiniz.</h4>
+                <h4>Eğer PREMIUM Üyeliğniz varken tekrar anahtar aktive ederseniz Mevcut sürenizin üzerine eklenir.</h4>
+                <p>🔑 Ürün Anahtarı Satışı Hakkında Önemli Bilgilendirme
+                    <br/>
+Değerli müşterilerimiz,
+
+Şu an için vergi mükellefiyeti kaydımız bulunmadığından dolayı, yasal mevzuat gereği ürün anahtarlarımızın doğrudan bu web sitesi üzerinden satışını gerçekleştiremiyoruz.
+
+Bu nedenle, sizlerin güvenli bir şekilde alışveriş yapabilmesi ve ödeme işlemlerinin sorunsuz ilerlemesi için ürün anahtarlarımızı yalnızca Bynogame platformu üzerinden satışa sunmaktayız.
+
+Ürün Anahtarlarımız İçin Lütfen Bynogame Sayfamızı Ziyaret Edin:
+
+<a href="https://www.bynogame.com/tr/account/selling?game=Pazar&status=active" target="_blank" rel="noopener noreferrer"> ByNoGame Ürün anahtarı LİNK</a>
+<br/>
+Anlayışınız için teşekkür eder, keyifli oyunlar dileriz!</p>
+                
             </form>
+            <div>
+               
+            </div>
+
         </div>
     );
 };
