@@ -115,7 +115,7 @@ Bu nedenle, sizlerin güvenli bir şekilde alışveriş yapabilmesi ve ödeme i�
 
 <a href="https://www.bynogame.com/tr/account/selling?game=Pazar&status=active" target="_blank" rel="noopener noreferrer"> ByNoGame Ürün anahtarı LİNK</a>
 <br/>
-Anlayışınız için teşekkür eder, keyifli oyunlar dileriz!</p>
+Anlayışınız için teşekkür eder,iyi çalışmalar dileriz!</p>
                 
             </form>
             <div>
