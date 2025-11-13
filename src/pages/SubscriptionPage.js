@@ -103,7 +103,14 @@ const SubscriptionPage = ({ userId, userProfile, isSubscriptionActive, onActivat
                 </button>
                 <h4>Ürün Anahtarını aktive ettikten sonra sayfayı yenileyiniz.</h4>
                 <h4>Eğer PREMIUM Üyeliğniz varken tekrar anahtar aktive ederseniz Mevcut sürenizin üzerine eklenir.</h4>
-                <p>Ürün Anahtarı Satın alım için iletişim 0546-876-56-49</p>
+                <p>​⚠️ Önemli Bilgilendirme
+​Değerli müşterilerimiz,
+​Şu anda resmi olarak vergi mükellefi olmadığımız için maalesef web sitemiz üzerinden doğrudan satış işlemi gerçekleştiremiyoruz.
+​Ancak ürünlerimizi size ulaştırmak adına, ürün anahtarlarımızı güvenilir olan Hesap.com.tr platformu üzerinden satışa sunmaktayız.
+​Tüm ürün anahtarı alımlarınız ve ödeme işlemleriniz, bu platformun güvencesiyle yapılmaktadır.
+​Anlayışınız için teşekkür ederiz.
+​<a href="https://hesap.com.tr/ilan/445617-stokprovercelapp-premium-urun-anahtari-1ay" target="_blank" rel="noopener noreferrer">Hesap.com.tr</a>
+ bağlantısına tıklayarak ürünlerimize ulaşabilirsiniz.</p>
                 
             </form>
             <div>
