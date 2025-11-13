@@ -113,7 +113,7 @@ Bu nedenle, sizlerin güvenli bir şekilde alışveriş yapabilmesi ve ödeme i�
 
 Ürün Anahtarlarımız İçin Lütfen Bynogame Sayfamızı Ziyaret Edin:
 
-<a href="https://www.bynogame.com/tr/account/selling?game=Pazar&status=active" target="_blank" rel="noopener noreferrer"> ByNoGame Ürün anahtarı LİNK</a>
+<a href="https://www.bynogame.com/tr/pazar/kodlu/kodlu/kodlu-331013" target="_blank" rel="noopener noreferrer"> ByNoGame Ürün anahtarı LİNK</a>
 <br/>
 Anlayışınız için teşekkür eder,iyi çalışmalar dileriz!</p>
                 
