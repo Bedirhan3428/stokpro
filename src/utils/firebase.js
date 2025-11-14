@@ -12,6 +12,7 @@ import {
   signInWithPopup,                  // Pop-up ile Giriş
   updateProfile,             // Profil Güncelleme
   sendEmailVerification,
+  sendPasswordResetEmail,
   multiFactor,
   TotpMultiFactorGenerator, 
   TotpSecret, // MFA işlemleri için
@@ -78,6 +79,7 @@ export {
   signInWithPopup,
   updateProfile,
   sendEmailVerification,
+  sendPasswordResetEmail,
   multiFactor,
  TotpMultiFactorGenerator, // QR kod üretme ve doğrulama için
   TotpSecret,

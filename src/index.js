@@ -15,6 +15,7 @@ import './css/Navbar.css';
 import './css/ProductList.css';
 import './css/Sales.css'; 
 import './css/Toast.css'; 
+import './css/HolSayfa.css';
 
 
 

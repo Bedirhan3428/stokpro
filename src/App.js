@@ -10,6 +10,8 @@ import {
     onSnapshot
 } from './utils/firebase';
 import { formatCurrency, normalizeSalesData } from './utils/helpers';
+// Yeni Sayfa Import
+import HolSayfa from './pages/HolSayfa'; 
 import AuthScreen from './components/AuthScreen';
 import {
     addProduct,
@@ -46,6 +48,9 @@ function App() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [currentUser, setCurrentUser] = useState(null);
+    
+    // 🛑 YENİ STATE: Auth ekranını HolSayfa'dan sonra göstermek için
+    const [showAuthScreen, setShowAuthScreen] = useState(false); 
 
     const [userProfile, setUserProfile] = useState(null);
 
@@ -169,7 +174,6 @@ function App() {
         }
     }, [userId]);
 
-    // formatCurrency import is a module-level helper (immutable). Exclude it from deps to avoid unnecessary ESLint warning.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const handleAddIncome = useCallback(async (incomeData) => {
         try {
@@ -202,8 +206,11 @@ function App() {
             if (user) {
                 setCurrentUser(user);
                 setUserId(user.uid);
+                // Eğer kullanıcı zaten giriş yapmışsa ve email'i doğrulamışsa,
+                // tekrar HolSayfa veya AuthScreen'e dönmemesi için
                 if (user.emailVerified) {
                     loadUserProfile(user.uid);
+                    setShowAuthScreen(true); // Oturum açılmışsa, Auth/Hol sayfa mantığını devre dışı bırak.
                 } else {
                     setUserProfile(null);
                 }
@@ -211,6 +218,7 @@ function App() {
                 setCurrentUser(null);
                 setUserId(null);
                 setUserProfile(null);
+                setShowAuthScreen(false); // Oturum kapanınca HolSayfa'ya dönmesi için
             }
             setIsLoading(false);
         });
@@ -218,7 +226,6 @@ function App() {
         return () => unsubscribeAuth();
     }, [loadUserProfile]);
 
-    // appId is a module-level constant (imported); exclude it from deps to avoid the "outer scope" eslint warning.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         if (!userId || (currentUser && !currentUser.emailVerified)) return;
@@ -303,6 +310,10 @@ function App() {
         }
     };
 
+    // ----------------------------------------------------
+    // 🛑 GÖRÜNÜM KONTROLÜ (RENDER LOGIC)
+    // ----------------------------------------------------
+
     if (error) {
         return (
             <div className="min-h-screen bg-red-100 dark:bg-red-900 text-gray-900 dark:text-white flex items-center justify-center p-4">
@@ -311,6 +322,7 @@ function App() {
                     <p className="text-red-600 dark:text-red-300">{error}</p>
                     <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">Lütfen sayfayı yenileyin veya daha sonra tekrar deneyin.</p>
                 </div>
+                <ToastContainer theme="colored" />
             </div>
         );
     }
@@ -318,15 +330,23 @@ function App() {
     if (isLoading) {
         return <LoadingScreen message="Veritabanına bağlanılıyor ve veriler yükleniyor..." />;
     }
-
+    
+    // 1. OTURUM YOKSA (userId null ise)
     if (!userId) {
-        return <AuthScreen />;
+        // HolSayfa'dan butona basıldıysa AuthScreen'e git
+        if (showAuthScreen) {
+            return <AuthScreen onSwitchToHome={() => setShowAuthScreen(false)} />;
+        }
+        // Hiçbir şey yapılmadıysa HolSayfa'yı göster ve butona basınca showAuthScreen'i true yap
+        return <HolSayfa onNavigateToAuth={() => setShowAuthScreen(true)} />;
     }
 
+    // 2. OTURUM VAR AMA E-POSTA DOĞRULANMAMIŞSA
     if (userId && currentUser && !currentUser.emailVerified) {
-        return <EmailVerificationScreen userEmail={currentUser.email} />;
+        return <EmailVerificationScreen userEmail={currentUser.email} onSignOut={handleSignOut} />;
     }
-
+    
+    // 3. OTURUM VAR VE GİRİŞ YAPILMIŞSA (ANA UYGULAMA)
     const renderPage = () => {
         switch (page) {
             case 'dashboard':
