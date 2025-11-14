@@ -40,7 +40,7 @@ const Dashboard = ({ products, normalizedSales, expenses, incomes, userProfile }
 
   return (
     <div className="page-container">
-      <h1 className="page-title">Dashboard</h1>
+      <h1 className="page-title">Gösterge Paneli</h1>
 
       <p className="welcome-message">
         👋 Hoş Geldin, {userName}!
