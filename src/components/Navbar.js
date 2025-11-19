@@ -15,7 +15,7 @@ import {
 // PROP GÜNCELLEMESİ: 'userId' kaldırıldı, 'onSignOut' eklendi
 const Navbar = ({ currentPage, setPage, onSignOut }) => { 
   const navItems = [
-    { name: 'Dashboard', page: 'dashboard', icon: <IconDashboard /> },
+    { name: 'Gösterge Paneli', page: 'dashboard', icon: <IconDashboard /> },
     { name: 'Stok Listesi', page: 'products', icon: <IconBox /> },
     { name: 'Ürün Ekle', page: 'add_product', icon: <IconPlusCircle /> },
     // İKON DÜZELTMESİ: Satış için Kredi Kartı (daha mantıklı)
