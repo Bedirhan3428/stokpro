@@ -46,10 +46,10 @@ const Dashboard = ({ products, normalizedSales, expenses, incomes, userProfile }
         👋 Hoş Geldin, {userName}!
       </p>
 
-<h3 style={{ color: '#fff', backgroundColor: '#f59e0b', padding: '12px', borderRadius: '8px', textAlign: 'center', margin: '16px' }}>
+<h3 style={{ color: '#fff', backgroundColor: 'black', padding: '12px', borderRadius: '8px', textAlign: 'center', margin: '16px' }}>
   ⚠️ DİKKAT: Önümüzdeki 1-3 gün içinde büyük güncelleme geliyor!<br/>
   Veresiye defteri, detaylı raporlar, haftalık kazanç tahmini ve daha fazlası eklenecek.<br/>
-  Verileriniz güvende, sadece daha iyi olacak 🔥
+  Verileriniz güvende, sadece daha iyi olacak 
 </h3>
       
       <div className="summary-grid">
