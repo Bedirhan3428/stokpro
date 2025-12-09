@@ -1,0 +1,204 @@
+/* Register.css
+   Styles for Register component (moved inline styles into CSS)
+*/
+
+.page-register {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+/* Card padding handled by .auth-card */
+.auth-card {
+  padding: 20px;
+}
+
+/* Title & subtitle */
+.register-title {
+  margin-top: 0;
+  margin-bottom: 6px;
+}
+.auth-sub {
+  color: var(--muted);
+  margin: 0 0 12px 0;
+}
+
+/* Form layout */
+.auth-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Inputs */
+.auth-input {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #eee;
+  font-size: 14px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Error */
+.auth-error {
+  color: crimson;
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+/* Actions */
+.auth-actions {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: stretch;
+}
+
+/* Wider screens show actions row */
+@media (min-width: 640px) {
+  .auth-actions {
+    flex-direction: row;
+    align-items: center;
+  }
+  .auth-link { margin-left: 8px; }
+}
+
+/* Submit sizing */
+.register-submit {
+  min-width: 160px;
+  display: inline-flex;
+  justify-content: center;
+}
+
+/* Google button */
+.btn-google {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(0,0,0,0.06);
+  background: #fff;
+  cursor: pointer;
+  font-weight: 600;
+}
+.btn-google:hover { box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+
+.google-icon {
+  width: 18px;
+  height: 18px;
+  margin-right: 4px;
+  flex: 0 0 18px;
+}
+
+/* Links */
+.auth-link {
+  margin-top: 6px;
+  color: var(--link-color, #2563eb);
+  text-decoration: none;
+  font-size: 13px;
+}
+.auth-link:hover,
+.auth-link:focus {
+  text-decoration: underline;
+}
+
+/* Responsive: stack buttons on very small screens */
+@media (max-width: 640px) {
+  .auth-actions { gap: 8px; }
+  .btn-google { width: 100%; }
+  .register-submit { width: 100%; }
+}
+
+/* ======================================================
+   BUTTON OVERRIDES FOR REGISTER
+   - Apply requested visual treatment across register UI:
+     * 1px solid black border on all .btn elements
+     * inner top white highlight + inner bottom dark shadow (inset box-shadow)
+     * variant rules (.btn-primary, .btn-ghost, .btn-danger, .btn-google) keep their backgrounds
+     * disabled state removes inner lighting but retains black border
+   ====================================================== */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #000; /* siyah border */
+  padding: 8px 12px;
+  height: 38px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.02)); /* hafif nötr zemin */
+  color: var(--text, #111);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.16s ease, background 0.12s ease;
+  font-weight: 600;
+  font-size: 14px;
+
+  /* içten üst beyaz parlaklık, içten alt koyu gölge */
+  box-shadow: inset 0 8px 14px rgba(255,255,255,0.12), inset 0 -8px 14px rgba(0,0,0,0.18);
+}
+.btn:focus { outline: 3px solid rgba(37,99,235,0.18); outline-offset: 2px; }
+
+/* Primary */
+.btn-primary {
+  background: linear-gradient(180deg, var(--primary, #2563eb), var(--primary-600, #1e40af));
+  color: #fff;
+  border: 1px solid #000;
+  box-shadow:
+    0 6px 12px rgba(37,99,235,0.12),
+    inset 0 10px 16px rgba(255,255,255,0.12),
+    inset 0 -10px 16px rgba(0,0,0,0.18);
+}
+.btn-primary:hover { transform: translateY(-1px); }
+.btn-primary:active { transform: translateY(0) scale(0.995); }
+
+/* Ghost (outline-like) */
+.btn-ghost {
+  background: transparent;
+  color: var(--primary, #2563eb);
+  border: 1px solid #000;
+  box-shadow: inset 0 8px 12px rgba(255,255,255,0.08), inset 0 -8px 12px rgba(0,0,0,0.08);
+}
+.btn-ghost:hover { background: rgba(37,99,235,0.04); }
+
+/* Danger */
+.btn-danger {
+  background: linear-gradient(180deg, #f87171, #ef4444);
+  color: #fff;
+  border: 1px solid #000;
+  box-shadow:
+    0 6px 12px rgba(239,68,68,0.10),
+    inset 0 10px 16px rgba(255,255,255,0.10),
+    inset 0 -10px 14px rgba(0,0,0,0.14);
+}
+
+/* Google (override to use black border and inset lighting) */
+.btn-google {
+  border: 1px solid #000;
+  box-shadow: inset 0 8px 12px rgba(255,255,255,0.12), inset 0 -8px 12px rgba(0,0,0,0.08);
+}
+
+/* Disabled / inactive state (buton hala siyah sınır korur) */
+[disabled], .btn[disabled],
+button:disabled,
+.btn[aria-disabled="true"] {
+  opacity: 1;
+  cursor: not-allowed;
+  box-shadow: none !important;
+  transform: none !important;
+  background: var(--muted-bg, #f1f5f9) !important;
+  color: var(--muted) !important;
+  border-color: #000 !important;
+  border-style: solid;
+  border-width: 1px;
+}
+.btn-ghost[disabled], .btn-ghost[aria-disabled="true"] {
+  background: var(--muted-bg, #f1f5f9) !important;
+  color: var(--muted) !important;
+  border-color: #000 !important;
+}

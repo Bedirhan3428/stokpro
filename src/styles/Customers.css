@@ -1,0 +1,239 @@
+/* Customers.css
+   Styles extracted from inline styles in Customers component.
+   Düzenlendi: butonlar için siyah 1px border ve üstten beyaz parlaklık / alttan koyu gölge eklendi.
+*/
+
+.page-customers {
+  padding: 12px;
+  box-sizing: border-box;
+  display: grid;
+  gap: 12px;
+}
+
+/* Note / Notification */
+.note-card {
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+.note-error {
+  background: rgba(254,226,226,0.9);
+  border: 1px solid rgba(239,68,68,0.16);
+}
+.note-success {
+  background: rgba(220,252,231,0.9);
+  border: 1px solid rgba(16,185,129,0.12);
+}
+.note-info {
+  background: rgba(239,246,255,0.9);
+  border: 1px solid rgba(59,130,246,0.06);
+}
+.note-title { font-weight: 700; }
+.note-sub { color: var(--muted); margin-top: 6px; }
+
+/* subscription warning */
+.subscription-warning { margin-bottom: 12px; padding: 12px; }
+.warning-title { font-weight: 700; }
+.warning-sub { color: var(--muted); margin-top: 6px; }
+
+/* cards and form */
+.card { background: var(--card-bg, #fff); border-radius: 8px; padding: 12px; box-shadow: var(--card-shadow, 0 1px 2px rgba(0,0,0,0.03)); }
+.add-customer-card .form-row,
+.card .form-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.input-flex { flex: 1; }
+.input-phone { width: 160px; }
+
+/* generic helpers likely present in global.css but ensure defaults */
+.auth-input {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #eee;
+  font-size: 14px;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+/* customers list */
+.customers-card { padding-bottom: 8px; }
+.customer-list { display: grid; gap: 8px; margin-top: 8px; }
+.customer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+}
+.customer-meta { max-width: 70%; }
+.customer-name { font-weight: 700; }
+.customer-phone, .customer-balance { color: var(--muted); font-size: 13px; }
+.customer-actions { display: flex; gap: 8px; }
+
+/* modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.45);
+  z-index: 60;
+  padding: 16px;
+}
+.modal-card {
+  width: 100%;
+  max-width: 960px;
+  max-height: 90vh;
+  overflow: auto;
+  padding: 12px;
+  box-sizing: border-box;
+}
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.detail-title { margin: 0; }
+.detail-actions { display: flex; gap: 8px; }
+
+/* modal grid layout */
+.modal-grid {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 12px;
+  margin-top: 12px;
+}
+.left-column {}
+.right-column {}
+
+/* small helpers */
+.section-title { margin: 0 0 8px 0; }
+.section-subtitle { margin: 0 0 8px 0; }
+.input-label { display: block; margin-top: 8px; margin-bottom: 6px; font-weight: 600; }
+.textarea-note {
+  width: 100%;
+  min-height: 80px;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #eee;
+  box-sizing: border-box;
+}
+
+/* divider */
+.divider { margin: 12px 0; border: 0; border-top: 1px solid #f3f4f6; }
+
+/* lists inside modal */
+.list-grid { display: grid; gap: 8px; }
+.sale-row, .payment-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+}
+.sale-left, .payment-left { max-width: 70%; }
+.sale-date, .payment-date, .sale-amount, .payment-amount { font-weight: 700; }
+.muted-sub { color: var(--muted); }
+
+/* payments section */
+.payments-section { margin-top: 12px; }
+
+/* responsive */
+@media (max-width: 900px) {
+  .modal-grid { grid-template-columns: 1fr; }
+  .input-phone { width: 120px; }
+}
+
+/* ======================================================
+   BUTTON OVERRIDES FOR CUSTOMERS
+   - Tüm butonlara 1px solid siyah border eklendi.
+   - Üstten hafif beyaz parlaklık ve alttan koyu gölge için inset box-shadow eklendi.
+   - Primary/ghost/danger/google butonları için border korundu ve interaktif durumlar eklendi.
+   ====================================================== */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #000; /* siyah border */
+  padding: 8px 12px;
+  height: 38px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.02)); /* hafif nötr zemin */
+  color: var(--text, #111);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.16s ease, background 0.12s ease;
+  font-weight: 600;
+  font-size: 14px;
+
+  /* içten üst beyaz parlaklık, içten alt koyu gölge */
+  box-shadow: inset 0 8px 14px rgba(255,255,255,0.12), inset 0 -8px 14px rgba(0,0,0,0.18);
+}
+.btn:focus { outline: 3px solid rgba(37,99,235,0.18); outline-offset: 2px; }
+
+/* Primary */
+.btn-primary {
+  background: linear-gradient(180deg, var(--accent, #00aaff), var(--accent-2, #7b61ff));
+  color: #fff;
+  border: 1px solid #000;
+  box-shadow:
+    0 6px 12px rgba(123,97,255,0.12),
+    inset 0 10px 16px rgba(255,255,255,0.12),
+    inset 0 -10px 16px rgba(0,0,0,0.18);
+}
+.btn-primary:hover { transform: translateY(-1px); }
+.btn-primary:active { transform: translateY(0) scale(0.995); }
+
+/* Ghost */
+.btn-ghost {
+  background: transparent;
+  color: var(--accent, #00aaff);
+  border: 1px solid #000;
+  box-shadow: inset 0 8px 12px rgba(255,255,255,0.08), inset 0 -8px 12px rgba(0,0,0,0.08);
+}
+.btn-ghost:hover { background: rgba(0,170,255,0.04); }
+
+/* Danger */
+.btn-danger {
+  background: linear-gradient(180deg, #f87171, #ef4444);
+  color: #fff;
+  border: 1px solid #000;
+  box-shadow:
+    0 6px 12px rgba(239,68,68,0.10),
+    inset 0 10px 16px rgba(255,255,255,0.10),
+    inset 0 -10px 14px rgba(0,0,0,0.14);
+}
+
+/* Google / other specific button */
+.btn-google {
+  background: #fff;
+  border: 1px solid #000;
+  color: #111;
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 8px;
+  gap: 8px;
+  box-shadow: inset 0 8px 12px rgba(255,255,255,0.12), inset 0 -8px 12px rgba(0,0,0,0.08);
+}
+
+/* Disabled / inactive state (buton hala siyah sınır korur) */
+[disabled], .btn[disabled],
+button:disabled,
+.btn[aria-disabled="true"] {
+  opacity: 1;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+  background: var(--muted-bg, #f1f5f9) !important;
+  color: var(--muted) !important;
+  border-color: #000 !important;
+  border-style: solid;
+  border-width: 1px;
+}
+.btn-ghost[disabled], .btn-ghost[aria-disabled="true"] {
+  background: var(--muted-bg, #f1f5f9) !important;
+  color: var(--muted) !important;
+  border-color: #000 !important;
+}

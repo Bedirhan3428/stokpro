@@ -1,0 +1,22 @@
+/* NotFound.css
+   Extracted styles for NotFound component (moved inline styles to CSS).
+*/
+
+.page-notfound {
+  text-align: center;
+  padding: 24px;
+  max-width: 720px;
+  margin: 24px auto;
+  box-sizing: border-box;
+}
+
+.nf-title {
+  margin: 0 0 8px 0;
+  font-size: 22px;
+}
+
+.nf-sub {
+  color: var(--muted);
+  margin: 0;
+  font-size: 15px;
+}

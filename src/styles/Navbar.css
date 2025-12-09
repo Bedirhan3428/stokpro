@@ -1,0 +1,249 @@
+/* Navbar: desktop shows full links inline; mobile/tablet hides inline links and shows hamburger + panel */
+
+/* Base layout */
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 1rem;
+  position: relative;
+  z-index: 60;
+}
+
+/* Brand */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  background: #0b5cff;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+.brand-text .brand-name {
+  font-weight: 700;
+}
+.brand-tag {
+  color: #666;
+  font-size: 0.75rem;
+}
+
+/* Nav row */
+.nav-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Link group */
+.nav-links {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.nav-links.mobile {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+/* Buttons */
+.btn {
+  padding: 0.45rem 0.7rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.btn-ghost {
+  background: transparent;
+  color: #222;
+}
+.btn-primary {
+  background: #0b5cff;
+  color: #fff;
+  border-color: #0753d8;
+}
+.btn-danger {
+  background: #e74c3c;
+  color: white;
+  border-color: #c63b2e;
+}
+
+/* Profile menu */
+.profile-container {
+  position: relative;
+}
+.profile-menu-outer {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  min-width: 220px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+  padding: 0.6rem;
+  z-index: 70;
+}
+.profile-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.profile-email {
+  font-weight: 600;
+}
+.profile-sub.muted {
+  color: #666;
+  font-size: 0.85rem;
+}
+.profile-actions {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: flex-end;
+}
+
+/* Hamburger (mobile) */
+.hamburger-button {
+  display: none; /* shown on small screens only via media query */
+  background: transparent;
+  border: none;
+  padding: 0.35rem;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.hamburger-box {
+  width: 28px;
+  height: 18px;
+  position: relative;
+}
+.hamburger-inner,
+.hamburger-inner::before,
+.hamburger-inner::after {
+  display: block;
+  background: #222;
+  height: 2px;
+  border-radius: 2px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+.hamburger-inner {
+  top: 50%;
+  transform: translateY(-50%);
+}
+.hamburger-inner::before {
+  content: "";
+  top: -7px;
+}
+.hamburger-inner::after {
+  content: "";
+  top: 7px;
+}
+.hamburger-button.is-open .hamburger-inner {
+  background: transparent;
+}
+.hamburger-button.is-open .hamburger-inner::before {
+  transform: translateY(7px) rotate(45deg);
+}
+.hamburger-button.is-open .hamburger-inner::after {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+/* Mobile backdrop and panel */
+.mobile-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.0);
+  pointer-events: none;
+  opacity: 0;
+  transition: background 0.18s ease, opacity 0.18s ease;
+  z-index: 50;
+}
+.mobile-backdrop.visible {
+  background: rgba(0,0,0,0.4);
+  pointer-events: auto;
+  opacity: 1;
+}
+.mobile-nav {
+  position: fixed;
+  top: 0;
+  right: -100%;
+  height: 100%;
+  width: 320px;
+  max-width: 92%;
+  background: #fff;
+  box-shadow: -6px 0 18px rgba(0,0,0,0.12);
+  transition: right 0.25s cubic-bezier(.2,.9,.2,1);
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+}
+.mobile-nav.open {
+  right: 0;
+}
+.mobile-nav-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+.mobile-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+.mobile-profile {
+  margin-top: auto;
+  border-top: 1px solid #eee;
+  padding-top: 0.8rem;
+}
+
+/* Utility placeholder when no profile */
+.visually-hidden-placeholder {
+  width: 40px;
+  height: 40px;
+}
+
+/* RESPONSIVE RULES
+   - On desktop (>= 769px): show full nav inline (.desktop-only) and hide mobile hamburger.
+   - On mobile/tablet (<= 768px): hide inline links, show hamburger + mobile panel.
+*/
+@media (max-width: 768px) {
+  .desktop-only {
+    display: none !important;
+  }
+  .hamburger-button {
+    display: inline-flex;
+  }
+  /* Profile button remains visible on mobile; profile menu will open but mobile panel contains profile actions too */
+}
+
+@media (min-width: 769px) {
+  .desktop-only {
+    display: flex;
+  }
+  .hamburger-button {
+    display: none;
+  }
+  /* Ensure mobile elements don't interfere when not open */
+  .mobile-backdrop,
+  .mobile-nav {
+    pointer-events: none;
+  }
+}

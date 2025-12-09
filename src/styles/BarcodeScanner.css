@@ -1,0 +1,67 @@
+/* BarcodeScanner.css
+   Styles for the BarcodeScanner component
+*/
+
+.page-barcode-scanner {
+  padding: 8px 0;
+  box-sizing: border-box;
+}
+
+/* controls row for supported devices */
+.scanner-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.scanner-note {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* video preview area */
+.video-wrap {
+  margin-top: 8px;
+}
+
+.video-preview {
+  width: 100%;
+  max-height: 240px;
+  border-radius: 8px;
+  background: #000;
+  object-fit: cover;
+}
+
+/* manual entry UI for unsupported browsers */
+.manual-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.manual-note {
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.manual-entry {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.manual-input {
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #eee;
+  flex: 1;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+/* small responsive adjustment */
+@media (max-width: 480px) {
+  .video-preview {
+    max-height: 200px;
+  }
+}

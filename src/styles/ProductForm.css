@@ -1,0 +1,72 @@
+/* ProductForm.css
+   Styles for ProductForm component - moved inline styles to CSS
+*/
+
+.page-product-form {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* grid of inputs - responsive 2 columns where space allows */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+/* on wider screens show two columns */
+@media (min-width: 720px) {
+  .form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* each labeled input */
+.form-row {
+  display: flex;
+  flex-direction: column;
+}
+
+.input-label {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+/* reuse existing auth-input style but ensure spacing */
+.auth-input {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #eee;
+  font-size: 14px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* error message */
+.error-message {
+  color: var(--danger, #b91c1c);
+  margin-top: 8px;
+  background: rgba(254,226,226,0.6);
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(239,68,68,0.12);
+}
+
+/* actions row */
+.form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* stack buttons on small screens */
+@media (max-width: 640px) {
+  .form-actions {
+    flex-direction: column;
+  }
+}
+
+/* keep button sizes reasonable */
+.form-actions .btn {
+  min-width: 120px;
+}

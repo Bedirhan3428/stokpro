@@ -1,32 +1,16 @@
+// src/index.js
+import './index.css';
+import './utils/chartSetup';
 import React from 'react';
-import { createRoot } from 'react-dom/client'; // Ya da eski React.dom.render
+import ReactDOM from 'react-dom/client';
 import App from './App';
-// CSS dosyasını import etmeyi unutmayın!
+import reportWebVitals from './reportWebVitals';
 
-import './css/AccountingPage.css';
-import './css/AddProduct.css'; 
-import './css/AuthScreen.css';
-import './css/CategoryManager.css'; 
-import './css/Dashboard.css';
-import './css/ExpenseManager.css'; 
-import './css/LoadingScreen.css';
-import './css/Modal.css';
-import './css/Navbar.css';
-import './css/ProductList.css';
-import './css/Sales.css'; 
-import './css/Toast.css'; 
-import './css/HolSayfa.css';
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+ 
+    <App />
+ 
+);
 
-
-
-
-
-
-
-
-
-
-
-const container = document.getElementById('root');
-const root = createRoot(container);
-root.render(<App />);
+reportWebVitals();

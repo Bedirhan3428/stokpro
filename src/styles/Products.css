@@ -1,0 +1,242 @@
+/* Products.css
+   Styles for Products component.
+   Düzenlendi: butonlar için siyah 1px border ve üstten beyaz parlaklık / alttan koyu gölge eklendi.
+*/
+
+.page-products {
+  padding: 12px;
+  box-sizing: border-box;
+  display: grid;
+  gap: 12px;
+}
+
+/* Notification note */
+.note {
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+.note-title { font-weight: 700; }
+.note-body { color: var(--muted); margin-top: 6px; }
+.note-error { background: rgba(254,226,226,0.95); border: 1px solid rgba(239,68,68,0.16); }
+.note-success { background: rgba(220,252,231,0.95); border: 1px solid rgba(16,185,129,0.12); }
+.note-info { background: rgba(239,246,255,0.95); border: 1px solid rgba(59,130,246,0.06); }
+
+/* subscription warning */
+.sub-warning { margin-bottom: 12px; padding: 12px; }
+.sub-warning-title { font-weight: 700; }
+.sub-warning-body { color: var(--muted); margin-top: 6px; }
+
+/* add product card */
+.add-product-card { padding-bottom: 8px; }
+.section-title { margin-top: 0; margin-bottom: 8px; }
+
+.add-product-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 120px 120px 160px;
+  gap: 8px;
+  align-items: center;
+}
+@media (max-width: 900px) {
+  .add-product-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.add-product-actions { display: flex; gap: 8px; align-items: center; }
+.muted-help { color: var(--muted); margin-top: 8px; }
+
+/* products list */
+.products-list { display: grid; gap: 8px; margin-top: 8px; }
+
+.product-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  gap: 12px;
+}
+.product-meta { min-width: 0; }
+.product-name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.product-sub { color: var(--muted); font-size: 13px; }
+
+/* right-hand actions in row */
+.product-right { display: flex; gap: 12px; align-items: center; }
+
+/* stock area */
+.product-stock { text-align: right; min-width: 90px; }
+.stock-value { font-weight: 700; }
+.stock-label { color: var(--muted); font-size: 12px; }
+
+/* quick stock input */
+
+.quick-stock-input {
+  width: 90px;
+  padding: 6px;
+  border-radius: 8px;
+  border: 1px solid #eee;
+  box-sizing: border-box;
+}
+
+/* product actions */
+.product-actions { display: flex; gap: 8px; }
+
+/* muted helpers */
+.muted-sub { color: var(--muted); }
+
+/* modal overlay and card */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.45);
+  z-index: 60;
+  padding: 16px;
+  box-sizing: border-box;
+}
+.modal-card {
+  width: 100%;
+  max-width: 720px;
+  padding: 12px;
+  box-sizing: border-box;
+  border-radius: 8px;
+}
+.modal-card.small { max-width: 520px; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; }
+.modal-title { margin: 0; }
+.modal-body { margin-top: 12px; }
+
+/* edit grid inside modal */
+.edit-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+@media (max-width: 640px) {
+  .edit-grid { grid-template-columns: 1fr; }
+}
+.form-field { display: flex; flex-direction: column; }
+.full-width { grid-column: 1 / -1; }
+
+/* modal actions */
+.modal-actions { display: flex; gap: 8px; margin-top: 12px; }
+
+/* small text/padding for cards */
+.card { background: var(--card-bg, #fff); border-radius: 8px; box-shadow: var(--card-shadow, 0 1px 2px rgba(0,0,0,0.03)); }
+
+/* loading state fallback */
+.app-loading { display: flex; align-items: center; gap: 12px; }
+
+/* input fallback style (auth-input used across app) */
+.auth-input {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #eee;
+  font-size: 14px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* responsive tweaks */
+@media (max-width: 720px) {
+  .add-product-grid { grid-template-columns: 1fr; }
+  .product-right { gap: 8px; }
+}
+
+/* ======================================================
+   BUTTON OVERRIDES FOR PRODUCTS (global-like within this file)
+   - Tüm butonlara 1px solid siyah border eklendi.
+   - Üstten hafif beyaz parlaklık ve alttan koyu gölge için inset box-shadow eklendi.
+   - Primary/ghost/danger/google butonları için border korundu.
+   ====================================================== */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #000; /* istenen siyah border */
+  padding: 8px 12px;
+  height: 38px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.02)); /* hafif nötr zemin */
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.16s ease, background 0.12s ease;
+  font-weight: 600;
+  font-size: 14px;
+
+  /* içten üst beyaz parlaklık, içten alt koyu gölge */
+  box-shadow: inset 0 8px 14px rgba(255,255,255,0.12), inset 0 -8px 14px rgba(0,0,0,0.18);
+}
+.btn:focus { outline: 3px solid rgba(37,99,235,0.18); outline-offset: 2px; }
+
+/* Primary */
+.btn-primary {
+  background: linear-gradient(180deg, var(--primary), var(--primary-600));
+  color: #fff;
+  border: 1px solid #000;
+  box-shadow:
+    0 6px 12px rgba(37,99,235,0.12),
+    inset 0 10px 16px rgba(255,255,255,0.12),
+    inset 0 -10px 16px rgba(0,0,0,0.18);
+}
+.btn-primary:hover { transform: translateY(-1px); }
+
+/* Ghost */
+.btn-ghost {
+  background: transparent;
+  color: var(--primary);
+  border: 1px solid #000;
+  box-shadow: inset 0 8px 12px rgba(255,255,255,0.08), inset 0 -8px 12px rgba(0,0,0,0.08);
+}
+.btn-ghost:hover { background: rgba(37,99,235,0.04); }
+
+/* Danger */
+.btn-danger {
+  background: linear-gradient(180deg, #f87171, #ef4444);
+  color: #fff;
+  border: 1px solid #000;
+  box-shadow:
+    0 6px 12px rgba(239,68,68,0.10),
+    inset 0 10px 16px rgba(255,255,255,0.10),
+    inset 0 -10px 14px rgba(0,0,0,0.14);
+}
+
+/* Google */
+.btn-google {
+  background: #fff;
+  border: 1px solid #000;
+  color: #111;
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 8px;
+  gap: 8px;
+  box-shadow: inset 0 8px 12px rgba(255,255,255,0.12), inset 0 -8px 12px rgba(0,0,0,0.08);
+}
+
+/* Disabled / inactive state */
+[disabled], .btn[disabled],
+button:disabled,
+.btn[aria-disabled="true"] {
+  opacity: 1;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+  background: var(--muted-bg) !important;
+  color: var(--muted) !important;
+  border-color: #000 !important;
+  border-style: solid;
+  border-width: 1px;
+}
+.btn-ghost[disabled], .btn-ghost[aria-disabled="true"] {
+  background: var(--muted-bg) !important;
+  color: var(--muted) !important;
+  border-color: #000 !important;
+}
+
+/* keep button sizes reasonable in forms */
+.form-actions .btn {
+  min-width: 120px;
+}

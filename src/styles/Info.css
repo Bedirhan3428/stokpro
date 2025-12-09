@@ -1,0 +1,59 @@
+/* Home.css
+   Styles for the Home component. Inline styles were moved here.
+*/
+
+.page-home {
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.card-home {
+  padding: 36px;
+  max-width: 920px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.home-title {
+  margin-top: 0;
+  font-size: 32px;
+}
+
+.home-sub {
+  color: var(--muted);
+  font-size: 16px;
+  margin-top: 8px;
+  line-height: 1.4;
+}
+
+.home-cta-row {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.home-cta-button {
+  min-width: 160px;
+}
+
+/* Info block below the CTA */
+.home-info {
+  margin-top: 18px;
+  color: var(--muted);
+  font-size: 14px;
+  text-align: left;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .card-home {
+    padding: 20px;
+  }
+  .home-title {
+    font-size: 28px;
+  }
+  .home-info {
+    font-size: 13px;
+  }
+}

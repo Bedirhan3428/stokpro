@@ -1,0 +1,221 @@
+/* AdvancedReport.css
+   Mobile-first, responsive rewrite so the AdvancedReport layout fits cleanly
+   on small devices (including iPhone 7 ~375px) and scales up for larger screens.
+   Strategies:
+   - Use flexible sizing (minmax, clamp, flex) instead of fixed widths.
+   - Ensure flex/grid children can shrink (min-width: 0) to avoid overflow.
+   - Use safe-area insets for iOS and -webkit-overflow-scrolling for smooth scrolling.
+   - Scale chart heights with clamp() so they don't overflow on small screens.
+*/
+
+/* reset & helpers */
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+:root {
+  --page-padding: clamp(8px, 3vw, 12px);
+  --gap: 12px;
+  --card-radius: 8px;
+  --card-bg: #fff;
+  --card-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  --muted: #6b7280;
+  --side-preferred: 380px; /* preferred width for side column on large screens */
+}
+
+/* page container */
+.page-advanced-report {
+  grid-column: 1 / -1;
+  width: 100%;
+  padding: var(--page-padding);
+  padding-left: calc(var(--page-padding) + env(safe-area-inset-left));
+  padding-right: calc(var(--page-padding) + env(safe-area-inset-right));
+  box-sizing: border-box;
+  max-width: 100%;
+  overflow-x: hidden; /* prevent accidental horizontal scroll on tiny viewports */
+}
+
+/* header */
+.adv-header {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.header-left { min-width: 0; }
+.adv-title { margin: 0; font-size: clamp(1rem, 2.2vw, 1.25rem); }
+.adv-sub { color: var(--muted); font-size: 0.95rem; }
+.header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* note */
+.note-banner {
+  margin-bottom: 12px;
+  padding: 10px;
+  background: var(--surface, #f8fafc);
+  border-radius: 6px;
+  word-break: break-word;
+}
+
+/* grid layout - mobile-first */
+.adv-grid {
+  display: grid;
+  gap: var(--gap);
+  grid-template-columns: 1fr; /* stack on small screens */
+}
+
+/* on larger screens show two columns with a flexible side column */
+@media (min-width: 800px) {
+  .adv-grid {
+    grid-template-columns: 1fr minmax(260px, var(--side-preferred));
+    align-items: start;
+  }
+}
+
+/* main & side */
+.adv-main { min-width: 0; } /* allow children to shrink */
+.adv-side { min-width: 0; }
+
+/* generic card tweaks */
+.card, .card.card-padded {
+  background: var(--card-bg);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+}
+.card-padded {
+  padding: 12px;
+}
+.card-chart { margin-top: 12px; padding: 12px; }
+
+/* small text/weights */
+.muted-small { color: var(--muted); font-size: 12px; }
+.muted-sub { color: var(--muted); margin-top: 6px; }
+.adv-strong { font-size: clamp(1.1rem, 2.2vw, 1.2rem); font-weight: 700; margin-top: 6px; }
+
+/* two column helper within sections */
+.grid.two-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* anomaly list */
+.anomaly-list {
+  margin-top: 8px;
+  max-height: clamp(80px, 22vh, 120px);
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.anomaly-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid #f3f4f6;
+  gap: 8px;
+  align-items: center;
+}
+
+/* chart container sizes (responsive) */
+.chart-container { height: clamp(180px, 28vw, 320px); }
+.chart-small { height: clamp(140px, 22vw, 240px); }
+
+/* forecast grid */
+.forecast-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  max-height: clamp(160px, 35vh, 220px);
+  overflow: auto;
+  margin-top: 8px;
+  -webkit-overflow-scrolling: touch;
+}
+.forecast-item {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #eef2ff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+/* recommendations */
+.recommendation-list {
+  max-height: clamp(140px, 35vh, 220px);
+  overflow: auto;
+  margin-top: 8px;
+  -webkit-overflow-scrolling: touch;
+}
+.rec-item { margin-bottom: 6px; }
+
+/* product / customer lists */
+.product-list, .customer-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+.card-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+}
+.card-list-item.small { padding: 6px; }
+
+/* recent transactions */
+.recent-section { margin-top: 12px; }
+.recent-wrap { max-width: 100%; }
+.recent-list {
+  max-height: clamp(160px, 38vh, calc(72px * 3));
+  overflow-y: auto;
+  padding-right: 8px;
+  border: 1px solid #eef2ff;
+  border-radius: 8px;
+  background: var(--card-bg);
+  -webkit-overflow-scrolling: touch;
+}
+.recent-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  margin: 0;
+  gap: 8px;
+}
+
+/* small helper classes */
+.small-text { font-size: 13px; }
+.muted-sub + .muted-sub { margin-top: 4px; }
+
+/* images and svgs scale */
+img, svg { max-width: 100%; height: auto; display: block; }
+
+/* responsive adjustments for narrow viewports (including iPhone 7 ~375px) */
+@media (max-width: 420px) {
+  :root { --gap: 10px; --side-preferred: 320px; }
+  .page-advanced-report { padding: clamp(6px, 4vw, 10px); }
+  .grid.two-cols { grid-template-columns: 1fr; } /* stack internal two-cols */
+  .forecast-grid { grid-template-columns: 1fr; }
+  .chart-container { height: clamp(160px, 34vw, 260px); }
+  .chart-small { height: clamp(120px, 30vw, 200px); }
+  .anomaly-list, .recommendation-list, .recent-list { max-height: 200px; }
+}
+
+/* very small devices: ensure full stacking and shrink behavior */
+@media (max-width: 360px) {
+  .adv-header { gap: 8px; }
+  .grid.two-cols { gap: 8px; }
+  .anomaly-row { padding: 6px 0; }
+}
+
+/* larger screens tweaks */
+@media (min-width: 1200px) {
+  .adv-grid { gap: 16px; }
+  .chart-container { height: 360px; }
+}

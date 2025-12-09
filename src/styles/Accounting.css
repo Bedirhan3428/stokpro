@@ -1,0 +1,328 @@
+/* Accounting.css
+   Styles extracted from inline styles in the component.
+   Add to your main styles import (already imported by the component).
+   Düzenlendi: butonlar için siyah 1px border ve üstten beyaz parlaklık / alttan koyu gölge eklendi.
+*/
+
+.page-accounting {
+  padding: 16px;
+}
+
+/* header row */
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.page-title {
+  margin: 0;
+}
+
+.header-subtext {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* Subscription warning card */
+.card-subscription-warning {
+  margin-bottom: 12px;
+  padding: 12px;
+}
+
+.muted-strong {
+  font-weight: 700;
+}
+
+.muted-sub {
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+.muted-small {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* Sales grid and sale card */
+.section-block {
+  margin-bottom: 16px;
+}
+
+.sales-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.sale-card {
+  position: relative;
+  padding: 12px;
+}
+
+.sale-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sale-amount {
+  text-align: right;
+}
+
+.sale-items {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sale-item-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+}
+
+.sale-item-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sale-item-price {}
+
+/* card actions */
+.card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+/* Table styles */
+.table-card {
+  padding: 0;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 12px;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  vertical-align: top;
+}
+
+.table th {
+  text-align: left;
+  font-weight: 600;
+}
+
+.table-empty {
+  padding: 20px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.text-right {
+  text-align: right;
+}
+
+.td-desc {
+  max-width: 420px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.td-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* Modal overlay and card */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.45);
+  z-index: 60;
+  padding: 16px;
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 560px;
+  padding: 12px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-title {
+  margin: 0;
+}
+
+.modal-body {
+  margin-top: 12px;
+}
+
+.modal-label {
+  display: block;
+  margin-top: 8px;
+  margin-bottom: 6px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* small helper styles used in Notification */
+.notification {
+  margin-bottom: 12px;
+  padding: 10px;
+  border-radius: 6px;
+  background: var(--surface);
+}
+
+.notification.error {
+  border-left: 4px solid var(--danger);
+}
+
+.notification.success {
+  border-left: 4px solid var(--success);
+}
+
+.notification-title {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.notification-sub {
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+/* spinner / loading fallback adapt if present in global.css */
+.app-loading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* keep small responsive adjustments */
+@media (max-width: 640px) {
+  .sales-grid {
+    grid-template-columns: 1fr;
+  }
+  .td-desc {
+    max-width: none;
+  }
+}
+
+/* ======================================================
+   BUTTON OVERRIDES FOR ACCOUNTING
+   - Tüm butonlara 1px solid siyah border eklendi.
+   - Üstten hafif beyaz parlaklık ve alttan koyu gölge için inset box-shadow eklendi.
+   - Primary/ghost/danger/google butonları için border korundu ve interaktif durumlar eklendi.
+   ====================================================== */
+
+/* Genel buton kuralı (uygulama içinde .btn kullanılıyorsa burada da geçerli olur) */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #000; /* siyah border isteğe göre #111 vs yapılabilir */
+  padding: 8px 12px;
+  height: 38px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.02)); /* hafif nötr zemin */
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.16s ease, background 0.12s ease;
+  font-weight: 600;
+  font-size: 14px;
+
+  /* içten üst beyaz parlaklık, içten alt koyu gölge */
+  box-shadow: inset 0 8px 14px rgba(255,255,255,0.12), inset 0 -8px 14px rgba(0,0,0,0.18);
+}
+.btn:focus { outline: 3px solid rgba(37,99,235,0.18); outline-offset: 2px; }
+
+/* Primary */
+.btn-primary {
+  background: linear-gradient(180deg, var(--primary), var(--primary-600));
+  color: #fff;
+  border: 1px solid #000;
+  box-shadow:
+    0 6px 12px rgba(37,99,235,0.12),
+    inset 0 10px 16px rgba(255,255,255,0.12), /* üst parlaklık */
+    inset 0 -10px 16px rgba(0,0,0,0.18);     /* alt koyuluk */
+}
+.btn-primary:hover { transform: translateY(-1px); }
+.btn-primary:active { transform: translateY(0) scale(0.995); }
+
+/* Ghost */
+.btn-ghost {
+  background: transparent;
+  color: var(--primary);
+  border: 1px solid #000;
+  box-shadow: inset 0 8px 12px rgba(255,255,255,0.08), inset 0 -8px 12px rgba(0,0,0,0.08);
+}
+.btn-ghost:hover { background: rgba(37,99,235,0.04); }
+
+/* Danger */
+.btn-danger {
+  background: linear-gradient(180deg, #f87171, #ef4444);
+  color: #fff;
+  border: 1px solid #000;
+  box-shadow:
+    0 6px 12px rgba(239,68,68,0.10),
+    inset 0 10px 16px rgba(255,255,255,0.10),
+    inset 0 -10px 14px rgba(0,0,0,0.14);
+}
+
+/* Google / other specific button */
+.btn-google {
+  background: #fff;
+  border: 1px solid #000;
+  color: #111;
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 8px;
+  gap: 8px;
+  box-shadow: inset 0 8px 12px rgba(255,255,255,0.12), inset 0 -8px 12px rgba(0,0,0,0.08);
+}
+
+/* Disabled / inactive state (buton hala siyah sınır korur) */
+[disabled], .btn[disabled],
+button:disabled,
+.btn[aria-disabled="true"] {
+  opacity: 1; /* renk tonu üzerinden ayrılık sağlanır */
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+
+  background: var(--muted-bg) !important;
+  color: var(--muted) !important;
+  border-color: #000 !important;
+  border-style: solid;
+  border-width: 1px;
+}
+/* Özellikle ghost disabled */
+.btn-ghost[disabled], .btn-ghost[aria-disabled="true"] {
+  background: var(--muted-bg) !important;
+  color: var(--muted) !important;
+  border-color: #000 !important;
+}
