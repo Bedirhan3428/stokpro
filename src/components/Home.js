@@ -1,6 +1,4 @@
-import "../styles/global.css";
 import "../styles/Home.css";
-
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { getAuth } from "firebase/auth";
@@ -12,15 +10,15 @@ export default function Home() {
   const user = auth.currentUser;
 
   return (
-    <div className="page-home container">
-      <div className="card card-home">
-        <h1 className="home-title">StokPro</h1>
-        <p className="home-sub">
+    <div className="home-kapsul">
+      <div className="home-kart">
+        <h1 className="home-baslik">StokPro</h1>
+        <p className="home-alt">
           Basit, hızlı ve güvenilir stok yönetimi — satış, barkod, veresiye ve muhasebe entegrasyonu.
         </p>
 
-        <div className="home-cta-row">
-          <button className="btn btn-primary home-cta-button" onClick={() => nav("/register")}>
+        <div className="home-cta">
+          <button className="home-btn" onClick={() => nav(user ? "/dashboard" : "/register")}>
             Hemen Başla
           </button>
         </div>

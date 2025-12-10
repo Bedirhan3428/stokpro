@@ -1,22 +1,32 @@
-/* NotFound.css
-   Extracted styles for NotFound component (moved inline styles to CSS).
-*/
+:root {
+  --nf-mavi: #1f6feb;
+  --nf-beyaz: #ffffff;
+  --nf-gri: #5f6b7a;
+}
 
-.page-notfound {
-  text-align: center;
-  padding: 24px;
-  max-width: 720px;
-  margin: 24px auto;
+* {
   box-sizing: border-box;
 }
 
-.nf-title {
-  margin: 0 0 8px 0;
-  font-size: 22px;
+.nf-kapsul {
+  max-width: 520px;
+  margin: 60px auto;
+  padding: 20px;
+  background: var(--nf-beyaz);
+  border-radius: 16px;
+  box-shadow: 0 14px 34px rgba(31, 111, 235, 0.14);
+  border: 1px solid #dbe3f3;
+  text-align: center;
+  font-family: "Inter", system-ui, sans-serif;
 }
 
-.nf-sub {
-  color: var(--muted);
+.nf-baslik {
   margin: 0;
-  font-size: 15px;
+  color: var(--nf-mavi);
+  font-weight: 900;
+}
+
+.nf-alt {
+  margin-top: 8px;
+  color: var(--nf-gri);
 }

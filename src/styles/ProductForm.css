@@ -1,72 +1,94 @@
-/* ProductForm.css
-   Styles for ProductForm component - moved inline styles to CSS
-*/
+:root {
+  --pf-mavi: #1f6feb;
+  --pf-mavi-orta: #4a8df5;
+  --pf-beyaz: #ffffff;
+  --pf-gri: #5f6b7a;
+  --pf-kirmizi: #e74646;
+}
 
-.page-product-form {
-  width: 100%;
+* {
   box-sizing: border-box;
 }
 
-/* grid of inputs - responsive 2 columns where space allows */
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-}
-
-/* on wider screens show two columns */
-@media (min-width: 720px) {
-  .form-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-/* each labeled input */
-.form-row {
+.pf-form {
   display: flex;
   flex-direction: column;
+  gap: 10px;
+  background: var(--pf-beyaz);
+  border: 1px solid #dbe3f3;
+  padding: 14px;
+  border-radius: 14px;
+  box-shadow: 0 12px 30px rgba(31, 111, 235, 0.12);
+  font-family: "Inter", system-ui, sans-serif;
 }
 
-.input-label {
-  font-weight: 600;
-  margin-bottom: 6px;
+.pf-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
 }
 
-/* reuse existing auth-input style but ensure spacing */
-.auth-input {
-  padding: 10px;
-  border-radius: 8px;
-  border: 1px solid #eee;
-  font-size: 14px;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-/* error message */
-.error-message {
-  color: var(--danger, #b91c1c);
-  margin-top: 8px;
-  background: rgba(254,226,226,0.6);
-  padding: 8px;
-  border-radius: 6px;
-  border: 1px solid rgba(239,68,68,0.12);
-}
-
-/* actions row */
-.form-actions {
+.pf-satir {
   display: flex;
-  gap: 8px;
-  margin-top: 12px;
+  flex-direction: column;
+  gap: 6px;
 }
 
-/* stack buttons on small screens */
-@media (max-width: 640px) {
-  .form-actions {
-    flex-direction: column;
-  }
+.pf-etiket {
+  font-weight: 700;
+  color: #0f172a;
 }
 
-/* keep button sizes reasonable */
-.form-actions .btn {
-  min-width: 120px;
+.pf-input {
+  padding: 11px 12px;
+  border-radius: 12px;
+  border: 1px solid #dbe3f3;
+  background: #fdfefe;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  font-size: 15px;
+}
+
+.pf-input:focus {
+  border-color: var(--pf-mavi);
+  box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.14);
+}
+
+.pf-hata {
+  background: #fff2f2;
+  border: 1px solid #f7c5c5;
+  color: #b91c1c;
+  padding: 10px 12px;
+  border-radius: 12px;
+}
+
+.pf-aks {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pf-btn {
+  border: none;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.pf-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 22px rgba(15, 23, 42, 0.12);
+}
+
+.pf-btn.mavi {
+  background: linear-gradient(135deg, var(--pf-mavi), var(--pf-mavi-orta));
+  color: #fff;
+}
+
+.pf-btn.cizgi {
+  background: #f5f7fb;
+  color: #0f172a;
+  border: 1px solid #dbe3f3;
 }

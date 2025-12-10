@@ -1,14 +1,7 @@
-import "../styles/global.css";
 import "../styles/ForgotPassword.css";
-
 import React, { useState } from "react";
 import { getAuth, sendPasswordResetEmail } from "firebase/auth";
 
-/**
- * ForgotPassword
- * - Kullanıcı eposta girer, submit ile Firebase'e reset maili gönderilir.
- * - (İsteğe bağlı) actionCodeSettings ile kullanıcıyı uygulamanıza yönlendiren özel link ayarlayabilirsiniz.
- */
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState(null); // { type: "success"|"error", msg: string }
@@ -25,10 +18,12 @@ export default function ForgotPassword() {
 
     setSending(true);
     const auth = getAuth();
-
     try {
-      await sendPasswordResetEmail(auth, email /*, actionCodeSettings */);
-      setStatus({ type: "success", msg: "Şifre sıfırlama bağlantısı e-postanıza gönderildi. Gelen kutunuzu kontrol edin." });
+      await sendPasswordResetEmail(auth, email);
+      setStatus({
+        type: "success",
+        msg: "Şifre sıfırlama bağlantısı e-postanıza gönderildi. Gelen kutunuzu kontrol edin."
+      });
     } catch (err) {
       console.error("sendPasswordResetEmail error", err);
       let message = err.message || "Şifre sıfırlama gönderilemedi.";
@@ -41,12 +36,12 @@ export default function ForgotPassword() {
   }
 
   return (
-    <div className="card page-forgot-password forgot-card">
-      <h3 className="forgot-title">Şifre Sıfırlama</h3>
-      <form onSubmit={handleSubmit} className="forgot-form" noValidate>
-        <label className="input-label">E-posta</label>
+    <div className="fp-kapsul">
+      <h3 className="fp-baslik">Şifre Sıfırlama</h3>
+      <form onSubmit={handleSubmit} className="fp-form" noValidate>
+        <label className="fp-etiket">E-posta</label>
         <input
-          className="auth-input"
+          className="fp-input"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -54,14 +49,17 @@ export default function ForgotPassword() {
           aria-label="E-posta"
         />
 
-        <div className="form-actions">
-          <button className="btn btn-primary" type="submit" disabled={sending}>
+        <div className="fp-islem">
+          <button className="fp-btn fp-btn-mavi" type="submit" disabled={sending}>
             {sending ? "Gönderiliyor..." : "Sıfırlama Bağlantısı Gönder"}
           </button>
         </div>
 
         {status && (
-          <div className={`status-message ${status.type === "error" ? "status-error" : "status-success"}`} role={status.type === "error" ? "alert" : "status"}>
+          <div
+            className={`fp-durum ${status.type === "error" ? "fp-hata" : "fp-basarili"}`}
+            role={status.type === "error" ? "alert" : "status"}
+          >
             {status.msg}
           </div>
         )}

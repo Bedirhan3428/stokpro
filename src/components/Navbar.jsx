@@ -1,13 +1,11 @@
-import "../styles/global.css";
 import "../styles/Navbar.css";
-
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function Navbar() {
-  const [open, setOpen] = useState(false); // profile menu
-  const [mobileOpen, setMobileOpen] = useState(false); // mobile panel
+  const [open, setOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const { user, logout } = useAuth();
   const loc = useLocation();
@@ -16,11 +14,10 @@ export default function Navbar() {
   const menuRef = useRef(null);
   const mobileRef = useRef(null);
 
-  // Close menus on outside click or Escape
   useEffect(() => {
     function onDocClick(e) {
       if (menuRef.current && !menuRef.current.contains(e.target)) setOpen(false);
-      if (mobileRef.current && !mobileRef.current.contains(e.target) && !e.target.closest(".hamburger-button"))
+      if (mobileRef.current && !mobileRef.current.contains(e.target) && !e.target.closest(".nb-hamburger"))
         setMobileOpen(false);
     }
     function onEsc(e) {
@@ -37,7 +34,6 @@ export default function Navbar() {
     };
   }, []);
 
-  // Close menus when route changes
   useEffect(() => {
     setOpen(false);
     setMobileOpen(false);
@@ -53,36 +49,34 @@ export default function Navbar() {
   }
 
   const NavLinks = ({ className = "" }) => (
-    <div className={`nav-links ${className}`}>
-      <Link to="/dashboard" className={`btn ${loc.pathname === "/dashboard" ? "btn-primary" : "btn-ghost"}`}>Dashboard</Link>
-      <Link to="/products" className={`btn ${loc.pathname === "/products" ? "btn-primary" : "btn-ghost"}`}>Ürünler</Link>
-      <Link to="/sales" className={`btn ${loc.pathname === "/sales" ? "btn-primary" : "btn-ghost"}`}>Satış</Link>
-      <Link to="/customers" className={`btn ${loc.pathname === "/customers" ? "btn-primary" : "btn-ghost"}`}>Müşteriler</Link>
-      <Link to="/accounting" className={`btn ${loc.pathname === "/accounting" ? "btn-primary" : "btn-ghost"}`}>Muhasebe</Link>
+    <div className={`nb-linkler ${className}`}>
+      <Link to="/dashboard" className={`nb-link ${loc.pathname === "/dashboard" ? "secili" : ""}`}>Dashboard</Link>
+      <Link to="/products" className={`nb-link ${loc.pathname === "/products" ? "secili" : ""}`}>Ürünler</Link>
+      <Link to="/sales" className={`nb-link ${loc.pathname === "/sales" ? "secili" : ""}`}>Satış</Link>
+      <Link to="/customers" className={`nb-link ${loc.pathname === "/customers" ? "secili" : ""}`}>Müşteriler</Link>
+      <Link to="/accounting" className={`nb-link ${loc.pathname === "/accounting" ? "secili" : ""}`}>Muhasebe</Link>
     </div>
   );
 
   return (
-    <header className="app-header card navbar" role="banner" aria-label="Main navigation">
-      <div className="navbar-left">
-        <div className="brand" aria-hidden={false}>
-          <div className="logo" aria-hidden> S </div>
-          <div className="brand-text">
-            <div className="brand-name">StokPro</div>
-            <small className="brand-tag">Hızlı · Güvenilir · Modern</small>
+    <header className="nb-ust" role="banner" aria-label="Ana gezinme">
+      <div className="nb-sol">
+        <div className="nb-marka" aria-hidden={false}>
+          <div className="nb-logo" aria-hidden> S </div>
+          <div className="nb-metin">
+            <div className="nb-ad">StokPro</div>
+            <small className="nb-alt">Hızlı · Güvenilir · Modern</small>
           </div>
         </div>
       </div>
 
-      <nav className="navbar-right" aria-label="Site navigation">
-        <div className="nav-row">
-          {/* Desktop: show full nav inline. Mobile/tablet: hidden via CSS. */}
-          {user && <NavLinks className="desktop-only" />}
+      <nav className="nb-sag" aria-label="Site navigation">
+        <div className="nb-satir">
+          {user && <NavLinks className="nb-masaustu" />}
 
-          {/* Mobile hamburger: shown only on phone/tablet via CSS */}
           {user && (
             <button
-              className={`hamburger-button ${mobileOpen ? "is-open" : ""}`}
+              className={`nb-hamburger ${mobileOpen ? "acik" : ""}`}
               aria-label={mobileOpen ? "Menüyü kapat" : "Menüyü aç"}
               aria-expanded={mobileOpen}
               onClick={() => {
@@ -90,72 +84,70 @@ export default function Navbar() {
                 setOpen(false);
               }}
             >
-              <span className="hamburger-box">
-                <span className="hamburger-inner" />
-              </span>
+              <span className="nb-hamburger-ic" />
             </button>
           )}
 
-          {/* Profile dropdown (desktop/tablet) */}
           {user ? (
-            <div ref={menuRef} className="profile-container">
+            <div ref={menuRef} className="nb-profil">
               <button
-                className="btn btn-ghost profile-button"
+                className="nb-profil-btn"
                 onClick={() => {
                   setOpen((s) => !s);
                   setMobileOpen(false);
                 }}
                 aria-expanded={open}
-                aria-controls="profile-menu"
+                aria-controls="profil-menu"
                 title="Profil"
               >
                 Profil
               </button>
 
-              {open && (
-                <div id="profile-menu" className="profile-menu-outer" role="menu" aria-label="Profil menüsü">
-                  <div className="card profile-card">
-                    <div className="profile-email" title={user.email}>{user.email}</div>
-                    <div className="profile-sub muted">Hesap</div>
-                    <div className="profile-actions">
-                      <button className="btn btn-ghost" onClick={() => { setOpen(false); nav("/settings"); }}>Ayarlar</button>
-                      <button className="btn btn-danger" onClick={handleLogout}>Çıkış</button>
+                {open && (
+                  <div id="profil-menu" className="nb-profil-menu" role="menu" aria-label="Profil menüsü">
+                    <div className="nb-profil-kart">
+                      <div className="nb-mail" title={user.email}>{user.email}</div>
+                      <div className="nb-alt">Hesap</div>
+                      <div className="nb-profil-aks">
+                        <button className="nb-profil-link" onClick={() => { setOpen(false); nav("/settings"); }}>Ayarlar</button>
+                        <button className="nb-cikis" onClick={handleLogout}>Çıkış</button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
             </div>
           ) : (
-            <div aria-hidden className="visually-hidden-placeholder" />
+            <div aria-hidden className="nb-bos" />
           )}
         </div>
       </nav>
 
-      {/* Mobile panel: contains all links (visible only on small screens) */}
       {user && (
-        <div className={`mobile-backdrop ${mobileOpen ? "visible" : ""}`} aria-hidden={!mobileOpen}>
-          <div ref={mobileRef} className={`mobile-nav ${mobileOpen ? "open" : ""}`} role="dialog" aria-label="Mobil menü" tabIndex={-1}>
-            <div className="mobile-nav-header">
-              <div className="brand mobile-brand">
-                <div className="logo">S</div>
-                <div className="brand-text">
-                  <div className="brand-name">StokPro</div>
-                  <small className="brand-tag">Hızlı · Güvenilir</small>
+        <div className={`nb-mobil-arka ${mobileOpen ? "gorunur" : ""}`} aria-hidden={!mobileOpen}>
+          <div ref={mobileRef} className={`nb-mobil ${mobileOpen ? "acik" : ""}`} role="dialog" aria-label="Mobil menü" tabIndex={-1}>
+            <div className="nb-mobil-ust">
+              <div className="nb-marka">
+                <div className="nb-logo">S</div>
+                <div className="nb-metin">
+                  <div className="nb-ad">StokPro</div>
+                  <small className="nb-alt">Hızlı · Güvenilir</small>
                 </div>
               </div>
-              <button className="btn btn-ghost mobile-close" onClick={() => setMobileOpen(false)} aria-label="Kapat">Kapat</button>
+              <button className="nb-profil-link" onClick={() => setMobileOpen(false)} aria-label="Kapat">
+                Kapat
+              </button>
             </div>
 
-            <div className="mobile-links">
-              <NavLinks className="mobile" />
+            <div className="nb-mobil-linkler">
+              <NavLinks className="nb-mobil-list" />
             </div>
 
-            <div className="mobile-profile">
-              <div className="profile-email" title={user.email}>{user.email}</div>
-              <div className="profile-sub muted">Hesap</div>
-              <div className="profile-actions mobile">
-                <button className="btn btn-ghost" onClick={() => { setMobileOpen(false); nav("/settings"); }}>Ayarlar</button>
-                <button className="btn btn-danger" onClick={handleLogout}>Çıkış</button>
+            <div className="nb-mobil-profil">
+              <div className="nb-mail" title={user.email}>{user.email}</div>
+              <div className="nb-alt">Hesap</div>
+              <div className="nb-profil-aks">
+                <button className="nb-profil-link" onClick={() => { setMobileOpen(false); nav("/settings"); }}>Ayarlar</button>
+                <button className="nb-cikis" onClick={handleLogout}>Çıkış</button>
               </div>
             </div>
           </div>

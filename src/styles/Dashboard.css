@@ -1,272 +1,260 @@
-/* =====================================================
-   styles/Dashboard.css
-   Responsive, mobile-first rewrite so the dashboard fits cleanly on small devices
-   (including iPhone 7 width ~375px) and scales up for larger screens.
-   Key approaches:
-   - Use flexible/fractional sizing instead of fixed min-widths where possible.
-   - Use clamp() for sizes that should scale between a min and max.
-   - Apply global box-sizing and safe-area insets for iOS devices.
-   - Keep overflow control and wrapping to avoid horizontal scroll.
-*/
-
-/* reset & helpers */
-*,
-*::before,
-*::after { box-sizing: border-box; }
-
-:root{
-  --gap: 12px;
-  --page-padding: clamp(8px, 3vw, 12px);
-  --card-bg: #fff;
-  --card-radius: 8px;
-  --card-shadow: 0 1px 2px rgba(0,0,0,0.03);
-  --muted: #6b7280;
-  --metric-min: 180px; /* minimum ideal width for metric cards */
+:root {
+  --d-mavi: #1f6feb;
+  --d-mavi-orta: #4a8df5;
+  --d-beyaz: #ffffff;
+  --d-gri: #6b7280;
+  --d-golge: 0 12px 30px rgba(15, 67, 146, 0.12);
 }
 
-/* ensure the viewport meta is included in the HTML:
-   <meta name="viewport" content="width=device-width, initial-scale=1">
-*/
-
-/* top-level container */
-.page-dashboard {
-  padding: var(--page-padding);
-  padding-left: calc(var(--page-padding) + env(safe-area-inset-left));
-  padding-right: calc(var(--page-padding) + env(safe-area-inset-right));
+* {
   box-sizing: border-box;
-  max-width: 100%;
-  overflow-x: hidden; /* prevent accidental horizontal scroll on very small viewports */
 }
 
-/* header */
-.dashboard-title {
-  margin: 0;
-  font-size: clamp(1rem, 2.2vw, 1.25rem);
-}
-
-/* error */
-.dashboard-error {
-  color: #ef4444;
-  margin-top: 8px;
-  word-break: break-word;
-}
-
-/* top metrics grid - mobile-first */
-.dashboard-metrics-grid {
-  display: flex;
-  gap: var(--gap);
-  flex-wrap: wrap;
-  margin-top: var(--gap);
-  align-items: stretch;
-}
-
-/* metric card: flexible but with min preferred width */
-.metric-card {
-  background: var(--card-bg);
-  border-radius: var(--card-radius);
-  padding: 12px;
-  flex: 1 1 var(--metric-min); /* grow, shrink, preferred basis */
-  min-width: 0; /* allows flex items to shrink below content width to avoid overflow */
-  max-width: 100%;
-  box-shadow: var(--card-shadow);
-  word-break: break-word;
-}
-
-/* text helpers inside metric cards */
-.metric-sub { color: var(--muted); font-size: 0.85rem; }
-.metric-value { font-size: clamp(1rem, 2.4vw, 1.125rem); font-weight: 700; margin-top: 6px; }
-.metric-strong { font-weight: 700; margin-top: 8px; }
-
-/* monthly card */
-.monthly-card { margin-top: 16px; padding: 12px; background: var(--card-bg); border-radius: var(--card-radius); }
-.monthly-grid {
-  display: flex;
-  gap: var(--gap);
-  flex-wrap: wrap;
-  align-items: flex-start;
-}
-
-/* left/right columns: responsive */
-.monthly-left {
-  flex: 1 1 320px;
-  min-width: 0;
-  min-height: 0;
-}
-.monthly-right {
-  flex: 0 1 420px; /* tries to take up to 420px but can shrink */
-  min-width: 0;
+.dash-sayfa {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f5f8ff 0%, #eaf0fb 100%);
+  padding: 18px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 14px;
+  font-family: "Inter", system-ui, sans-serif;
 }
 
-/* use grid for sub layout in monthly */
-.grid.two-cols {
+.dash-baslik {
+  margin: 0;
+  color: var(--d-mavi);
+  font-weight: 900;
+}
+
+.dash-kart {
+  background: var(--d-beyaz);
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: var(--d-golge);
+  border: 1px solid #dbe3f3;
+}
+
+.dash-metrik-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
 }
-.small-card { padding: 12px; background: var(--card-bg); border-radius: var(--card-radius); }
-.large-card { padding: 12px; background: var(--card-bg); border-radius: var(--card-radius); grid-column: 1 / -1; }
 
-/* donut - responsive height */
-.donut-wrap {
-  height: clamp(160px, 28vw, 320px); /* scales between 160 and 320px */
+.dash-etiket {
+  color: var(--d-gri);
+  font-size: 14px;
+}
+.dash-etiket-buyuk {
+  margin: 0 0 8px;
+  color: #0f172a;
+}
+
+.dash-deger {
+  font-weight: 800;
+  font-size: 22px;
+  color: #0f172a;
+}
+
+.dash-kalin {
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.dash-alt {
+  color: var(--d-gri);
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.dash-hata {
+  background: #fff2f2;
+  border: 1px solid #f7c5c5;
+  color: #b91c1c;
+  padding: 10px 12px;
+  border-radius: 12px;
+}
+
+.dash-aylik-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 12px;
+}
+
+.dash-aylik-sol {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  gap: 10px;
 }
-.donut-caption { text-align: center; color: var(--muted); margin-top: 8px; font-size: 0.9rem; }
 
-/* recent transactions */
-.recent-section { margin-top: 16px; }
-.recent-wrapper { max-width: 100%; }
-.recent-container {
-  max-height: clamp(160px, 38vh, 216px); /* responsive max-height */
-  overflow-y: auto;
-  padding-right: 8px;
-  border: 1px solid #eef2ff;
-  border-radius: var(--card-radius);
-  background: var(--card-bg);
-  -webkit-overflow-scrolling: touch; /* smoother scrolling on iOS */
+.dash-iki {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
 }
-.recent-empty { padding: 12px; color: var(--muted); }
-.recent-item {
+
+.dash-mini-kart,
+.dash-buyuk-kart {
+  border: 1px solid #e4ebf7;
+  border-radius: 12px;
+  padding: 10px;
+  background: #f9fbff;
+}
+
+.dash-buyuk-kart .dash-deger {
+  font-size: 20px;
+}
+
+.dash-aylik-sag {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dash-donut {
+  height: 260px;
+}
+
+.dash-mini {
+  color: var(--d-gri);
+  font-size: 13px;
+}
+
+.dash-recent-kapsul {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+}
+
+.dash-recent {
+  border: 1px solid #e4ebf7;
+  border-radius: 12px;
+  padding: 10px;
+  background: #f9fbff;
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 10px 12px;
-  margin: 0;
   gap: 8px;
 }
-.recent-meta { max-width: 70%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.recent-label { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.recent-amount { font-weight: 700; flex-shrink: 0; margin-left: 8px; }
 
-/* small helpers */
-.section-title { margin: 0 0 8px 0; font-size: 1rem; }
-.muted { color: var(--muted); }
-
-/* prevent large fixed sizes from causing overflow; allow images/icons to scale */
-img, svg { max-width: 100%; height: auto; display: block; }
-
-/* responsive adjustments for smaller viewports (including iPhone 7 ~375px) */
-@media (max-width: 420px) {
-  :root { --gap: 10px; --metric-min: 140px; }
-  .page-dashboard { padding: clamp(6px, 4vw, 10px); }
-  .dashboard-metrics-grid { gap: 10px; }
-  .metric-card { padding: 10px; flex-basis: calc(50% - 5px); } /* try two columns on slightly larger phones */
-  .monthly-right { flex-basis: 100%; width: 100%; }
-  .donut-wrap { height: clamp(140px, 36vw, 220px); }
-  .recent-container { max-height: 200px; }
-  .grid.two-cols { grid-template-columns: 1fr; } /* stack the two cols on tiny screens */
-}
-
-/* even smaller devices: full-width stacking */
-@media (max-width: 360px) {
-  .dashboard-metrics-grid { flex-direction: column; }
-  .metric-card { flex-basis: 100%; }
-  .monthly-grid { flex-direction: column; }
-  .recent-meta { max-width: 65%; }
-}
-
-/* larger screens tweaks */
-@media (min-width: 900px) {
-  .metric-card { flex-basis: 260px; }
-  .monthly-right { flex: 0 0 420px; }
-  .monthly-left { min-width: 320px; }
-}
-
-/* ======================================================
-   BUTTON OVERRIDES FOR DASHBOARD
-   - Tüm butonlara 1px solid siyah border eklendi.
-   - Üstten hafif beyaz parlaklık ve alttan koyu gölge için inset box-shadow eklendi.
-   - Variant (primary/ghost/danger/google) kuralları border ve efektleri koruyacak şekilde eklendi.
-   - Disabled hallerde iç efektler kaldırılıyor, siyah sınır korunuyor.
-   ====================================================== */
-
-.btn {
-  display: inline-flex;
+.dash-yukleme {
+  display: flex;
   align-items: center;
-  gap: 8px;
-  border: 1px solid #000; /* siyah border */
-  padding: 8px 12px;
-  height: 38px;
-  border-radius: 8px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.02)); /* hafif nötr zemin */
-  color: #111;
-  cursor: pointer;
-  transition: transform 0.12s ease, box-shadow 0.16s ease, background 0.12s ease;
-  font-weight: 600;
-  font-size: 14px;
-
-  /* içten üst beyaz parlaklık, içten alt koyu gölge */
-  box-shadow: inset 0 8px 14px rgba(255,255,255,0.12), inset 0 -8px 14px rgba(0,0,0,0.18);
+  gap: 10px;
+  color: var(--d-gri);
 }
-.btn:focus { outline: 3px solid rgba(0,170,255,0.12); outline-offset: 2px; }
-
-/* Primary (if used in dashboard) */
-.btn-primary {
-  background: linear-gradient(180deg, var(--accent, #00aaff), var(--accent-2, #7b61ff));
-  color: #fff;
-  border: 1px solid #000;
-  box-shadow:
-    0 6px 12px rgba(123,97,255,0.12),
-    inset 0 10px 16px rgba(255,255,255,0.12),
-    inset 0 -10px 16px rgba(0,0,0,0.18);
+.dash-spinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 3px solid #d7e5ff;
+  border-top-color: var(--d-mavi);
+  animation: dspin 0.9s linear infinite;
 }
-.btn-primary:hover { transform: translateY(-1px); }
-.btn-primary:active { transform: translateY(0) scale(0.995); }
-
-/* Ghost */
-.btn-ghost {
-  background: transparent;
-  color: var(--accent, #00aaff);
-  border: 1px solid #000;
-  box-shadow: inset 0 8px 12px rgba(255,255,255,0.08), inset 0 -8px 12px rgba(0,0,0,0.08);
-}
-.btn-ghost:hover { background: rgba(0,170,255,0.04); }
-
-/* Danger */
-.btn-danger {
-  background: linear-gradient(180deg, #f87171, #ef4444);
-  color: #fff;
-  border: 1px solid #000;
-  box-shadow:
-    0 6px 12px rgba(239,68,68,0.10),
-    inset 0 10px 16px rgba(255,255,255,0.10),
-    inset 0 -10px 14px rgba(0,0,0,0.14);
+@keyframes dspin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-/* Google / other specific button */
-.btn-google {
-  background: #fff;
-  border: 1px solid #000;
-  color: #111;
-  display: inline-flex;
-  align-items: center;
-  padding: 8px 12px;
-  border-radius: 8px;
-  gap: 8px;
-  box-shadow: inset 0 8px 12px rgba(255,255,255,0.12), inset 0 -8px 12px rgba(0,0,0,0.08);
+/* Tablet (≤1080px) */
+@media (max-width: 1080px) {
+  .dash-aylik-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dash-donut {
+    height: 220px;
+  }
 }
 
-/* Disabled / inactive state (buton hala siyah sınır korur) */
-[disabled], .btn[disabled],
-button:disabled,
-.btn[aria-disabled="true"] {
-  opacity: 1;
-  cursor: not-allowed;
-  box-shadow: none !important;
-  transform: none !important;
-  background: var(--muted-bg, #f1f5f9) !important;
-  color: var(--muted) !important;
-  border-color: #000 !important;
-  border-style: solid;
-  border-width: 1px;
+/* Small tablet (≤900px) */
+@media (max-width: 900px) {
+  .dash-sayfa {
+    padding: 14px;
+  }
+
+  .dash-metrik-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+
+  .dash-iki {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+
+  .dash-deger {
+    font-size: 20px;
+  }
+
+  .dash-buyuk-kart .dash-deger {
+    font-size: 18px;
+  }
+
+  .dash-donut {
+    height: 200px;
+  }
 }
-.btn-ghost[disabled], .btn-ghost[aria-disabled="true"] {
-  background: var(--muted-bg, #f1f5f9) !important;
-  color: var(--muted) !important;
-  border-color: #000 !important;
+
+/* Mobile (≤720px) */
+@media (max-width: 720px) {
+  .dash-sayfa {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .dash-baslik {
+    font-size: 20px;
+  }
+
+  .dash-kart {
+    padding: 12px;
+  }
+
+  .dash-metrik-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dash-iki {
+    grid-template-columns: 1fr;
+  }
+
+  .dash-recent-kapsul {
+    grid-template-columns: 1fr;
+  }
+
+  .dash-etiket,
+  .dash-alt {
+    font-size: 13px;
+  }
+
+  .dash-deger {
+    font-size: 18px;
+  }
+
+  .dash-kalin {
+    font-size: 15px;
+  }
+
+  .dash-donut {
+    height: 180px;
+  }
+}
+
+/* Small mobile (≤480px) */
+@media (max-width: 480px) {
+  .dash-sayfa {
+    padding: 10px;
+  }
+
+  .dash-kart {
+    border-radius: 12px;
+    padding: 10px;
+  }
+
+  .dash-recent {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .dash-donut {
+    height: 160px;
+  }
 }

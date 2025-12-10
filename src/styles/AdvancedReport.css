@@ -1,221 +1,358 @@
-/* AdvancedReport.css
-   Mobile-first, responsive rewrite so the AdvancedReport layout fits cleanly
-   on small devices (including iPhone 7 ~375px) and scales up for larger screens.
-   Strategies:
-   - Use flexible sizing (minmax, clamp, flex) instead of fixed widths.
-   - Ensure flex/grid children can shrink (min-width: 0) to avoid overflow.
-   - Use safe-area insets for iOS and -webkit-overflow-scrolling for smooth scrolling.
-   - Scale chart heights with clamp() so they don't overflow on small screens.
-*/
-
-/* reset & helpers */
-*,
-*::before,
-*::after { box-sizing: border-box; }
-
 :root {
-  --page-padding: clamp(8px, 3vw, 12px);
-  --gap: 12px;
-  --card-radius: 8px;
-  --card-bg: #fff;
-  --card-shadow: 0 1px 2px rgba(0,0,0,0.03);
-  --muted: #6b7280;
-  --side-preferred: 380px; /* preferred width for side column on large screens */
+  --r-mavi: #1f6feb;
+  --r-mavi-acik: #e9f2ff;
+  --r-arka: #f5f7fb;
+  --r-beyaz: #ffffff;
+  --r-golge: 0 10px 24px rgba(17, 59, 141, 0.12);
+  --r-gri: #5f6b7a;
 }
 
-/* page container */
-.page-advanced-report {
-  grid-column: 1 / -1;
-  width: 100%;
-  padding: var(--page-padding);
-  padding-left: calc(var(--page-padding) + env(safe-area-inset-left));
-  padding-right: calc(var(--page-padding) + env(safe-area-inset-right));
+* {
   box-sizing: border-box;
-  max-width: 100%;
-  overflow-x: hidden; /* prevent accidental horizontal scroll on tiny viewports */
 }
 
-/* header */
-.adv-header {
+.rapor-kapsul {
   display: flex;
-  gap: 12px;
+  flex-direction: column;
+  gap: 14px;
+  background: linear-gradient(180deg, #f7faff 0%, #eef3fb 100%);
+  padding: 16px;
+  border-radius: 16px;
+}
+
+.rapor-baslik-satir {
+  display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  gap: 12px;
   flex-wrap: wrap;
 }
-.header-left { min-width: 0; }
-.adv-title { margin: 0; font-size: clamp(1rem, 2.2vw, 1.25rem); }
-.adv-sub { color: var(--muted); font-size: 0.95rem; }
-.header-actions {
+
+.rapor-baslik {
+  margin: 0;
+  color: var(--r-mavi);
+  font-weight: 800;
+}
+
+.rapor-alt {
+  color: var(--r-gri);
+  font-size: 14px;
+}
+
+.rapor-mini {
+  color: #6b7280;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.rapor-bant {
+  background: #dff0ff;
+  color: #0f172a;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #bcdcff;
+}
+
+.rapor-bant-bilgi {
+  background: #f1f5ff;
+  color: #0f172a;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px dashed #b3ccff;
+}
+
+.rapor-aksiyonlar {
   display: flex;
-  gap: 8px;
-  align-items: center;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
-/* note */
-.note-banner {
-  margin-bottom: 12px;
-  padding: 10px;
-  background: var(--surface, #f8fafc);
-  border-radius: 6px;
-  word-break: break-word;
+.rapor-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.2s ease;
+}
+.rapor-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.rapor-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.14);
+}
+.rapor-btn.primary {
+  background: linear-gradient(135deg, #1f6feb, #4a8df5);
+  color: #fff;
+}
+.rapor-btn.ghost {
+  background: #f5f7fb;
+  color: #0f172a;
+  border: 1px solid #dbe3f3;
 }
 
-/* grid layout - mobile-first */
-.adv-grid {
+.rapor-ana-grid {
   display: grid;
-  gap: var(--gap);
-  grid-template-columns: 1fr; /* stack on small screens */
+  grid-template-columns: 1.65fr 0.95fr;
+  gap: 14px;
 }
 
-/* on larger screens show two columns with a flexible side column */
-@media (min-width: 800px) {
-  .adv-grid {
-    grid-template-columns: 1fr minmax(260px, var(--side-preferred));
-    align-items: start;
+.rapor-sol,
+.rapor-sag {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.rapor-kart {
+  background: var(--r-beyaz);
+  border-radius: 14px;
+  box-shadow: var(--r-golge);
+  border: 1px solid #dbe5f5;
+  padding: 14px 16px;
+}
+
+.rapor-kart h4,
+.rapor-kart h5 {
+  margin: 0 0 8px;
+  color: #0f172a;
+}
+
+.rapor-kalin {
+  font-weight: 800;
+  color: #0f172a;
+  font-size: 18px;
+}
+
+.rapor-iki {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.rapor-iki.yukari {
+  margin-top: 12px;
+}
+
+.p16 {
+  padding: 16px;
+}
+
+.rapor-anomali-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.rapor-anomali {
+  display: flex;
+  justify-content: space-between;
+  background: #f6f9ff;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #e2ebff;
+}
+
+.rapor-grafik {
+  height: 320px;
+}
+
+.rapor-grafik-kucuk {
+  height: 240px;
+}
+
+.rapor-tahmin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.rapor-tahmin {
+  background: #f6f9ff;
+  border: 1px solid #dfe8fb;
+  padding: 10px 12px;
+  border-radius: 12px;
+}
+
+.rapor-tarih {
+  color: var(--r-gri);
+  font-size: 13px;
+}
+
+.rapor-oneri {
+  list-style: disc;
+  padding-left: 18px;
+  margin: 8px 0 0;
+  color: #0f172a;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rapor-oneri-oge {
+  line-height: 1.4;
+}
+
+.rapor-urun-listesi {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.rapor-urun-karti,
+.rapor-musteri-karti {
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid #dfe6f5;
+  background: #f9fbff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.rapor-musteri-listesi {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rapor-kalin,
+.rapor-urun-karti .rapor-kalin {
+  font-size: 16px;
+}
+
+.rapor-mini {
+  font-size: 13px;
+  color: #65748a;
+}
+
+.rapor-yukleme {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--r-gri);
+}
+
+.rapor-spinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 3px solid #d7e5ff;
+  border-top-color: var(--r-mavi);
+  animation: rapor-spin 0.9s linear infinite;
+}
+
+@keyframes rapor-spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 
-/* main & side */
-.adv-main { min-width: 0; } /* allow children to shrink */
-.adv-side { min-width: 0; }
-
-/* generic card tweaks */
-.card, .card.card-padded {
-  background: var(--card-bg);
-  border-radius: var(--card-radius);
-  box-shadow: var(--card-shadow);
-}
-.card-padded {
-  padding: 12px;
-}
-.card-chart { margin-top: 12px; padding: 12px; }
-
-/* small text/weights */
-.muted-small { color: var(--muted); font-size: 12px; }
-.muted-sub { color: var(--muted); margin-top: 6px; }
-.adv-strong { font-size: clamp(1.1rem, 2.2vw, 1.2rem); font-weight: 700; margin-top: 6px; }
-
-/* two column helper within sections */
-.grid.two-cols {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+/* Tablet (≤1080px) */
+@media (max-width: 1080px) {
+  .rapor-ana-grid {
+    grid-template-columns: 1fr;
+  }
+  .rapor-grafik {
+    height: 280px;
+  }
 }
 
-/* anomaly list */
-.anomaly-list {
-  margin-top: 8px;
-  max-height: clamp(80px, 22vh, 120px);
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
-}
-.anomaly-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 6px 0;
-  border-bottom: 1px solid #f3f4f6;
-  gap: 8px;
-  align-items: center;
-}
-
-/* chart container sizes (responsive) */
-.chart-container { height: clamp(180px, 28vw, 320px); }
-.chart-small { height: clamp(140px, 22vw, 240px); }
-
-/* forecast grid */
-.forecast-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-  max-height: clamp(160px, 35vh, 220px);
-  overflow: auto;
-  margin-top: 8px;
-  -webkit-overflow-scrolling: touch;
-}
-.forecast-item {
-  padding: 10px;
-  border-radius: 8px;
-  border: 1px solid #eef2ff;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
+/* Medium tablet (≤900px) */
+@media (max-width: 900px) {
+  .rapor-kapsul {
+    padding: 14px;
+    gap: 12px;
+  }
+  .rapor-iki {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+  .rapor-urun-listesi {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+  .rapor-grafik {
+    height: 260px;
+  }
+  .rapor-grafik-kucuk {
+    height: 210px;
+  }
+  .rapor-kalin {
+    font-size: 17px;
+  }
 }
 
-/* recommendations */
-.recommendation-list {
-  max-height: clamp(140px, 35vh, 220px);
-  overflow: auto;
-  margin-top: 8px;
-  -webkit-overflow-scrolling: touch;
-}
-.rec-item { margin-bottom: 6px; }
-
-/* product / customer lists */
-.product-list, .customer-list {
-  display: grid;
-  gap: 8px;
-  margin-top: 8px;
-}
-.card-list-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px;
-}
-.card-list-item.small { padding: 6px; }
-
-/* recent transactions */
-.recent-section { margin-top: 12px; }
-.recent-wrap { max-width: 100%; }
-.recent-list {
-  max-height: clamp(160px, 38vh, calc(72px * 3));
-  overflow-y: auto;
-  padding-right: 8px;
-  border: 1px solid #eef2ff;
-  border-radius: 8px;
-  background: var(--card-bg);
-  -webkit-overflow-scrolling: touch;
-}
-.recent-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 12px;
-  margin: 0;
-  gap: 8px;
-}
-
-/* small helper classes */
-.small-text { font-size: 13px; }
-.muted-sub + .muted-sub { margin-top: 4px; }
-
-/* images and svgs scale */
-img, svg { max-width: 100%; height: auto; display: block; }
-
-/* responsive adjustments for narrow viewports (including iPhone 7 ~375px) */
-@media (max-width: 420px) {
-  :root { --gap: 10px; --side-preferred: 320px; }
-  .page-advanced-report { padding: clamp(6px, 4vw, 10px); }
-  .grid.two-cols { grid-template-columns: 1fr; } /* stack internal two-cols */
-  .forecast-grid { grid-template-columns: 1fr; }
-  .chart-container { height: clamp(160px, 34vw, 260px); }
-  .chart-small { height: clamp(120px, 30vw, 200px); }
-  .anomaly-list, .recommendation-list, .recent-list { max-height: 200px; }
+/* Mobile (≤720px) */
+@media (max-width: 720px) {
+  .rapor-kapsul {
+    padding: 12px;
+  }
+  .rapor-baslik-satir {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .rapor-baslik {
+    font-size: 18px;
+  }
+  .rapor-alt,
+  .rapor-mini {
+    font-size: 13px;
+  }
+  .rapor-kart {
+    padding: 12px;
+    border-radius: 12px;
+  }
+  .rapor-iki {
+    grid-template-columns: 1fr;
+  }
+  .rapor-urun-listesi {
+    grid-template-columns: 1fr;
+  }
+  .rapor-anomali {
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-start;
+  }
+  .rapor-grafik {
+    height: 220px;
+  }
+  .rapor-grafik-kucuk {
+    height: 190px;
+  }
+  .rapor-aksiyonlar {
+    width: 100%;
+  }
+  .rapor-btn {
+    width: 100%;
+    text-align: center;
+  }
 }
 
-/* very small devices: ensure full stacking and shrink behavior */
-@media (max-width: 360px) {
-  .adv-header { gap: 8px; }
-  .grid.two-cols { gap: 8px; }
-  .anomaly-row { padding: 6px 0; }
-}
-
-/* larger screens tweaks */
-@media (min-width: 1200px) {
-  .adv-grid { gap: 16px; }
-  .chart-container { height: 360px; }
+/* Small mobile (≤540px) */
+@media (max-width: 540px) {
+  .rapor-kapsul {
+    padding: 10px;
+    border-radius: 14px;
+  }
+  .rapor-kart {
+    padding: 10px;
+  }
+  .rapor-kalin {
+    font-size: 16px;
+  }
+  .rapor-baslik {
+    font-size: 17px;
+  }
+  .rapor-grafik {
+    height: 200px;
+  }
+  .rapor-grafik-kucuk {
+    height: 170px;
+  }
+  .rapor-aksiyonlar {
+    flex-direction: column;
+    gap: 8px;
+  }
 }

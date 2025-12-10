@@ -1,12 +1,4 @@
-import "../styles/global.css";
 import "../styles/Accounting.css";
-
-/* Accounting (updated)
- - Disable edit/delete buttons when user has no active subscription (UI gating).
- - When confirming deletions/edits the backend will still block writes if subscription inactive.
- - Use customer names where possible in labels for clarity.
- - Inline styles moved to Accounting.css and className usage applied.
-*/
 import React, { useEffect, useState } from "react";
 import {
   listLedger,
@@ -24,35 +16,37 @@ import {
 import "../utils/chartSetup";
 import useSubscription from "../hooks/useSubscription";
 
-function Notification({ note }) {
+function AccBildirim({ note }) {
   if (!note) return null;
-  const color = note?.type === "error" ? "var(--danger)" : (note?.type === "success" ? "var(--success)" : "var(--muted)");
+  const tone =
+    note?.type === "error" ? "uyari-kirmizi" : note?.type === "success" ? "uyari-yesil" : "uyari-norm";
   return (
-    <div className={`notification ${note?.type === "error" ? "error" : note?.type === "success" ? "success" : ""}`}>
-      <div className="notification-title" style={{ color }}>{note?.title || (note?.type === "error" ? "Hata" : "Bilgi")}</div>
-      <div className="notification-sub">{note?.message}</div>
+    <div className={`acc-uyari ${tone}`}>
+      <div className="acc-uyari-baslik">{note?.title || (note?.type === "error" ? "Hata" : "Bilgi")}</div>
+      <div className="acc-uyari-icerik">{note?.message}</div>
     </div>
   );
 }
 
 export default function Accounting() {
   const [sales, setSales] = useState([]);
-  const [ledger, setLedger] = useState([]); // still fetched but not listed
+  const [ledger, setLedger] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [incomes, setIncomes] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
-
   const [note, setNote] = useState(null);
   const { loading: subLoading, active: subActive } = useSubscription();
 
-  // single editing state for any row (income/expense/sale)
-  const [editingRow, setEditingRow] = useState(null); // { kind, id, rawId, description, amount, sourceArtifact, sourcePath, existingTotals, saleType }
-  const [confirmDelete, setConfirmDelete] = useState(null); // { kind: 'sale'|'legacy', id?, rawId?, sourceArtifact?, sourcePath?, label }
+  const [editingRow, setEditingRow] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null);
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
+  useEffect(() => {
+    yukle();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  async function load() {
+  async function yukle() {
     setLoading(true);
     try {
       const [sRaw, l, exp, inc, custs] = await Promise.all([
@@ -63,20 +57,16 @@ export default function Accounting() {
         listCustomers()
       ]);
 
-      // Normalize sales (same logic as before)
       const normalizedSales = (Array.isArray(sRaw) ? sRaw : []).map((s) => {
         const itemsArr = Array.isArray(s.items) ? s.items : [];
         const items = itemsArr.map((it) => {
           const quantity = Number(it.qty ?? it.quantity ?? 1);
           const rawPrice = it.price ?? it.unitPrice ?? it.unit_price ?? null;
           let price = 0;
-          if (rawPrice != null) {
-            price = Number(rawPrice || 0);
-          } else if (it.totalPrice != null || it.total_price != null) {
+          if (rawPrice != null) price = Number(rawPrice || 0);
+          else if (it.totalPrice != null || it.total_price != null) {
             const totalP = Number(it.totalPrice ?? it.total_price ?? 0);
             price = quantity > 0 ? totalP / quantity : totalP;
-          } else {
-            price = 0;
           }
           return {
             name: it.name ?? it.productName ?? it.product_name ?? it.productId ?? "Ürün",
@@ -105,29 +95,36 @@ export default function Accounting() {
       setIncomes(Array.isArray(inc) ? inc : []);
       setCustomers(Array.isArray(custs) ? custs : []);
     } catch (err) {
-      showNote({ type: "error", title: "Yükleme Hatası", message: String(err?.message || err) });
+      bildirimGoster({ type: "error", title: "Yükleme Hatası", message: String(err?.message || err) });
     } finally {
       setLoading(false);
     }
   }
 
-  function showNote(n) {
+  function bildirimGoster(n) {
     setNote(n);
     setTimeout(() => setNote(null), 4000);
   }
 
-  function formatDate(d) {
+  function tarihYaz(d) {
     if (!d) return "";
     try {
-      const dt = (typeof d === "object" && d?.toDate) ? d.toDate() : new Date(d);
+      const dt = typeof d === "object" && d?.toDate ? d.toDate() : new Date(d);
       return dt.toLocaleString();
     } catch {
-      try { return new Date(d).toLocaleString(); } catch { return String(d); }
+      return String(d);
     }
   }
-  function currency(v) { try { return Number(v || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" }); } catch { return v; } }
 
-  function computeSaleTotal(sale) {
+  function para(v) {
+    try {
+      return Number(v || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" });
+    } catch {
+      return v;
+    }
+  }
+
+  function satisToplam(sale) {
     if (!sale) return 0;
     const t = Number(sale.totals?.total ?? sale.total ?? NaN);
     if (!Number.isNaN(t) && t !== 0) return t;
@@ -135,11 +132,14 @@ export default function Accounting() {
     return items.reduce((sm, it) => sm + (Number(it.price || 0) * Number(it.qty || 0)), 0);
   }
 
-  function saleTypeLabel(t) { if (t === "cash") return "Nakit"; if (t === "credit") return "Veresiye"; return t || ""; }
+  function satisTipi(t) {
+    if (t === "cash") return "Nakit";
+    if (t === "credit") return "Veresiye";
+    return t || "";
+  }
 
-  /* open generic editor for any row */
-  function openEditRow(row) {
-    const base = {
+  function duzenlemeAc(row) {
+    const temel = {
       kind: row.kind,
       id: row.id,
       rawId: row.raw?.id || row.rawId || row.rawId,
@@ -147,18 +147,18 @@ export default function Accounting() {
       amount: typeof row.amount !== "undefined" ? Number(row.amount) : 0
     };
     if (row.kind === "income" || row.kind === "expense") {
-      base.sourceArtifact = row.sourceArtifact || row.raw?.sourceArtifact || null;
-      base.sourcePath = row.sourcePath || row.raw?.sourcePath || null;
+      temel.sourceArtifact = row.sourceArtifact || row.raw?.sourceArtifact || null;
+      temel.sourcePath = row.sourcePath || row.raw?.sourcePath || null;
     }
     if (row.kind === "sale" || row.raw?.saleId || row.raw?.totals) {
-      base.saleType = row.raw?.saleType || row.saleType;
-      base.existingTotals = row.raw?.totals || row.totals || {};
-      base.amount = Number(base.existingTotals?.total ?? computeSaleTotal(row));
+      temel.saleType = row.raw?.saleType || row.saleType;
+      temel.existingTotals = row.raw?.totals || row.totals || {};
+      temel.amount = Number(temel.existingTotals?.total ?? satisToplam(row));
     }
-    setEditingRow(base);
+    setEditingRow(temel);
   }
 
-  async function saveEditRow() {
+  async function duzenlemeKaydet() {
     if (!editingRow) return;
     const { kind, id, rawId, description, amount, sourceArtifact, sourcePath, saleType, existingTotals } = editingRow;
     setLoading(true);
@@ -173,19 +173,18 @@ export default function Accounting() {
         await updateLegacyDocument(sourceArtifact, sourcePath, docId, { description, amount: Number(amount || 0) });
       }
       setEditingRow(null);
-      await load();
-      showNote({ type: "success", title: "Güncellendi", message: "Kayıt başarıyla güncellendi." });
+      await yukle();
+      bildirimGoster({ type: "success", title: "Güncellendi", message: "Kayıt başarıyla güncellendi." });
     } catch (err) {
-      showNote({ type: "error", title: "Güncelleme Başarısız", message: String(err?.message || err) });
+      bildirimGoster({ type: "error", title: "Güncelleme Başarısız", message: String(err?.message || err) });
     } finally {
       setLoading(false);
     }
   }
 
-  /* prepare confirm delete for any row */
-  function confirmDeleteRow(row) {
+  function silOnayHazirla(row) {
     if (row.kind === "sale") {
-      setConfirmDelete({ kind: "sale", id: row.id, label: `Satış ${formatDate(row.createdAt)}` });
+      setConfirmDelete({ kind: "sale", id: row.id, label: `Satış ${tarihYaz(row.createdAt)}` });
     } else if (row.kind === "income" || row.kind === "expense") {
       setConfirmDelete({
         kind: "legacy",
@@ -197,7 +196,7 @@ export default function Accounting() {
     }
   }
 
-  async function performDelete() {
+  async function silGercek() {
     if (!confirmDelete) return;
     setLoading(true);
     try {
@@ -208,16 +207,15 @@ export default function Accounting() {
         await deleteLegacyDocument(confirmDelete.sourceArtifact, confirmDelete.sourcePath, confirmDelete.rawId);
       }
       setConfirmDelete(null);
-      await load();
-      showNote({ type: "success", title: "Silindi", message: "Kayıt başarıyla silindi." });
+      await yukle();
+      bildirimGoster({ type: "success", title: "Silindi", message: "Kayıt başarıyla silindi." });
     } catch (err) {
-      showNote({ type: "error", title: "Silme Başarısız", message: String(err?.message || err) });
+      bildirimGoster({ type: "error", title: "Silme Başarısız", message: String(err?.message || err) });
     } finally {
       setLoading(false);
     }
   }
 
-  /* Build normalized rows (manual incomes/expenses) */
   const normalizedLedgerRows = (() => {
     const inc = (incomes || []).map((i) => ({
       kind: "income",
@@ -240,166 +238,227 @@ export default function Accounting() {
       raw: e
     }));
     const merged = [...inc, ...exp];
-    merged.sort((a, b) => (new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()));
+    merged.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
     return merged;
   })();
 
   return (
-    <div className="page-accounting">
-      <Notification note={note} />
+    <div className="acc-sayfa">
+      <AccBildirim note={note} />
 
       {!subLoading && !subActive && (
-        <div className="card card-subscription-warning">
-          <div className="muted-strong">Abonelik gerekli</div>
-          <div className="muted-sub">
-            Aboneliğiniz aktif değil; ekleme/güncelleme/silme işlemleri devre dışı bırakıldı. Ayarlar &gt; Ürün Anahtarı bölümünden aboneliğinizi kontrol edebilirsiniz.
+        <div className="acc-kart acc-uyari-kutu">
+          <div className="acc-uyari-baslik">Abonelik gerekli</div>
+          <div className="acc-yazi-ince">
+            Aboneliğiniz aktif değil; ekleme/güncelleme/silme işlemleri devre dışı. Ayarlar &gt; Ürün Anahtarı
+            bölümünden kontrol edebilirsiniz.
           </div>
         </div>
       )}
 
-      <div className="header-row">
-        <h3 className="page-title">Muhasebe</h3>
-        
+      <div className="acc-baslik-satiri">
+        <h3 className="acc-baslik">Muhasebe</h3>
       </div>
 
-      {/* Sales */}
-      <section className="section-block">
-        <h4>Satışlar</h4>
-        {loading ? <div className="app-loading"><div className="spinner" /><p>Yükleniyor...</p></div> : null}
-        {(!loading && sales.length === 0) ? (
-          <div className="muted-sub">Henüz satış kaydı yok.</div>
+      <section className="acc-bolum">
+        <div className="acc-bolum-baslik">Satışlar</div>
+        {loading && (
+          <div className="acc-yukleme">
+            <div className="acc-spinner" />
+            <p>Yükleniyor...</p>
+          </div>
+        )}
+        {!loading && sales.length === 0 ? (
+          <div className="acc-yazi-ince">Henüz satış kaydı yok.</div>
         ) : (
-          <div className="sales-grid">
-            {sales.slice().sort((a,b)=> new Date(b.createdAt||b.raw?.createdAt||b.raw?.created_at||0) - new Date(a.createdAt||a.raw?.createdAt||a.raw?.created_at||0)).map((s) => {
-              const items = Array.isArray(s.items) ? s.items : [];
-              const total = computeSaleTotal(s);
-              // try to resolve customer name if sale.raw.customerId present
-              const custId = s.raw?.customerId ?? s.raw?.customer_id ?? null;
-              const cust = custId ? (customers || []).find(c => String(c.id) === String(custId)) : null;
-              const custLabel = cust ? ` • ${cust.name}` : "";
-              return (
-                <div key={s.id} className="card sale-card">
-                  <div className="sale-card-top">
-                    <div>
-                      <div className="muted-strong">{saleTypeLabel(s.saleType)}{custLabel}</div>
-                      <div className="muted-small">{formatDate(s.createdAt)}</div>
-                    </div>
-                    <div className="sale-amount">
-                      <div className="muted-strong">{currency(total)}</div>
-                      <div className="muted-small">{items.length} ürün</div>
-                    </div>
-                  </div>
-
-                  <div className="sale-items">
-                    {(items || []).map((it, idx) => (
-                      <div key={idx} className="sale-item-row">
-                        <div className="sale-item-name">{it.name || it.productId} x{it.qty}</div>
-                        <div className="sale-item-price">{currency(it.price)}</div>
+          <div className="acc-satis-grid">
+            {sales
+              .slice()
+              .sort(
+                (a, b) =>
+                  new Date(b.createdAt || b.raw?.createdAt || b.raw?.created_at || 0) -
+                  new Date(a.createdAt || a.raw?.createdAt || a.raw?.created_at || 0)
+              )
+              .map((s) => {
+                const items = Array.isArray(s.items) ? s.items : [];
+                const total = satisToplam(s);
+                const custId = s.raw?.customerId ?? s.raw?.customer_id ?? null;
+                const cust = custId ? (customers || []).find((c) => String(c.id) === String(custId)) : null;
+                const custLabel = cust ? ` • ${cust.name}` : "";
+                return (
+                  <div key={s.id} className="acc-kart acc-satis-karti">
+                    <div className="acc-satis-ust">
+                      <div>
+                        <div className="acc-yazi-kalin">{satisTipi(s.saleType) + custLabel}</div>
+                        <div className="acc-yazi-ince">{tarihYaz(s.createdAt)}</div>
                       </div>
-                    ))}
-                  </div>
+                      <div className="acc-satis-toplam">
+                        <div className="acc-yazi-kalin">{para(total)}</div>
+                        <div className="acc-yazi-ince">{items.length} ürün</div>
+                      </div>
+                    </div>
 
-                  <div className="card-actions">
-                    <button className="btn btn-ghost" onClick={() => openEditRow({ kind: "sale", id: s.id, raw: s, saleType: s.saleType, totals: s.totals })} disabled={loading || !subActive}>Düzenle</button>
-                    <button className="btn btn-danger" onClick={() => confirmDeleteRow({ kind: "sale", id: s.id, createdAt: s.createdAt })} disabled={loading || !subActive}>Sil</button>
+                    <div className="acc-satis-urunler">
+                      {(items || []).map((it, idx) => (
+                        <div key={idx} className="acc-satis-satir">
+                          <div className="acc-satis-isim">{it.name || it.productId} x{it.qty}</div>
+                          <div className="acc-satis-fiyat">{para(it.price)}</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="acc-islem-dizisi">
+                      <button
+                        className="acc-btn acc-btn-cizgi"
+                        onClick={() =>
+                          duzenlemeAc({ kind: "sale", id: s.id, raw: s, saleType: s.saleType, totals: s.totals })
+                        }
+                        disabled={loading || !subActive}
+                      >
+                        Düzenle
+                      </button>
+                      <button
+                        className="acc-btn acc-btn-kirmizi"
+                        onClick={() => silOnayHazirla({ kind: "sale", id: s.id, createdAt: s.createdAt })}
+                        disabled={loading || !subActive}
+                      >
+                        Sil
+                      </button>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
           </div>
         )}
       </section>
 
-      {/* Manual incomes/expenses table */}
-      <section className="section-block">
-        <h4>Manuel Gelir / Gider Kayıtları</h4>
-        <div className="card table-card">
-          <table className="table" role="table" aria-label="Manuel gelir gider">
+      <section className="acc-bolum">
+        <div className="acc-bolum-baslik">Manuel Gelir / Gider Kayıtları</div>
+        <div className="acc-kart acc-tablo-kart">
+          <table className="acc-tablo" role="table" aria-label="Manuel gelir gider">
             <thead>
               <tr>
                 <th>Tarih</th>
                 <th>Açıklama</th>
-                <th className="text-right">Tutar</th>
+                <th className="acc-hucre-sag">Tutar</th>
                 <th>Tür</th>
-                <th></th>
+                <th />
               </tr>
             </thead>
             <tbody>
-              {(!loading && normalizedLedgerRows.length === 0) ? (
+              {!loading && normalizedLedgerRows.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="table-empty">Henüz manuel gelir/gider kaydı yok.</td>
+                  <td colSpan={5} className="acc-tablo-bos">
+                    Henüz manuel gelir/gider kaydı yok.
+                  </td>
                 </tr>
-              ) : normalizedLedgerRows.map((row) => {
-                const amt = row.amount ?? 0;
-                return (
-                  <tr key={row.id}>
-                    <td className="td-date">{formatDate(row.createdAt)}</td>
-                    <td className="td-desc">
-                      <div className="muted-strong">{row.description || (row.kind === "income" ? "Manuel Gelir" : "Manuel Gider")}</div>
-                    </td>
-                    <td className="text-right">{currency(amt)}</td>
-                    <td>{row.kind === "income" ? "Gelir" : "Gider"}</td>
-                    <td className="td-actions">
-                      <button className="btn btn-ghost" onClick={() => openEditRow(row)} disabled={loading || !subActive}>Düzenle</button>
-                      <button className="btn btn-danger" onClick={() => confirmDeleteRow(row)} disabled={loading || !subActive}>Sil</button>
-                    </td>
-                  </tr>
-                );
-              })}
+              ) : (
+                normalizedLedgerRows.map((row) => {
+                  const amt = row.amount ?? 0;
+                  return (
+                    <tr key={row.id}>
+                      <td className="acc-td-tarih">{tarihYaz(row.createdAt)}</td>
+                      <td className="acc-td-aciklama">
+                        <div className="acc-yazi-kalin">
+                          {row.description || (row.kind === "income" ? "Manuel Gelir" : "Manuel Gider")}
+                        </div>
+                      </td>
+                      <td className="acc-hucre-sag">{para(amt)}</td>
+                      <td>{row.kind === "income" ? "Gelir" : "Gider"}</td>
+                      <td className="acc-td-islem">
+                        <button
+                          className="acc-btn acc-btn-cizgi"
+                          onClick={() => duzenlemeAc(row)}
+                          disabled={loading || !subActive}
+                        >
+                          Düzenle
+                        </button>
+                        <button
+                          className="acc-btn acc-btn-kirmizi"
+                          onClick={() => silOnayHazirla(row)}
+                          disabled={loading || !subActive}
+                        >
+                          Sil
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
       </section>
 
-      {/* Edit Row Modal (used for incomes/expenses/sale) */}
       {editingRow && (
-        <div className="modal-overlay">
-          <div className="card modal-card">
-            <div className="modal-header">
-              <h4 className="modal-title">{editingRow.kind === "sale" ? "Satışı Düzenle" : "Kaydı Düzenle"}</h4>
-              <button className="btn btn-ghost" onClick={() => setEditingRow(null)}>Kapat</button>
+        <div className="acc-modal-kaplama">
+          <div className="acc-kart acc-modal">
+            <div className="acc-modal-baslik">
+              <h4>{editingRow.kind === "sale" ? "Satışı Düzenle" : "Kaydı Düzenle"}</h4>
+              <button className="acc-btn acc-btn-cizgi" onClick={() => setEditingRow(null)}>
+                Kapat
+              </button>
             </div>
 
-            <div className="modal-body">
-              <label className="modal-label">Açıklama</label>
-              <input value={editingRow.description} onChange={(e) => setEditingRow((s) => ({ ...s, description: e.target.value }))} className="auth-input" />
+            <div className="acc-modal-icerik">
+              <label className="acc-etiket">Açıklama</label>
+              <input
+                value={editingRow.description}
+                onChange={(e) => setEditingRow((s) => ({ ...s, description: e.target.value }))}
+                className="acc-input"
+              />
 
-              <label className="modal-label">Tutar</label>
-              <input type="number" value={editingRow.amount ?? ""} onChange={(e) => setEditingRow((s) => ({ ...s, amount: parseFloat(e.target.value || 0) }))} className="auth-input" />
+              <label className="acc-etiket">Tutar</label>
+              <input
+                type="number"
+                value={editingRow.amount ?? ""}
+                onChange={(e) => setEditingRow((s) => ({ ...s, amount: parseFloat(e.target.value || 0) }))}
+                className="acc-input"
+              />
 
               {editingRow.kind === "sale" && (
                 <>
-                  <label className="modal-label">Satış Türü</label>
-                  <select value={editingRow.saleType || "cash"} onChange={(e) => setEditingRow((s) => ({ ...s, saleType: e.target.value }))} className="auth-input">
+                  <label className="acc-etiket">Satış Türü</label>
+                  <select
+                    value={editingRow.saleType || "cash"}
+                    onChange={(e) => setEditingRow((s) => ({ ...s, saleType: e.target.value }))}
+                    className="acc-input"
+                  >
                     <option value="cash">Nakit</option>
                     <option value="credit">Veresiye</option>
                   </select>
                 </>
               )}
 
-              <div className="modal-actions">
-                <button className="btn btn-primary" onClick={saveEditRow} disabled={loading || !subActive}>Kaydet</button>
-                <button className="btn btn-ghost" onClick={() => setEditingRow(null)}>İptal</button>
+              <div className="acc-modal-islem">
+                <button className="acc-btn acc-btn-mavi" onClick={duzenlemeKaydet} disabled={loading || !subActive}>
+                  Kaydet
+                </button>
+                <button className="acc-btn acc-btn-cizgi" onClick={() => setEditingRow(null)}>
+                  İptal
+                </button>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Confirm Delete Modal */}
       {confirmDelete && (
-        <div className="modal-overlay">
-          <div className="card modal-card">
-            <h4 className="modal-title">Silme Onayı</h4>
-            <div className="muted-sub"> "{confirmDelete.label}" kaydını silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.</div>
-            <div className="modal-actions">
-              <button className="btn btn-danger" onClick={performDelete} disabled={loading || !subActive}>Evet, Sil</button>
-              <button className="btn btn-ghost" onClick={() => setConfirmDelete(null)}>İptal</button>
+        <div className="acc-modal-kaplama">
+          <div className="acc-kart acc-modal">
+            <h4 className="acc-modal-baslik-orta">Silme Onayı</h4>
+            <div className="acc-yazi-ince">"{confirmDelete.label}" kaydını silmek istediğinize emin misiniz?</div>
+            <div className="acc-modal-islem">
+              <button className="acc-btn acc-btn-kirmizi" onClick={silGercek} disabled={loading || !subActive}>
+                Evet, Sil
+              </button>
+              <button className="acc-btn acc-btn-cizgi" onClick={() => setConfirmDelete(null)}>
+                İptal
+              </button>
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 }

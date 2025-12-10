@@ -1,59 +1,47 @@
-/* Home.css
-   Styles for the Home component. Inline styles were moved here.
-*/
+:root {
+  --i-mavi: #1f6feb;
+  --i-gri: #5f6b7a;
+}
 
-.page-home {
-  padding: 16px;
+* {
   box-sizing: border-box;
 }
 
-.card-home {
-  padding: 36px;
-  max-width: 920px;
-  margin: 0 auto;
-  text-align: center;
+.info-kapsul {
+  width: 100%;
 }
 
-.home-title {
-  margin-top: 0;
-  font-size: 32px;
-}
-
-.home-sub {
-  color: var(--muted);
-  font-size: 16px;
-  margin-top: 8px;
-  line-height: 1.4;
-}
-
-.home-cta-row {
-  margin-top: 20px;
+.info-icerik {
   display: flex;
-  justify-content: center;
-  gap: 12px;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--i-gri);
+  font-family: "Inter", system-ui, sans-serif;
+  border-top: 1px solid #dbe3f3;
+  padding-top: 10px;
 }
 
-.home-cta-button {
-  min-width: 160px;
+.info-detay {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
-/* Info block below the CTA */
-.home-info {
-  margin-top: 18px;
-  color: var(--muted);
-  font-size: 14px;
-  text-align: left;
+.info-yazi {
+  margin: 0;
 }
 
-/* Responsive adjustments */
-@media (max-width: 640px) {
-  .card-home {
-    padding: 20px;
-  }
-  .home-title {
-    font-size: 28px;
-  }
-  .home-info {
-    font-size: 13px;
-  }
+.info-surum {
+  color: var(--i-mavi);
+  font-weight: 700;
+}
+
+.info-geri {
+  color: var(--i-mavi);
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.info-geri:hover {
+  text-decoration: underline;
 }

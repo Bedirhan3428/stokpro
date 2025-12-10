@@ -1,20 +1,23 @@
-import "../styles/global.css";
 import "../styles/BarcodeScanner.css";
-
 import React, { useEffect, useRef, useState } from "react";
 
 export default function BarcodeScanner({ onDetected }) {
   const [supported, setSupported] = useState(false);
   const [scanning, setScanning] = useState(false);
+  const [manual, setManual] = useState("");
+  const [feedback, setFeedback] = useState("");
   const videoRef = useRef(null);
   const detectorRef = useRef(null);
-  const [manual, setManual] = useState("");
+  const lastCodeRef = useRef(null);
+  const rafRef = useRef(null);
 
   useEffect(() => {
     if (window.BarcodeDetector) {
       setSupported(true);
       try {
-        detectorRef.current = new window.BarcodeDetector({ formats: ["ean_13", "ean_8", "code_128", "qr_code"] });
+        detectorRef.current = new window.BarcodeDetector({
+          formats: ["ean_13", "ean_8", "code_128", "qr_code"]
+        });
       } catch {
         detectorRef.current = null;
       }
@@ -22,7 +25,7 @@ export default function BarcodeScanner({ onDetected }) {
       setSupported(false);
     }
     return () => stopCamera();
-    // eslint-disable-next-line
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function startCamera() {
@@ -30,16 +33,18 @@ export default function BarcodeScanner({ onDetected }) {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
       videoRef.current.srcObject = stream;
-      videoRef.current.play();
+      await videoRef.current.play();
       setScanning(true);
-      requestAnimationFrame(tick);
+      lastCodeRef.current = null;
+      tick();
     } catch (err) {
-      console.warn("Kamera açılamadı:", err);
+      setFeedback("Kamera açılamadı.");
       setScanning(false);
     }
   }
 
   function stopCamera() {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
     if (videoRef.current && videoRef.current.srcObject) {
       const tracks = videoRef.current.srcObject.getTracks();
       tracks.forEach((t) => t.stop());
@@ -50,46 +55,58 @@ export default function BarcodeScanner({ onDetected }) {
 
   async function tick() {
     if (!detectorRef.current || !videoRef.current || videoRef.current.readyState < 2 || !scanning) {
-      if (scanning) requestAnimationFrame(tick);
+      if (scanning) rafRef.current = requestAnimationFrame(tick);
       return;
     }
     try {
       const detections = await detectorRef.current.detect(videoRef.current);
       if (detections && detections.length) {
         const code = detections[0].rawValue;
-        if (code) onDetected(code);
+        if (code && code !== lastCodeRef.current) {
+          lastCodeRef.current = code;
+          setFeedback(`Bulundu: ${code}`);
+          onDetected(code);
+          // küçük gecikme ile tekrar taramaya devam et
+          setTimeout(() => {
+            if (scanning) rafRef.current = requestAnimationFrame(tick);
+          }, 350);
+          return;
+        }
       }
-    } catch (err) { /* ignore detection errors */ }
-    if (scanning) requestAnimationFrame(tick);
+    } catch {
+      // ignore
+    }
+    if (scanning) rafRef.current = requestAnimationFrame(tick);
   }
 
   return (
-    <div className="page-barcode-scanner">
+    <div className="scanner-kapsul">
       {supported ? (
-        <div>
-          <div className="scanner-controls">
-            <button className="btn btn-ghost" onClick={() => (scanning ? stopCamera() : startCamera())}>
-              {scanning ? "Taramayı Durdur" : "Kamera ile tara"}
+        <div className="scanner-icerik">
+          <div className="scanner-kontrol">
+            <button className={`scanner-btn ${scanning ? "kirmizi" : "mavi"}`} onClick={() => (scanning ? stopCamera() : startCamera())}>
+              {scanning ? "Taramayı Durdur" : "Kamera ile Tara"}
             </button>
-            <small className="scanner-note">Tarayıcı destekliyorsa kameradan otomatik barkod algılanır.</small>
+            <div className="scanner-not">Kamera destekliyorsa barkod otomatik algılanır.</div>
           </div>
 
-          <div className="video-wrap">
-            <video ref={videoRef} className="video-preview" />
+          <div className="scanner-video">
+            <video ref={videoRef} className="scanner-goruntu" />
           </div>
+          {feedback && <div className="scanner-geri">{feedback}</div>}
         </div>
       ) : (
-        <div className="manual-wrap">
-          <div className="manual-note">Tarayıcı barkod API'sini desteklemiyor. Manuel giriniz.</div>
-          <div className="manual-entry">
+        <div className="scanner-manuel">
+          <div className="scanner-not">Tarayıcı barkod API'sini desteklemiyor. Manuel girin.</div>
+          <div className="scanner-manuel-satir">
             <input
               placeholder="Barkod girin"
               value={manual}
               onChange={(e) => setManual(e.target.value)}
-              className="manual-input"
+              className="scanner-input"
             />
             <button
-              className="btn btn-primary"
+              className="scanner-btn mavi"
               onClick={() => {
                 if (manual.trim()) onDetected(manual.trim());
                 setManual("");

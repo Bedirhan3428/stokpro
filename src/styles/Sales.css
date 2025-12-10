@@ -1,392 +1,225 @@
-/* =====================================================
-   styles/Sales.css
-   Tamamen yeniden yazıldı — Satış sayfası için düzen,
-   ürün listesi, sepet, ödeme alanı, son satışlar ve modallar.
-   Değişkenler global.css'den (var(--...)) beslenir.
-   ===================================================== */
+:root {
+  --sl-mavi: #1f6feb;
+  --sl-mavi-orta: #4a8df5;
+  --sl-kirmizi: #e74646;
+  --sl-beyaz: #ffffff;
+  --sl-gri: #5f6b7a;
+  --sl-golge: 0 12px 30px rgba(31, 111, 235, 0.12);
+}
 
-/* Sayfa düzeni */
-.page-sales {
+* { box-sizing: border-box; }
+
+.sl-sayfa {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f6f9ff 0%, #eef3fb 100%);
+  padding: 18px;
   display: grid;
-  grid-template-columns: 1fr 420px;
-  gap: 16px;
-  align-items: start;
-  width: 100%;
-  box-sizing: border-box;
-  padding: 0;
+  grid-template-columns: minmax(320px, 1.1fr) minmax(320px, 0.9fr);
+  gap: 14px;
+  font-family: "Inter", system-ui, sans-serif;
+  position: relative;
 }
 
-/* responsive: küçük ekranlarda tek sütun */
-@media (max-width: 960px) {
-  .page-sales { grid-template-columns: 1fr; padding: 0; }
-}
-
-/* Kart bazlı yapılar (ana bölümler) */
-.page-sales .card {
-  box-sizing: border-box;
-  padding: 14px;
-  border-radius: var(--radius);
-}
-
-/* ----- Hızlı Satış (sol bölüm) ----- */
-.sales-quick .section-title {
-  margin: 0 0 10px 0;
-  font-size: 18px;
-}
-
-.sales-quick .section-subtitle {
-  margin: 14px 0 8px 0;
-  font-size: 15px;
-}
-
-/* Barkod tarayıcı / scan sonucu */
-.sales-quick .scan-result {
-  margin-top: 8px;
-  color: var(--muted);
-  font-size: 13px;
-}
-
-/* Arama satırı */
-.search-row {
+.sl-bildirim-bar {
+  position: sticky;
+  top: 70px;
+  z-index: 15;
   display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-bottom: 12px;
-}
-.search-row .search-input {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-/* Ürünler grid'i */
-.products-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 12px;
-  margin-top: 8px;
-}
-
-/* Ürün kartı */
-.product-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px;
-  border-radius: 10px;
-  background: var(--card-bg);
-  border: 1px solid rgba(15,23,42,0.03);
-  box-shadow: var(--shadow-sm);
-}
-.product-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0; /* flex taşmasını önler */
-  flex: 1 1 auto;
-}
-.product-name {
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.product-cat { font-weight: 400; font-size: 12px; color: var(--muted); margin-left: 6px; }
-.product-stock-info { font-size: 12px; color: var(--muted); }
-
-/* Ürün eylem alanı (fiyat + buton) */
-.product-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: flex-end;
   justify-content: center;
+  pointer-events: none;
+  grid-column: 1 / -1;
 }
-.product-price { font-weight: 700; color: var(--text); }
 
-/* ----- Sağ sütun: Sepet ve Son Satışlar ----- */
-.cart-section .section-title { margin: 0 0 12px 0; }
-
-/* Sepet öğeleri listesi */
-.cart-item {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--surface-border);
-}
-.cart-meta { min-width: 0; flex: 1 1 auto; }
-.cart-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cart-sub { font-size: 13px; color: var(--muted); margin-top: 4px; }
-
-/* Sepet eylemleri (adet, kaldır) */
-.cart-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-shrink: 0;
-}
-.qty-input {
-  width: 72px;
-  min-width: 56px;
-  padding: 6px 8px;
-  border-radius: 8px;
-  border: 1px solid #e8eef8;
-  background: #fff;
+.sl-bildirim {
+  max-width: 520px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid #dbe3f3;
+  pointer-events: auto;
+  background: #eef4ff;
   font-size: 14px;
-  box-sizing: border-box;
+  box-shadow: 0 8px 18px rgba(31, 111, 235, 0.12);
+}
+.sl-bildirim-baslik { font-weight: 700; margin-bottom: 2px; font-size: 14px; }
+.sl-bildirim-icerik { color: var(--sl-gri); font-size: 13px; }
+.sl-bildirim.basari { background: #f2fff7; border-color: #c7f3df; }
+.sl-bildirim.hata { background: #fff2f2; border-color: #f7c5c5; }
+.sl-bildirim.info { background: #eef4ff; }
+
+.sl-kart {
+  background: var(--sl-beyaz);
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: var(--sl-golge);
+  border: 1px solid #dbe3f3;
 }
 
-/* Toplam satırı */
-.totals-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 12px;
-  padding-top: 8px;
-  border-top: 1px dashed rgba(0,0,0,0.03);
-  font-weight: 700;
-  font-size: 16px;
-}
+.sl-baslik { margin: 0 0 8px; color: #0f172a; font-weight: 800; }
+.sl-altbaslik { margin: 8px 0; color: #0f172a; }
 
-/* Ödeme tipi alanı */
-.payment-row {
+.sl-uyari { border: 1px solid #f7c5c5; background: #fff2f2; grid-column: 1 / -1; }
+.sl-uyari-baslik { font-weight: 800; color: #b91c1c; }
+.sl-uyari-icerik { color: var(--sl-gri); }
+
+.sl-hizli,
+.sl-sepet {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-top: 12px;
-}
-.payment-row .input-label { font-size: 13px; margin-bottom: 6px; color: var(--muted); }
-
-/* Nakit / Veresiye buton grubu */
-.payment-buttons {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.payment-buttons .btn {
-  white-space: nowrap;
-  flex: none;
 }
 
-/* Kredi seçildiğinde gösterilen müşteri seçimi bloğu */
-.credit-select {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.sl-info { color: var(--sl-mavi); font-weight: 700; }
+
+.sl-ara { display: flex; }
+.sl-input {
   width: 100%;
-  box-sizing: border-box;
+  padding: 11px 12px;
+  border-radius: 12px;
+  border: 1px solid #dbe3f3;
+  background: #fdfefe;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  font-size: 15px;
 }
-.credit-select .auth-input,
-.credit-select select,
-.credit-select input {
-  width: 100%;
-  min-width: 0; /* flex context overflow fix */
+.sl-input:focus { border-color: var(--sl-mavi); box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.14); }
+.sl-input.kucuk { width: 80px; }
+
+.sl-urun-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
 }
-
-/* Yardım metni */
-.muted-help { font-size: 12px; color: var(--muted); }
-
-/* Sepet altındaki ana butonlar */
-.cart-actions-row {
-  margin-top: 14px;
+.sl-urun {
+  border: 1px solid #e4ebf7;
+  border-radius: 12px;
+  padding: 12px;
+  background: #f9fbff;
   display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-.cart-actions-row .btn { flex: none; }
-
-/* Divider */
-.divider {
-  margin: 14px 0;
-  border: none;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(15,23,42,0.03), transparent);
-}
-
-/* Son satışlar listesi */
-.recent-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
-
-/* Tek bir satış kartı (recent-item) */
-.recent-item {
-  display: flex;
-  gap: 12px;
-  align-items: center;
   justify-content: space-between;
+  gap: 10px;
+}
+.sl-urun-ad { font-weight: 800; color: #0f172a; }
+.sl-kat { color: var(--sl-gri); }
+.sl-urun-alt { color: var(--sl-gri); font-size: 14px; }
+.sl-urun-aks { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.sl-fiyat { font-weight: 800; color: var(--sl-mavi); }
+
+.sl-btn {
+  border: none;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.sl-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 20px rgba(15, 23, 42, 0.14); }
+.sl-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.sl-btn.mavi { background: linear-gradient(135deg, var(--sl-mavi), var(--sl-mavi-orta)); color: #fff; }
+.sl-btn.cizgi { background: #f5f7fb; color: #0f172a; border: 1px solid #dbe3f3; }
+.sl-btn.kirmizi { background: linear-gradient(135deg, #f87171, var(--sl-kirmizi)); color: #fff; }
+
+.sl-mini { color: var(--sl-gri); font-size: 13px; }
+
+.sl-sepet-satir {
+  border: 1px solid #e4ebf7;
+  border-radius: 12px;
   padding: 10px;
-  border-radius: 8px;
-  background: var(--card-bg);
-  border: 1px solid rgba(15,23,42,0.03);
-  box-shadow: var(--shadow-sm);
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  background: #f9fbff;
 }
-.recent-item .recent-type { font-weight: 700; }
-.recent-item .recent-items { font-size: 13px; color: var(--muted); margin-top: 6px; }
-.recent-actions { display: flex; gap: 8px; align-items: center; margin-left: 12px; }
+.sl-sepet-ad { font-weight: 800; }
 
-/* Küçük ekranlarda recent item stacking */
-@media (max-width: 640px) {
-  .recent-item { flex-direction: column; align-items: stretch; }
-  .recent-actions { justify-content: flex-end; }
+.sl-sepet-aks { display: flex; gap: 8px; align-items: center; }
+
+.sl-toplam {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px dashed #dbe3f3;
+  padding-top: 8px;
+  font-weight: 800;
 }
 
-/* ----- Modal overlay ve modal kartları ----- */
-.modal-overlay {
+.sl-kalin { font-weight: 800; }
+
+.sl-odeme { display: flex; flex-direction: column; gap: 8px; }
+.sl-etiket { font-weight: 700; color: #0f172a; }
+.sl-odeme-btn { display: flex; gap: 8px; }
+
+.sl-kredi { display: flex; flex-direction: column; gap: 6px; }
+
+.sl-aks-dizi { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.sl-hr { border: none; border-top: 1px dashed #dbe3f3; }
+
+.sl-recent { display: flex; flex-direction: column; gap: 10px; }
+.sl-recent-kart {
+  border: 1px solid #e4ebf7;
+  border-radius: 12px;
+  padding: 10px;
+  background: #f9fbff;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.sl-recent-aks { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+.sl-modal-kaplama {
   position: fixed;
   inset: 0;
+  background: rgba(9, 23, 54, 0.4);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  z-index: 50;
+  backdrop-filter: blur(6px);
+}
+
+.sl-modal {
+  background: var(--sl-beyaz);
+  border-radius: 16px;
+  padding: 16px;
+  width: min(520px, 100%);
+  box-shadow: var(--sl-golge);
+  border: 1px solid #dbe3f3;
+}
+.sl-modal.kucuk { width: min(420px, 100%); }
+
+.sl-modal-baslik {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.sl-modal-icerik { display: flex; flex-direction: column; gap: 10px; }
+
+.sl-modal-aks { display: flex; gap: 8px; justify-content: flex-end; }
+
+.sl-yukleme {
   display: flex;
   align-items: center;
-  justify-content: center;
-  background: rgba(0,0,0,0.45);
-  z-index: 120;
-  padding: 20px;
-}
-.modal-card {
-  background: var(--card-bg);
-  border-radius: 12px;
-  padding: 16px;
-  max-width: 680px;
-  width: 100%;
-  box-shadow: var(--shadow-md);
-  border: 1px solid rgba(15,23,42,0.04);
-  box-sizing: border-box;
-}
-.modal-card.small { max-width: 440px; }
-.modal-header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom: 8px; }
-.modal-title { margin:0; font-size:16px; font-weight:700; }
-
-/* Modal body düzeni */
-.modal-body { display: flex; flex-direction: column; gap: 10px; }
-.modal-actions { display:flex; gap:8px; justify-content:flex-end; margin-top: 12px; }
-
-/* Küçük yardımcı stiller */
-.muted-sub { color: var(--muted); font-size: 13px; padding: 8px 0; }
-.note { margin-bottom: 12px; padding: 10px 12px; border-radius: 8px; }
-.note .note-title { font-weight:700; margin-bottom:6px; }
-.note-success { background: rgba(220,252,231,0.6); border: 1px solid rgba(16,185,129,0.08); }
-.note-error { background: rgba(254,226,226,0.8); border: 1px solid rgba(239,68,68,0.12); }
-
-/* Focus ve erişilebilirlik */
-.btn:focus-visible, .auth-input:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 4px rgba(37,99,235,0.12);
-}
-
-/* Scroll kutusu (kayıtlar vb.) */
-.scroll-box {
-  max-height: 260px;
-  overflow-y: auto;
-  padding-right: 8px;
-}
-
-/* Küçük düzen düzeltmeleri */
-.products-grid .muted-sub,
-.recent-list .muted-sub { padding: 8px 0; }
-
-/* Yükleme durumları */
-.app-loading { display:flex; align-items:center; gap:12px; padding:18px; }
-
-/* Eğer özel buton (ör. Satışı Tamamla) için daha geniş pill görünüm istenirse: */
-/* (global.css içinde .btn-style-3 zaten varsa, bunu kullanabilirsiniz) */
-.btn--wide {
-  padding: 10px 26px;
-  border-radius: 999px;
-  font-weight: 700;
-}
-
-/* Son kontrol: min-width:0 kuralı ile flex içindeki taşmaların önüne geçiyoruz */
-.page-sales * { box-sizing: border-box; }
-
-/* ======================================================
-   BUTTON OVERRIDES FOR SALES
-   - Tüm butonlara 1px solid siyah border eklendi.
-   - Üstten hafif beyaz parlaklık ve alttan koyu gölge için inset box-shadow eklendi.
-   - Primary/ghost/danger/google butonları için border korundu ve interaktif durumlar eklendi.
-   - Disabled hallerde iç efektler kaldırılıyor, siyah sınır korunuyor.
-   ====================================================== */
-
-.btn {
-  display: inline-flex;
-  align-items: center;
   gap: 8px;
-  border: 1px solid #000; /* siyah border */
-  padding: 8px 12px;
-  height: 38px;
-  border-radius: 8px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.02)); /* hafif nötr zemin */
-  color: var(--text, #0f172a);
-  cursor: pointer;
-  transition: transform 0.12s ease, box-shadow 0.16s ease, background 0.12s ease;
-  font-weight: 600;
-  font-size: 14px;
-
-  /* içten üst beyaz parlaklık, içten alt koyu gölge */
-  box-shadow: inset 0 8px 14px rgba(255,255,255,0.12), inset 0 -8px 14px rgba(0,0,0,0.18);
+  color: var(--sl-gri);
 }
-.btn:focus { outline: 3px solid rgba(37,99,235,0.18); outline-offset: 2px; }
-
-/* Primary */
-.btn-primary {
-  background: linear-gradient(180deg, var(--primary), var(--primary-600));
-  color: #fff;
-  border: 1px solid #000;
-  box-shadow:
-    0 6px 12px rgba(37,99,235,0.12),
-    inset 0 10px 16px rgba(255,255,255,0.12),
-    inset 0 -10px 16px rgba(0,0,0,0.18);
+.sl-spinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 3px solid #d7e5ff;
+  border-top-color: var(--sl-mavi);
+  animation: sl-spin 0.9s linear infinite;
 }
-.btn-primary:hover { transform: translateY(-1px); }
-.btn-primary:active { transform: translateY(0) scale(0.995); }
+@keyframes sl-spin { to { transform: rotate(360deg); } }
 
-/* Ghost */
-.btn-ghost {
-  background: transparent;
-  color: var(--primary);
-  border: 1px solid #000;
-  box-shadow: inset 0 8px 12px rgba(255,255,255,0.08), inset 0 -8px 12px rgba(0,0,0,0.08);
+@media (max-width: 1080px) {
+  .sl-sayfa { grid-template-columns: 1fr; }
+  .sl-bildirim-bar { top: 64px; }
 }
-.btn-ghost:hover { background: rgba(37,99,235,0.04); }
-
-/* Danger */
-.btn-danger {
-  background: linear-gradient(180deg, #f87171, #ef4444);
-  color: #fff;
-  border: 1px solid #000;
-  box-shadow:
-    0 6px 12px rgba(239,68,68,0.10),
-    inset 0 10px 16px rgba(255,255,255,0.10),
-    inset 0 -10px 14px rgba(0,0,0,0.14);
-}
-
-/* Google / other specific button */
-.btn-google {
-  background: #fff;
-  border: 1px solid #000;
-  color: #111;
-  display: inline-flex;
-  align-items: center;
-  padding: 8px 12px;
-  border-radius: 8px;
-  gap: 8px;
-  box-shadow: inset 0 8px 12px rgba(255,255,255,0.12), inset 0 -8px 12px rgba(0,0,0,0.08);
-}
-
-/* Disabled / inactive state (buton hala siyah sınır korur) */
-[disabled], .btn[disabled],
-button:disabled,
-.btn[aria-disabled="true"] {
-  opacity: 1;
-  cursor: not-allowed;
-  box-shadow: none;
-  transform: none;
-  background: var(--muted-bg, #f1f5f9) !important;
-  color: var(--muted) !important;
-  border-color: #000 !important;
-  border-style: solid;
-  border-width: 1px;
-}
-.btn-ghost[disabled], .btn-ghost[aria-disabled="true"] {
-  background: var(--muted-bg, #f1f5f9) !important;
-  color: var(--muted) !important;
-  border-color: #000 !important;
+@media (max-width: 720px) {
+  .sl-sayfa { padding: 14px; }
+  .sl-urun, .sl-sepet-satir, .sl-recent-kart { flex-direction: column; align-items: flex-start; }
 }

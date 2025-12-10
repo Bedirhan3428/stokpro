@@ -1,8 +1,6 @@
-import '../styles/global.css';
-import '../styles/Sales.css';
-
+import "../styles/Sales.css";
 import React, { useEffect, useMemo, useState } from "react";
-import BarcodeScanner from "./BarcodeScanner";
+import BarcodeScanner from "../components/BarcodeScanner";
 import { listProductsForCurrentUser } from "../utils/artifactUserProducts";
 import {
   listCustomers,
@@ -15,13 +13,15 @@ import {
 } from "../utils/firebaseHelpers";
 import useSubscription from "../hooks/useSubscription";
 
-/* Notification */
-function Notification({ note }) {
+function Bildirim({ note }) {
   if (!note) return null;
+  const tip = note.type === "error" ? "sl-bildirim hata" : note.type === "success" ? "sl-bildirim basari" : "sl-bildirim info";
   return (
-    <div className={`note ${note.type === "error" ? "note-error" : note.type === "success" ? "note-success" : "note-info"}`}>
-      <div className="note-title">{note.title || (note.type === "error" ? "Hata" : "Bilgi")}</div>
-      <div className="note-body">{note.message}</div>
+    <div className="sl-bildirim-bar">
+      <div className={tip}>
+        <div className="sl-bildirim-baslik">{note.title || (note.type === "error" ? "Hata" : "Bilgi")}</div>
+        <div className="sl-bildirim-icerik">{note.message}</div>
+      </div>
     </div>
   );
 }
@@ -50,7 +50,6 @@ export default function Sales() {
   const [selectedCustomer, setSelectedCustomer] = useState("");
   const [scanResult, setScanResult] = useState("");
   const [search, setSearch] = useState("");
- 
 
   const [salesList, setSalesList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -68,12 +67,12 @@ export default function Sales() {
 
   const { loading: subLoading, active: subActive } = useSubscription();
 
-  function showNote(n) {
+  function bildir(n) {
     setNote(n);
     setTimeout(() => setNote(null), 3500);
   }
 
-  async function refreshAll() {
+  async function yenile() {
     setLoading(true);
     try {
       const [prods, custs, allSales] = await Promise.all([listProductsForCurrentUser(), listCustomers(), listSales()]);
@@ -84,20 +83,15 @@ export default function Sales() {
         const itemsArr = Array.isArray(s.items) ? s.items : [];
         const items = itemsArr.map((it) => {
           const quantity = Number(it.qty ?? it.quantity ?? 1);
-
           const rawPrice = it.price ?? it.unitPrice ?? it.unit_price ?? null;
           let price = 0;
-          if (rawPrice != null) {
-            price = Number(rawPrice || 0);
-          } else if (it.totalPrice != null || it.total_price != null) {
+          if (rawPrice != null) price = Number(rawPrice || 0);
+          else if (it.totalPrice != null || it.total_price != null) {
             const totalP = Number(it.totalPrice ?? it.total_price ?? 0);
             price = quantity > 0 ? totalP / quantity : totalP;
           } else if (it.unit_price_per ?? null) {
             price = Number(it.unit_price_per);
-          } else {
-            price = 0;
           }
-
           return {
             name: it.name ?? it.productName ?? it.product_name ?? it.productId ?? "Ürün",
             price,
@@ -107,12 +101,8 @@ export default function Sales() {
           };
         });
 
-        const createdAt =
-          s.createdAt ?? s.date ?? s.created_at ?? s.timestamp ?? s.time ?? s.createdAtString ?? null;
-
-        const totalVal = Number(
-          s.totals?.total ?? s.total ?? s.totalPrice ?? s.total_price ?? s.sum ?? s.amount ?? 0
-        );
+        const createdAt = s.createdAt ?? s.date ?? s.created_at ?? s.timestamp ?? s.time ?? s.createdAtString ?? null;
+        const totalVal = Number(s.totals?.total ?? s.total ?? s.totalPrice ?? s.total_price ?? s.sum ?? s.amount ?? 0);
 
         return {
           id: String(s.id ?? s._id ?? s.saleId ?? s.id ?? Math.random().toString(36).slice(2, 9)),
@@ -127,8 +117,7 @@ export default function Sales() {
       normalized.sort((a, b) => parseDateKey(b.createdAt) - parseDateKey(a.createdAt));
       setSalesList(normalized.slice(0, 100));
     } catch (err) {
-      console.error(err);
-      showNote({ type: "error", title: "Yükleme hatası", message: String(err?.message ?? err) });
+      bildir({ type: "error", title: "Yükleme hatası", message: String(err?.message ?? err) });
       setSalesList([]);
     } finally {
       setLoading(false);
@@ -136,8 +125,8 @@ export default function Sales() {
   }
 
   useEffect(() => {
-    refreshAll();
-    // eslint-disable-next-line
+    yenile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const totals = useMemo(() => {
@@ -145,23 +134,36 @@ export default function Sales() {
     return { subtotal: sub, tax: 0, total: sub };
   }, [cart]);
 
-  function addToCartByProduct(p, qty = 1) {
+  function sepeteEkle(p, qty = 1) {
+    const stok = Number(p.stock || 0);
+    if (stok <= 0) {
+      return bildir({ type: "error", title: "Stok yok", message: `${p.name} ürünü stokta yok.` });
+    }
     setCart((c) => {
       const idx = c.findIndex((it) => it.productId === p.id);
+      const mevcut = idx >= 0 ? Number(c[idx].qty || 0) : 0;
+      if (mevcut + qty > stok) {
+        bildir({ type: "error", title: "Stok yetersiz", message: `${p.name} için mevcut stok: ${stok}` });
+        return c;
+      }
       if (idx >= 0) {
         const copy = [...c];
-        copy[idx].qty = Math.min((copy[idx].qty || 0) + qty, p.stock || 999999);
+        copy[idx].qty = mevcut + qty;
         return copy;
       }
       return [{ productId: p.id, name: p.name, price: p.price || 0, qty }, ...c];
     });
   }
 
-  function addByBarcode(code) {
+  function barkodlaEkle(code) {
     if (!code) return;
     const p = products.find((x) => x.barcode && x.barcode === code);
     if (p) {
-      addToCartByProduct(p, 1);
+      const stok = Number(p.stock || 0);
+      if (stok <= 0) {
+        return bildir({ type: "error", title: "Stok yok", message: `${p.name} ürünü stokta yok.` });
+      }
+      sepeteEkle(p, 1);
       setScanResult(`Sepete eklendi: ${p.name}`);
     } else {
       setScanResult("Barkodlu ürün bulunamadı.");
@@ -169,21 +171,13 @@ export default function Sales() {
     setTimeout(() => setScanResult(""), 2500);
   }
 
-  
-
-  async function finalizeSale() {
-    if (cart.length === 0) return showNote({ type: "error", title: "Sepet boş", message: "Satış için önce ürün ekleyin." });
-    if (!subActive) return showNote({ type: "error", title: "Abonelik gerekli", message: "Satışı tamamlamak için abonelik gereklidir." });
+  async function satisTamamla() {
+    if (cart.length === 0) return bildir({ type: "error", title: "Sepet boş", message: "Satış için önce ürün ekleyin." });
+    if (!subActive) return bildir({ type: "error", title: "Abonelik gerekli", message: "Satışı tamamlamak için abonelik gereklidir." });
     try {
       const itemsForSale = cart.map((it) => ({ productId: it.productId, name: it.name, qty: it.qty, price: it.price }));
-      await finalizeSaleTransaction({
-        items: itemsForSale,
-        paymentType,
-        customerId: selectedCustomer || null,
-        totals
-      });
+      await finalizeSaleTransaction({ items: itemsForSale, paymentType, customerId: selectedCustomer || null, totals });
 
-      // optimistic UI update for customer balance when veresiye
       if (paymentType === "credit" && selectedCustomer) {
         const amt = Number(totals.total || 0);
         setCustomers((prev) =>
@@ -193,96 +187,91 @@ export default function Sales() {
         );
       }
       setCart([]);
-      await refreshAll();
-      showNote({ type: "success", title: "Satış kaydedildi", message: "Satış başarıyla kaydedildi." });
+      await yenile();
+      bildir({ type: "success", title: "Satış kaydedildi", message: "Satış başarıyla kaydedildi." });
     } catch (err) {
-      console.error(err);
-      showNote({ type: "error", title: "Satış başarısız", message: String(err?.message ?? err) });
+      bildir({ type: "error", title: "Satış başarısız", message: String(err?.message ?? err) });
     }
   }
 
-  function removeCartItem(pid) {
+  function sepettenSil(pid) {
     setCart((c) => c.filter((it) => it.productId !== pid));
   }
-  function changeQty(pid, qty) {
+  function miktarDegis(pid, qty) {
     setCart((c) => c.map((it) => (it.productId === pid ? { ...it, qty: Math.max(1, qty) } : it)));
   }
 
-  function openEditSale(s) {
+  function satisDuzenleAc(s) {
     if (!s) return;
     setEditingSale({ id: s.id, saleType: s.saleType || "cash", total: Number(s.totals?.total || 0) });
   }
-  async function saveEditSale() {
+  async function satisDuzenleKaydet() {
     if (!editingSale) return;
-    if (!subActive) return showNote({ type: "error", title: "Abonelik gerekli", message: "Güncelleme için abonelik gereklidir." });
+    if (!subActive) return bildir({ type: "error", title: "Abonelik gerekli", message: "Güncelleme için abonelik gereklidir." });
     try {
       await updateSale(editingSale.id, { saleType: editingSale.saleType, totals: { total: Number(editingSale.total || 0) } });
       setEditingSale(null);
-      await refreshAll();
-      showNote({ type: "success", title: "Güncellendi", message: "Satış kaydı güncellendi." });
+      await yenile();
+      bildir({ type: "success", title: "Güncellendi", message: "Satış kaydı güncellendi." });
     } catch (err) {
-      console.error(err);
-      showNote({ type: "error", title: "Güncelleme hatası", message: String(err?.message ?? err) });
+      bildir({ type: "error", title: "Güncelleme hatası", message: String(err?.message ?? err) });
     }
   }
 
-  function confirmDeleteSale(s) {
+  function satisSilIste(s) {
     if (!s) return;
     setConfirmDelete({ kind: "sale", id: s.id, label: s.createdAt ? new Date(s.createdAt).toLocaleString() : s.id });
   }
-  async function performDeleteSale() {
+  async function satisSilGercek() {
     if (!confirmDelete) return;
-    if (!subActive) return showNote({ type: "error", title: "Abonelik gerekli", message: "Silme için abonelik gereklidir." });
+    if (!subActive) return bildir({ type: "error", title: "Abonelik gerekli", message: "Silme için abonelik gereklidir." });
     try {
       await deleteSale(confirmDelete.id);
       setConfirmDelete(null);
-      await refreshAll();
-      showNote({ type: "success", title: "Silindi", message: "Satış silindi." });
+      await yenile();
+      bildir({ type: "success", title: "Silindi", message: "Satış silindi." });
     } catch (err) {
-      console.error(err);
-      showNote({ type: "error", title: "Silme hatası", message: String(err?.message ?? err) });
+      bildir({ type: "error", title: "Silme hatası", message: String(err?.message ?? err) });
     }
   }
 
-  function openIncomeModal() {
-    if (!subActive) return showNote({ type: "error", title: "Abonelik gerekli", message: "Gelir eklemek için abonelik gereklidir." });
+  function gelirModalAc() {
+    if (!subActive) return bildir({ type: "error", title: "Abonelik gerekli", message: "Gelir eklemek için abonelik gereklidir." });
     setIncomeAmount("");
     setIncomeDesc("");
     setShowIncomeModal(true);
   }
-  async function submitIncome() {
+  async function gelirKaydet() {
     const amt = Number(incomeAmount);
-    if (!amt || amt <= 0) return showNote({ type: "error", title: "Geçersiz tutar", message: "Lütfen geçerli bir tutar girin." });
-    if (!subActive) return showNote({ type: "error", title: "Abonelik gerekli", message: "Gelir eklemek için abonelik gereklidir." });
+    if (!amt || amt <= 0) return bildir({ type: "error", title: "Geçersiz tutar", message: "Geçerli tutar girin." });
+    if (!subActive) return bildir({ type: "error", title: "Abonelik gerekli", message: "Gelir eklemek için abonelik gereklidir." });
     try {
       await addLegacyIncome({ amount: amt, description: incomeDesc || "Manuel gelir" });
       setShowIncomeModal(false);
-      await refreshAll();
-      showNote({ type: "success", title: "Gelir kaydedildi", message: `Gelir: ${amt} kaydedildi.` });
+      await yenile();
+      bildir({ type: "success", title: "Gelir kaydedildi", message: `Gelir: ${amt} kaydedildi.` });
     } catch (err) {
-      console.error(err);
-      showNote({ type: "error", title: "Hata", message: String(err?.message ?? err) });
+      bildir({ type: "error", title: "Hata", message: String(err?.message ?? err) });
     }
   }
 
-  function openExpenseModal() {
-    if (!subActive) return showNote({ type: "error", title: "Abonelik gerekli", message: "Gider eklemek için abonelik gereklidir." });
+  function giderModalAc() {
+    if (!subActive) return bildir({ type: "error", title: "Abonelik gerekli", message: "Gider eklemek için abonelik gereklidir." });
     setExpenseAmount("");
     setExpenseDesc("");
     setShowExpenseModal(true);
   }
-  async function submitExpense() {
+  async function giderKaydet() {
     const amt = Number(expenseAmount);
-    if (!amt || amt <= 0) return showNote({ type: "error", title: "Geçersiz tutar", message: "Lütfen geçerli bir tutar girin." });
-    if (!subActive) return showNote({ type: "error", title: "Abonelik gerekli", message: "Gider eklemek için abonelik gereklidir." });
+    if (!amt || amt <= 0) return bildir({ type: "error", title: "Geçersiz tutar", message: "Geçerli tutar girin." });
+    if (!subActive) return bildir({ type: "error", title: "Abonelik gerekli", message: "Gider eklemek için abonelik gereklidir." });
     try {
       await addLegacyExpense({ amount: amt, description: expenseDesc || "Manuel gider" });
       setShowExpenseModal(false);
-      await refreshAll();
-      showNote({ type: "success", title: "Gider kaydedildi", message: `Gider: ${amt} kaydedildi.` });
+      await yenile();
+      bildir({ type: "success", title: "Gider kaydedildi", message: `Gider: ${amt} kaydedildi.` });
     } catch (err) {
-      console.error(err);
-      showNote({ type: "error", title: "Hata", message: String(err?.message ?? err) });
+      bildir({ type: "error", title: "Hata", message: String(err?.message ?? err) });
     }
   }
 
@@ -293,92 +282,87 @@ export default function Sales() {
   });
 
   return (
-    <div className="page-sales grid-2">
-      <Notification note={note} />
+    <div className="sl-sayfa">
+      <Bildirim note={note} />
+
       {!subLoading && !subActive && (
-        <div className="card sub-warning">
-          <div className="sub-warning-title">Abonelik gerekli</div>
-          <div className="sub-warning-body">Yazma işlemleri devre dışı — aboneliğinizi Ayarlar sayfasından yönetebilirsiniz.</div>
+        <div className="sl-kart sl-uyari">
+          <div className="sl-uyari-baslik">Abonelik gerekli</div>
+          <div className="sl-uyari-icerik">Yazma işlemleri devre dışı — aboneliğinizi Ayarlar sayfasından yönetebilirsiniz.</div>
         </div>
       )}
 
-      <section className="card sales-quick">
-        <h3 className="section-title">Satış (Hızlı)</h3>
-        <BarcodeScanner onDetected={(code) => addByBarcode(code)} />
-        {scanResult && <div className="scan-result">{scanResult}</div>}
+      <section className="sl-kart sl-hizli">
+        <h3 className="sl-baslik">Satış (Hızlı)</h3>
+        <BarcodeScanner onDetected={(code) => barkodlaEkle(code)} />
+        {scanResult && <div className="sl-info">{scanResult}</div>}
 
-        <div className="search-row">
+        <div className="sl-ara">
           <input
             placeholder="Ürün ismine veya barkoda göre ara..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="auth-input search-input"
+            className="sl-input"
           />
-         
-          
         </div>
 
-        <h4 className="section-subtitle">Ürünler</h4>
-        <div className="products-grid">
+        <h4 className="sl-altbaslik">Ürünler</h4>
+        <div className="sl-urun-grid">
           {filteredProducts.map((p) => (
-            <div key={p.id} className="product-card card">
-              <div className="product-meta">
-                <div className="product-name">{p.name} <small className="product-cat">{p.category}</small></div>
-                <div className="product-stock-info">Stok: {p.stock} • Barkod: {p.barcode || "—"}</div>
+            <div key={p.id} className="sl-urun">
+              <div>
+                <div className="sl-urun-ad">{p.name} <small className="sl-kat">{p.category}</small></div>
+                <div className="sl-urun-alt">Stok: {p.stock} • Barkod: {p.barcode || "—"}</div>
               </div>
-              <div className="product-actions">
-                <div className="product-price">{Number(p.price || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</div>
-                <button className="btn btn-primary" onClick={() => addToCartByProduct(p, 1)} disabled={!subActive}>Sepete Ekle</button>
+              <div className="sl-urun-aks">
+                <div className="sl-fiyat">{Number(p.price || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</div>
+                <button className="sl-btn mavi" onClick={() => sepeteEkle(p, 1)} disabled={!subActive}>Sepete Ekle</button>
               </div>
             </div>
           ))}
-          {filteredProducts.length === 0 && <div className="muted-sub">Aramaya uygun ürün bulunamadı.</div>}
+          {filteredProducts.length === 0 && <div className="sl-mini">Aramaya uygun ürün bulunamadı.</div>}
         </div>
       </section>
 
-      <aside className="card cart-section">
-        <h3 className="section-title">Sepet</h3>
-        {cart.length === 0 && <div className="muted-sub">Sepet boş</div>}
+      <aside className="sl-kart sl-sepet">
+        <h3 className="sl-baslik">Sepet</h3>
+        {cart.length === 0 && <div className="sl-mini">Sepet boş</div>}
         {cart.map((it) => (
-          <div key={it.productId} className="cart-item">
-            <div className="cart-meta">
-              <div className="cart-name">{it.name}</div>
-              <div className="cart-sub">{Number(it.price).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })} x {it.qty}</div>
+          <div key={it.productId} className="sl-sepet-satir">
+            <div>
+              <div className="sl-sepet-ad">{it.name}</div>
+              <div className="sl-mini">{Number(it.price).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })} x {it.qty}</div>
             </div>
-            <div className="cart-actions">
+            <div className="sl-sepet-aks">
               <input
                 type="number"
                 min="1"
                 value={it.qty}
-                onChange={(e) => changeQty(it.productId, parseInt(e.target.value || 1, 10))}
-                className="qty-input"
+                onChange={(e) => miktarDegis(it.productId, parseInt(e.target.value || 1, 10))}
+                className="sl-input kucuk"
                 disabled={!subActive}
               />
-              <button className="btn btn-ghost" onClick={() => removeCartItem(it.productId)} disabled={!subActive}>Kaldır</button>
+              <button className="sl-btn cizgi" onClick={() => sepettenSil(it.productId)} disabled={!subActive}>Kaldır</button>
             </div>
           </div>
         ))}
 
-        <div className="totals-row">
+        <div className="sl-toplam">
           <div>Toplam</div>
-          <div className="totals-value">{totals.total.toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</div>
+          <div className="sl-kalin">{totals.total.toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</div>
         </div>
 
-        <div className="payment-row">
-          <label className="input-label">Ödeme tipi</label>
-          <div className="payment-buttons">
-            <button className={`btn ${paymentType === "cash" ? "btn-primary" : "btn-ghost"}`} onClick={() => setPaymentType("cash")}>Nakit</button>
-            <button className={`btn ${paymentType === "credit" ? "btn-primary" : "btn-ghost"}`} onClick={() => setPaymentType("credit")}>Veresiye</button>
-         
-         </div>
-          
-
-          
+        <div className="sl-odeme">
+          <label className="sl-etiket">Ödeme tipi</label>
+          <div className="sl-odeme-btn">
+            <button className={`sl-btn ${paymentType === "cash" ? "mavi" : "cizgi"}`} onClick={() => setPaymentType("cash")}>Nakit</button>
+            <button className={`sl-btn ${paymentType === "credit" ? "mavi" : "cizgi"}`} onClick={() => setPaymentType("credit")}>Veresiye</button>
+          </div>
 
           {paymentType === "credit" && (
-            <div className="credit-select">
-              <label className="input-label">Müşteri</label>
-              <select value={selectedCustomer} onChange={(e) => setSelectedCustomer(e.target.value)} className="auth-input">
+            <div className="sl-kredi">
+              <label className="sl-etiket">Müşteri</label>
+              <select value={selectedCustomer} onChange={(e) => setSelectedCustomer(e.target.value)} className="sl-input">
                 <option value="">-- Müşteri seçin --</option>
                 {customers.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -386,39 +370,39 @@ export default function Sales() {
                   </option>
                 ))}
               </select>
-              <div className="muted-help">Yeni müşteri eklemek için Müşteriler bölümüne gidin.</div>
+              <div className="sl-mini">Yeni müşteri eklemek için Müşteriler bölümüne gidin.</div>
             </div>
           )}
         </div>
 
-        <div className="cart-actions-row">
-          <button className="btn btn-primary" onClick={finalizeSale} disabled={!subActive}>Satışı Tamamla</button>
-          <button className="btn btn-ghost" onClick={openIncomeModal} disabled={!subActive}>Gelir Ekle</button>
-          <button className="btn btn-ghost" onClick={openExpenseModal} disabled={!subActive}>Gider Ekle</button>
+        <div className="sl-aks-dizi">
+          <button className="sl-btn mavi" onClick={satisTamamla} disabled={!subActive}>Satışı Tamamla</button>
+          <button className="sl-btn cizgi" onClick={gelirModalAc} disabled={!subActive}>Gelir Ekle</button>
+          <button className="sl-btn cizgi" onClick={giderModalAc} disabled={!subActive}>Gider Ekle</button>
         </div>
 
-        <hr className="divider" />
+        <hr className="sl-hr" />
 
-        <h4 className="section-title">Son 100 Satış</h4>
-        {loading ? <div className="app-loading"><div className="spinner" /><p>Yükleniyor...</p></div> : null}
+        <h4 className="sl-altbaslik">Son 100 Satış</h4>
+        {loading && <div className="sl-yukleme"><div className="sl-spinner" /><p>Yükleniyor...</p></div>}
         {salesList.length === 0 ? (
-          <div className="muted-sub">Satış kaydı yok.</div>
+          <div className="sl-mini">Satış kaydı yok.</div>
         ) : (
-          <div className="recent-list">
+          <div className="sl-recent">
             {salesList.map((s) => {
               const items = Array.isArray(s.items) ? s.items : [];
               const total = Number(s.totals?.total ?? 0);
               return (
-                <div key={s.id} className="recent-item card">
+                <div key={s.id} className="sl-recent-kart">
                   <div>
-                    <div className="recent-type">{saleTypeLabel(s.saleType)}</div>
-                    <div className="muted-sub">{s.createdAt ? new Date(s.createdAt).toLocaleString() : "—"}</div>
-                    <div className="muted-sub recent-items">{items.map((it) => `${it.name} (${Number(it.price || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}) x${it.qty}`).join(", ")}</div>
+                    <div className="sl-kalin">{saleTypeLabel(s.saleType)}</div>
+                    <div className="sl-mini">{s.createdAt ? new Date(s.createdAt).toLocaleString() : "—"}</div>
+                    <div className="sl-mini">{items.map((it) => `${it.name} (${Number(it.price || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}) x${it.qty}`).join(", ")}</div>
                   </div>
-                  <div className="recent-actions">
-                    <div className="recent-amount">{total.toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</div>
-                    <button className="btn btn-ghost" onClick={() => openEditSale(s)} disabled={!subActive}>Düzenle</button>
-                    <button className="btn btn-danger" onClick={() => confirmDeleteSale(s)} disabled={!subActive}>Sil</button>
+                  <div className="sl-recent-aks">
+                    <div className="sl-kalin">{total.toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</div>
+                    <button className="sl-btn cizgi" onClick={() => satisDuzenleAc(s)} disabled={!subActive}>Düzenle</button>
+                    <button className="sl-btn kirmizi" onClick={() => satisSilIste(s)} disabled={!subActive}>Sil</button>
                   </div>
                 </div>
               );
@@ -427,77 +411,73 @@ export default function Sales() {
         )}
       </aside>
 
-      {/* Edit modal */}
       {editingSale && (
-        <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Satışı düzenle">
-          <div className="modal-card">
-            <div className="modal-header">
-              <h4 className="modal-title">Satışı Düzenle</h4>
-              <button className="btn btn-ghost" onClick={() => setEditingSale(null)}>Kapat</button>
+        <div className="sl-modal-kaplama" role="dialog" aria-modal="true" aria-label="Satışı düzenle">
+          <div className="sl-modal">
+            <div className="sl-modal-baslik">
+              <h4>Satışı Düzenle</h4>
+              <button className="sl-btn cizgi" onClick={() => setEditingSale(null)}>Kapat</button>
             </div>
 
-            <div className="modal-body">
-              <label className="input-label">Satış Türü</label>
-              <select value={editingSale.saleType} onChange={(e) => setEditingSale((s) => ({ ...s, saleType: e.target.value }))} className="auth-input">
+            <div className="sl-modal-icerik">
+              <label className="sl-etiket">Satış Türü</label>
+              <select value={editingSale.saleType} onChange={(e) => setEditingSale((s) => ({ ...s, saleType: e.target.value }))} className="sl-input">
                 <option value="cash">Nakit</option>
                 <option value="credit">Veresiye</option>
               </select>
 
-              <label className="input-label">Toplam (TL)</label>
-              <input type="number" value={editingSale.total} onChange={(e) => setEditingSale((s) => ({ ...s, total: parseFloat(e.target.value || 0) }))} className="auth-input" />
+              <label className="sl-etiket">Toplam (TL)</label>
+              <input type="number" value={editingSale.total} onChange={(e) => setEditingSale((s) => ({ ...s, total: parseFloat(e.target.value || 0) }))} className="sl-input" />
 
-              <div className="modal-actions">
-                <button className="btn btn-primary" onClick={saveEditSale} disabled={!subActive}>Kaydet</button>
-                <button className="btn btn-ghost" onClick={() => setEditingSale(null)}>İptal</button>
+              <div className="sl-modal-aks">
+                <button className="sl-btn mavi" onClick={satisDuzenleKaydet} disabled={!subActive}>Kaydet</button>
+                <button className="sl-btn cizgi" onClick={() => setEditingSale(null)}>İptal</button>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Confirm delete */}
       {confirmDelete && (
-        <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Silme onayı">
-          <div className="modal-card small">
-            <h4 className="modal-title">Silme Onayı</h4>
-            <div className="modal-text">Kaydı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.</div>
-            <div className="modal-actions">
-              <button className="btn btn-danger" onClick={performDeleteSale} disabled={!subActive}>Evet, Sil</button>
-              <button className="btn btn-ghost" onClick={() => setConfirmDelete(null)}>İptal</button>
+        <div className="sl-modal-kaplama" role="dialog" aria-modal="true" aria-label="Silme onayı">
+          <div className="sl-modal kucuk">
+            <h4>Silme Onayı</h4>
+            <div className="sl-mini">Kaydı silmek istediğinize emin misiniz?</div>
+            <div className="sl-modal-aks">
+              <button className="sl-btn kirmizi" onClick={satisSilGercek} disabled={!subActive}>Evet, Sil</button>
+              <button className="sl-btn cizgi" onClick={() => setConfirmDelete(null)}>İptal</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Income modal */}
       {showIncomeModal && (
-        <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Gelir ekle">
-          <div className="modal-card small">
-            <h4 className="modal-title">Gelir Ekle</h4>
-            <label className="input-label">Tutar</label>
-            <input value={incomeAmount} onChange={(e) => setIncomeAmount(e.target.value)} className="auth-input" />
-            <label className="input-label">Açıklama</label>
-            <input value={incomeDesc} onChange={(e) => setIncomeDesc(e.target.value)} className="auth-input" />
-            <div className="modal-actions">
-              <button className="btn btn-primary" onClick={submitIncome} disabled={!subActive}>Kaydet</button>
-              <button className="btn btn-ghost" onClick={() => setShowIncomeModal(false)}>İptal</button>
+        <div className="sl-modal-kaplama" role="dialog" aria-modal="true" aria-label="Gelir ekle">
+          <div className="sl-modal kucuk">
+            <h4>Gelir Ekle</h4>
+            <label className="sl-etiket">Tutar</label>
+            <input value={incomeAmount} onChange={(e) => setIncomeAmount(e.target.value)} className="sl-input" />
+            <label className="sl-etiket">Açıklama</label>
+            <input value={incomeDesc} onChange={(e) => setIncomeDesc(e.target.value)} className="sl-input" />
+            <div className="sl-modal-aks">
+              <button className="sl-btn mavi" onClick={gelirKaydet} disabled={!subActive}>Kaydet</button>
+              <button className="sl-btn cizgi" onClick={() => setShowIncomeModal(false)}>İptal</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Expense modal */}
       {showExpenseModal && (
-        <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Gider ekle">
-          <div className="modal-card small">
-            <h4 className="modal-title">Gider Ekle</h4>
-            <label className="input-label">Tutar</label>
-            <input value={expenseAmount} onChange={(e) => setExpenseAmount(e.target.value)} className="auth-input" />
-            <label className="input-label">Açıklama</label>
-            <input value={expenseDesc} onChange={(e) => setExpenseDesc(e.target.value)} className="auth-input" />
-            <div className="modal-actions">
-              <button className="btn btn-primary" onClick={submitExpense} disabled={!subActive}>Kaydet</button>
-              <button className="btn btn-ghost" onClick={() => setShowExpenseModal(false)}>İptal</button>
+        <div className="sl-modal-kaplama" role="dialog" aria-modal="true" aria-label="Gider ekle">
+          <div className="sl-modal kucuk">
+            <h4>Gider Ekle</h4>
+            <label className="sl-etiket">Tutar</label>
+            <input value={expenseAmount} onChange={(e) => setExpenseAmount(e.target.value)} className="sl-input" />
+            <label className="sl-etiket">Açıklama</label>
+            <input value={expenseDesc} onChange={(e) => setExpenseDesc(e.target.value)} className="sl-input" />
+            <div className="sl-modal-aks">
+              <button className="sl-btn mavi" onClick={giderKaydet} disabled={!subActive}>Kaydet</button>
+              <button className="sl-btn cizgi" onClick={() => setShowExpenseModal(false)}>İptal</button>
             </div>
           </div>
         </div>
