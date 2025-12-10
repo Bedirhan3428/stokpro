@@ -1,108 +1,53 @@
-:root {
-  --sc-mavi: #1f6feb;
-  --sc-mavi-acik: #e9f2ff;
-  --sc-kirmizi: #e74646;
-  --sc-beyaz: #ffffff;
-}
-
-.scanner-kapsul {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  background: linear-gradient(180deg, #f7faff 0%, #eef3fb 100%);
-  padding: 12px;
-  border-radius: 14px;
-  border: 1px solid #dbe5f5;
-}
-
-.scanner-icerik {
+.page-barcode-scanner {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.scanner-kontrol {
+.scanner-controls {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  gap: 8px;
 }
 
-.scanner-btn {
-  border: none;
+.scanner-note {
+  color: #64748b;
+}
+
+.video-wrap {
+  width: 100%;
+  border: 1px solid #e2e8f0;
   border-radius: 12px;
-  padding: 10px 14px;
-  font-weight: 700;
-  cursor: pointer;
-  color: #fff;
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
-}
-.scanner-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.14);
-}
-.scanner-btn.mavi {
-  background: linear-gradient(135deg, var(--sc-mavi), #4a8df5);
-}
-.scanner-btn.kirmizi {
-  background: linear-gradient(135deg, #f97373, var(--sc-kirmizi));
-}
-
-.scanner-not {
-  color: #5f6b7a;
-  font-size: 14px;
-}
-
-.scanner-video {
-  width: 100%;
-  border-radius: 14px;
   overflow: hidden;
-  border: 1px solid #dbe5f5;
-  background: #000;
-  box-shadow: 0 12px 24px rgba(14, 51, 120, 0.16);
+  background: #0f172a;
+  aspect-ratio: 4 / 3;
 }
 
-.scanner-goruntu {
+.video-preview {
   width: 100%;
-  height: 240px;
-  object-fit: cover;
-  background: #000;
+  height: 100%;
 }
 
-.scanner-geri {
-  color: var(--sc-mavi);
-  font-weight: 700;
+.manual-wrap {
+  border: 1px dashed #cbd5e1;
+  padding: 12px;
+  border-radius: 12px;
+  background: #f8fafc;
 }
 
-.scanner-manuel {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.manual-note {
+  color: #475569;
+  margin-bottom: 6px;
 }
 
-.scanner-manuel-satir {
+.manual-entry {
   display: flex;
   gap: 8px;
-  flex-wrap: wrap;
 }
 
-.scanner-input {
+.manual-input {
   flex: 1;
-  min-width: 160px;
   padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid #dbe5f5;
-  background: var(--sc-beyaz);
-  outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-.scanner-input:focus {
-  border-color: var(--sc-mavi);
-  box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.18);
-}
-
-@media (max-width: 640px) {
-  .scanner-goruntu {
-    height: 200px;
-  }
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
 }

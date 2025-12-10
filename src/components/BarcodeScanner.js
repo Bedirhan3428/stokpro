@@ -1,115 +1,161 @@
 import "../styles/BarcodeScanner.css";
 import React, { useEffect, useRef, useState } from "react";
+// @zxing/library kütüphanesini import ediyoruz
+import {
+  BrowserMultiFormatReader,
+  DecodeHintType,
+  BarcodeFormat,
+  NotFoundException,
+} from "@zxing/library";
+
+// Zxing'in desteklediği formatlar
+const DECODER_FORMATS = [
+  BarcodeFormat.EAN_13,
+  BarcodeFormat.EAN_8,
+  BarcodeFormat.CODE_128,
+  BarcodeFormat.UPC_A,
+  BarcodeFormat.UPC_E,
+  BarcodeFormat.CODE_39,
+  BarcodeFormat.QR_CODE,
+];
 
 export default function BarcodeScanner({ onDetected }) {
-  const [supported, setSupported] = useState(false);
-  const [scanning, setScanning] = useState(false);
-  const [manual, setManual] = useState("");
-  const [feedback, setFeedback] = useState("");
+  const [destekli, setDestekli] = useState(false);
+  const [tarama, setTarama] = useState(false);
+  const [manuel, setManuel] = useState("");
+  const [izinHatasi, setIzinHatasi] = useState("");
+
   const videoRef = useRef(null);
-  const detectorRef = useRef(null);
-  const lastCodeRef = useRef(null);
-  const rafRef = useRef(null);
+  const codeReaderRef = useRef(null);
+  const manualStop = useRef(false);
+  const restartTimer = useRef(null);
+  const lastCodeRef = useRef({ code: null, ts: 0 });
 
   useEffect(() => {
-    if (window.BarcodeDetector) {
-      setSupported(true);
-      try {
-        detectorRef.current = new window.BarcodeDetector({
-          formats: ["ean_13", "ean_8", "code_128", "qr_code"]
-        });
-      } catch {
-        detectorRef.current = null;
-      }
-    } else {
-      setSupported(false);
-    }
-    return () => stopCamera();
+    setDestekli(typeof navigator !== "undefined" && !!navigator.mediaDevices);
+    
+    const hints = new Map();
+    hints.set(DecodeHintType.POSSIBLE_FORMATS, DECODER_FORMATS);
+    codeReaderRef.current = new BrowserMultiFormatReader(hints);
+
+    return () => stopZxing(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function startCamera() {
-    if (!navigator.mediaDevices || !videoRef.current) return;
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
-      videoRef.current.srcObject = stream;
-      await videoRef.current.play();
-      setScanning(true);
-      lastCodeRef.current = null;
-      tick();
-    } catch (err) {
-      setFeedback("Kamera açılamadı.");
-      setScanning(false);
+  function clearTimers() {
+    if (restartTimer.current) {
+      clearTimeout(restartTimer.current);
+      restartTimer.current = null;
     }
   }
 
-  function stopCamera() {
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    if (videoRef.current && videoRef.current.srcObject) {
-      const tracks = videoRef.current.srcObject.getTracks();
-      tracks.forEach((t) => t.stop());
-      videoRef.current.srcObject = null;
+  function stopZxing(fullStop = true) {
+    clearTimers();
+    if (codeReaderRef.current) {
+      codeReaderRef.current.reset();
+      console.log("Zxing tarayıcı durduruldu.");
     }
-    setScanning(false);
+    if (fullStop) setTarama(false);
   }
 
-  async function tick() {
-    if (!detectorRef.current || !videoRef.current || videoRef.current.readyState < 2 || !scanning) {
-      if (scanning) rafRef.current = requestAnimationFrame(tick);
-      return;
+  function onZxingDetected(code) {
+    if (manualStop.current) return;
+    
+    const now = Date.now();
+    // Aynı kodu çok hızlı tekrar okumayı engelle (spam koruması)
+    if (lastCodeRef.current.code === code && now - lastCodeRef.current.ts < 1000) return;
+    lastCodeRef.current = { code, ts: now };
+
+    // Üst bileşene kodu gönder ve sonucu al
+    const basarili = onDetected?.(code);
+
+    if (basarili) {
+      // SADECE ürün sepete eklendiyse kamerayı durdur ve 1 sn bekle
+      stopZxing(false);
+      restartTimer.current = setTimeout(() => {
+        if (!manualStop.current) startZxing();
+      }, 1000);
+    } else {
+      console.log("Ürün bulunamadı, tarama devam ediyor...");
     }
+  }
+
+  async function startZxing() {
+    if (!destekli || tarama) return;
+    
+    manualStop.current = false;
+    setTarama(true);
+    setIzinHatasi("");
+
     try {
-      const detections = await detectorRef.current.detect(videoRef.current);
-      if (detections && detections.length) {
-        const code = detections[0].rawValue;
-        if (code && code !== lastCodeRef.current) {
-          lastCodeRef.current = code;
-          setFeedback(`Bulundu: ${code}`);
-          onDetected(code);
-          // küçük gecikme ile tekrar taramaya devam et
-          setTimeout(() => {
-            if (scanning) rafRef.current = requestAnimationFrame(tick);
-          }, 350);
-          return;
+      if (!videoRef.current) throw new Error("Video elementi bulunamadı.");
+      
+      await codeReaderRef.current.decodeFromVideoDevice(
+        null, 
+        videoRef.current, 
+        (result, err) => {
+          if (result) {
+            onZxingDetected(result.getText());
+          }
+          if (err && !(err instanceof NotFoundException)) {
+            console.error("Zxing tarama hatası:", err);
+            // Kritik olmayan hatalarda durdurmuyoruz
+          }
         }
-      }
-    } catch {
-      // ignore
+      );
+      console.log("Zxing tarama başlatıldı.");
+    } catch (err) {
+      console.error("Zxing başlatma hatası", err);
+      setIzinHatasi(err?.message || "Kamera başlatılamadı.");
+      setTarama(false);
     }
-    if (scanning) rafRef.current = requestAnimationFrame(tick);
+  }
+
+  function toggleScan() {
+    if (tarama) {
+      manualStop.current = true;
+      stopZxing(true);
+    } else {
+      startZxing();
+    }
   }
 
   return (
-    <div className="scanner-kapsul">
-      {supported ? (
-        <div className="scanner-icerik">
-          <div className="scanner-kontrol">
-            <button className={`scanner-btn ${scanning ? "kirmizi" : "mavi"}`} onClick={() => (scanning ? stopCamera() : startCamera())}>
-              {scanning ? "Taramayı Durdur" : "Kamera ile Tara"}
+    <div className="page-barcode-scanner">
+      {destekli ? (
+        <div>
+          <div className="scanner-controls">
+            <button className="btn btn-ghost" onClick={toggleScan}>
+              {tarama ? "Taramayı Durdur" : "Kamera ile tara"}
             </button>
-            <div className="scanner-not">Kamera destekliyorsa barkod otomatik algılanır.</div>
+            <small className="scanner-note">
+              Ürün bulununca 1 sn duraklar. Bulunamazsa taramaya devam eder.
+            </small>
           </div>
+          {izinHatasi && <div className="scanner-error" role="alert">{izinHatasi}</div>}
 
-          <div className="scanner-video">
-            <video ref={videoRef} className="scanner-goruntu" />
+          {/* Kamera önizlemesi yalnızca tarama açıkken yer kaplar */}
+          <div className="video-wrap" style={{ display: tarama ? "block" : "none" }}>
+            <video ref={videoRef} className="video-preview" />
+            {tarama && <div className="scanner-focus-area"></div>}
           </div>
-          {feedback && <div className="scanner-geri">{feedback}</div>}
         </div>
       ) : (
-        <div className="scanner-manuel">
-          <div className="scanner-not">Tarayıcı barkod API'sini desteklemiyor. Manuel girin.</div>
-          <div className="scanner-manuel-satir">
+        <div className="manual-wrap">
+          <div className="manual-note">Tarayıcı kamera API'sini desteklemiyor. Manuel giriniz.</div>
+          <div className="manual-entry">
             <input
               placeholder="Barkod girin"
-              value={manual}
-              onChange={(e) => setManual(e.target.value)}
-              className="scanner-input"
+              value={manuel}
+              onChange={(e) => setManuel(e.target.value)}
+              className="manual-input"
             />
             <button
-              className="scanner-btn mavi"
+              className="btn btn-primary"
               onClick={() => {
-                if (manual.trim()) onDetected(manual.trim());
-                setManual("");
+                const code = (manuel || "").trim();
+                if (code) onDetected?.(code);
+                setManuel("");
               }}
             >
               Ekle
