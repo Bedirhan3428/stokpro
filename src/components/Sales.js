@@ -1,6 +1,6 @@
 import "../styles/Sales.css";
 import React, { useEffect, useMemo, useState } from "react";
-import BarcodeScanner from "../components/BarcodeScanner"; // @zxing/library tabanlı
+import BarcodeScanner from "../components/BarcodeScanner"; 
 import { listProductsForCurrentUser } from "../utils/artifactUserProducts";
 import {
   listCustomers,
@@ -57,6 +57,9 @@ export default function Sales() {
   const [salesList, setSalesList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [note, setNote] = useState(null);
+
+  // --- KAMERA KONTROL STATE'İ ---
+  const [showCamera, setShowCamera] = useState(false);
 
   const [editingSale, setEditingSale] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
@@ -159,32 +162,21 @@ export default function Sales() {
     });
   }
 
-  // GÜNCELLENEN FONKSİYON: Daha esnek barkod eşleştirme + sepete eklenince uyarı
   function barkodlaEkle(rawCode) {
     const code = norm(rawCode);
     if (!code) return false;
+    
+    // Tarama yapıldığında kamerayı kapat (opsiyonel, seri okuma için bu satırı kaldırabilirsiniz)
+    // setShowCamera(false); 
 
-    console.log("Taranan Barkod:", code);
-
-    // Eşleştirme Mantığı:
-    // 1. Tam eşleşme
-    // 2. Başındaki sıfırları atarak eşleşme (Örn: veritabanı '0123', tarama '123')
-    // 3. İçerme kontrolü (Örn: EAN-13 başındaki 0 farkı için)
     const match = products.find((x) => {
       const bc = norm(x.barcode);
       if (!bc) return false;
-
-      // Tam eşleşme
       if (bc === code) return true;
-
-      // Sadece rakamlara indirgeyip 0'ları atarak kontrol
       if (normDigits(bc) === normDigits(code)) return true;
-
-      // Barkod uzunsa ve diğerini içeriyorsa (en az 6 karakterli ise hata payını düşürmek için)
       if (bc.length > 6 && code.length > 6) {
         if (bc.includes(code) || code.includes(bc)) return true;
       }
-
       return false;
     });
 
@@ -194,13 +186,19 @@ export default function Sales() {
       setScanResult(msg);
       bildir({ type: "success", title: "Sepete eklendi", message: msg });
       setTimeout(() => setScanResult(""), 3000);
-      return true; // ürün sepete eklendi
+      return true; 
     } else {
       setScanResult(`Bulunamadı: ${code}`);
       bildir({ type: "error", title: "Eşleşme yok", message: `Sistemde kayıtlı değil: ${code}` });
       setTimeout(() => setScanResult(""), 3000);
-      return false; // ürün bulunamadı, kamera açık kalmalı
+      return false; 
     }
+  }
+
+  // --- KAMERA AÇ/KAPAT FONKSİYONU ---
+  function toggleCamera() {
+    setShowCamera((prev) => !prev);
+    setScanResult(""); // Kamera açılıp kapandığında eski mesajı temizle
   }
 
   async function satisTamamla() {
@@ -324,11 +322,25 @@ export default function Sales() {
         </div>
       )}
 
+      {/* --- SOL TARA (Hızlı Satış Alanı) --- */}
       <section className="sl-kart sl-hizli">
         <h3 className="sl-baslik">Satış (Hızlı)</h3>
 
-        {/* Yeni Zxing tabanlı barkod tarayıcı bileşeni */}
-        <BarcodeScanner onDetected={(code) => barkodlaEkle(code)} />
+        {/* KAMERA AÇ/KAPAT BUTONU: En üstte sabit */}
+        <button 
+          className={`sl-btn ${showCamera ? "kirmizi" : "mavi"}`} 
+          onClick={toggleCamera} 
+          style={{ width: '100%', marginBottom: '10px' }}
+        >
+          {showCamera ? "Kamerayı Kapat" : "Barkod Tara (Kamerayı Aç)"}
+        </button>
+
+        {/* KAMERA ALANI: Sadece showCamera true ise görünür */}
+        {showCamera && (
+          <div className="sl-kamera-kapsayici">
+            <BarcodeScanner onDetected={(code) => barkodlaEkle(code)} />
+          </div>
+        )}
 
         {scanResult && <div className="sl-info">{scanResult}</div>}
 
@@ -341,20 +353,20 @@ export default function Sales() {
           />
         </div>
 
+        {/* ÜRÜN LİSTESİ */}
         <h4 className="sl-altbaslik">Ürünler</h4>
         <div className="sl-urun-grid">
           {filteredProducts.map((p) => (
             <div key={p.id} className="sl-urun">
               <div>
-                <div className="sl-urun-ad">
-                  {p.name} <small className="sl-kat">{p.category}</small>
-                </div>
-                <div className="sl-urun-alt">Stok: {p.stock} • Barkod: {p.barcode || "—"}</div>
+                <div className="sl-urun-ad">{p.name}</div>
+                <small className="sl-kat">{p.category || "Kategorisiz"}</small>
+                <div className="sl-urun-alt">Stok: {p.stock} • {p.barcode || "—"}</div>
               </div>
               <div className="sl-urun-aks">
                 <div className="sl-fiyat">{Number(p.price || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</div>
                 <button className="sl-btn mavi" onClick={() => sepeteEkle(p, 1)} disabled={!subActive}>
-                  Sepete Ekle
+                  Ekle
                 </button>
               </div>
             </div>
@@ -363,32 +375,36 @@ export default function Sales() {
         </div>
       </section>
 
+      {/* --- SAĞ TARA (Sepet ve Geçmiş) --- */}
       <aside className="sl-kart sl-sepet">
         <h3 className="sl-baslik">Sepet</h3>
-        {cart.length === 0 && <div className="sl-mini">Sepet boş</div>}
-        {cart.map((it) => (
-          <div key={it.productId} className="sl-sepet-satir">
-            <div>
-              <div className="sl-sepet-ad">{it.name}</div>
-              <div className="sl-mini">
-                {Number(it.price).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })} x {it.qty}
+        
+        <div className="sl-sepet-liste">
+          {cart.length === 0 && <div className="sl-mini">Sepet boş</div>}
+          {cart.map((it) => (
+            <div key={it.productId} className="sl-sepet-satir">
+              <div>
+                <div className="sl-sepet-ad">{it.name}</div>
+                <div className="sl-mini">
+                  {Number(it.price).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })} x {it.qty}
+                </div>
+              </div>
+              <div className="sl-sepet-aks">
+                <input
+                  type="number"
+                  min="1"
+                  value={it.qty}
+                  onChange={(e) => miktarDegis(it.productId, parseInt(e.target.value || 1, 10))}
+                  className="sl-input kucuk"
+                  disabled={!subActive}
+                />
+                <button className="sl-btn cizgi" onClick={() => sepettenSil(it.productId)} disabled={!subActive}>
+                  Sil
+                </button>
               </div>
             </div>
-            <div className="sl-sepet-aks">
-              <input
-                type="number"
-                min="1"
-                value={it.qty}
-                onChange={(e) => miktarDegis(it.productId, parseInt(e.target.value || 1, 10))}
-                className="sl-input kucuk"
-                disabled={!subActive}
-              />
-              <button className="sl-btn cizgi" onClick={() => sepettenSil(it.productId)} disabled={!subActive}>
-                Kaldır
-              </button>
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
 
         <div className="sl-toplam">
           <div>Toplam</div>
@@ -417,37 +433,26 @@ export default function Sales() {
                   </option>
                 ))}
               </select>
-              <div className="sl-mini">Yeni müşteri eklemek için Müşteriler bölümüne gidin.</div>
             </div>
           )}
         </div>
 
         <div className="sl-aks-dizi">
-          <button className="sl-btn mavi" onClick={satisTamamla} disabled={!subActive}>
-            Satışı Tamamla
-          </button>
-          <button className="sl-btn cizgi" onClick={gelirModalAc} disabled={!subActive}>
-            Gelir Ekle
-          </button>
-          <button className="sl-btn cizgi" onClick={giderModalAc} disabled={!subActive}>
-            Gider Ekle
-          </button>
+          <button className="sl-btn mavi" onClick={satisTamamla} disabled={!subActive}>Satışı Tamamla</button>
+          <button className="sl-btn cizgi" onClick={gelirModalAc} disabled={!subActive}>Gelir Ekle</button>
+          <button className="sl-btn cizgi" onClick={giderModalAc} disabled={!subActive}>Gider Ekle</button>
         </div>
 
         <hr className="sl-hr" />
 
-        <h4 className="sl-altbaslik">Son 100 Satış</h4>
-        {loading && (
-          <div className="sl-yukleme">
-            <div className="sl-spinner" />
-            <p>Yükleniyor...</p>
-          </div>
-        )}
-        {salesList.length === 0 ? (
-          <div className="sl-mini">Satış kaydı yok.</div>
-        ) : (
-          <div className="sl-recent">
-            {salesList.map((s) => {
+        <h4 className="sl-altbaslik">Son Satışlar</h4>
+        {loading && <div className="sl-yukleme"><div className="sl-spinner" /><p>Yükleniyor...</p></div>}
+        
+        <div className="sl-recent">
+          {salesList.length === 0 ? (
+            <div className="sl-mini">Satış kaydı yok.</div>
+          ) : (
+             salesList.map((s) => {
               const items = Array.isArray(s.items) ? s.items : [];
               const total = Number(s.totals?.total ?? 0);
               return (
@@ -456,59 +461,40 @@ export default function Sales() {
                     <div className="sl-kalin">{saleTypeLabel(s.saleType)}</div>
                     <div className="sl-mini">{s.createdAt ? new Date(s.createdAt).toLocaleString() : "—"}</div>
                     <div className="sl-mini">
-                      {items
-                        .map((it) => `${it.name} (${Number(it.price || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}) x${it.qty}`)
-                        .join(", ")}
+                      {items.map((it) => `${it.name} x${it.qty}`).join(", ")}
                     </div>
                   </div>
                   <div className="sl-recent-aks">
                     <div className="sl-kalin">{total.toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</div>
-                    <button className="sl-btn cizgi" onClick={() => satisDuzenleAc(s)} disabled={!subActive}>
-                      Düzenle
-                    </button>
-                    <button className="sl-btn kirmizi" onClick={() => satisSilIste(s)} disabled={!subActive}>
-                      Sil
-                    </button>
+                    <button className="sl-btn cizgi" onClick={() => satisDuzenleAc(s)} disabled={!subActive}>Düzenle</button>
+                    <button className="sl-btn kirmizi" onClick={() => satisSilIste(s)} disabled={!subActive}>Sil</button>
                   </div>
                 </div>
               );
-            })}
-          </div>
-        )}
+            })
+          )}
+        </div>
       </aside>
 
+      {/* MODALLAR AYNEN KALDI */}
       {editingSale && (
         <div className="sl-modal-kaplama" role="dialog" aria-modal="true" aria-label="Satışı düzenle">
           <div className="sl-modal">
             <div className="sl-modal-baslik">
               <h4>Satışı Düzenle</h4>
-              <button className="sl-btn cizgi" onClick={() => setEditingSale(null)}>
-                Kapat
-              </button>
+              <button className="sl-btn cizgi" onClick={() => setEditingSale(null)}>Kapat</button>
             </div>
-
             <div className="sl-modal-icerik">
               <label className="sl-etiket">Satış Türü</label>
               <select value={editingSale.saleType} onChange={(e) => setEditingSale((s) => ({ ...s, saleType: e.target.value }))} className="sl-input">
                 <option value="cash">Nakit</option>
                 <option value="credit">Veresiye</option>
               </select>
-
               <label className="sl-etiket">Toplam (TL)</label>
-              <input
-                type="number"
-                value={editingSale.total}
-                onChange={(e) => setEditingSale((s) => ({ ...s, total: parseFloat(e.target.value || 0) }))}
-                className="sl-input"
-              />
-
+              <input type="number" value={editingSale.total} onChange={(e) => setEditingSale((s) => ({ ...s, total: parseFloat(e.target.value || 0) }))} className="sl-input" />
               <div className="sl-modal-aks">
-                <button className="sl-btn mavi" onClick={satisDuzenleKaydet} disabled={!subActive}>
-                  Kaydet
-                </button>
-                <button className="sl-btn cizgi" onClick={() => setEditingSale(null)}>
-                  İptal
-                </button>
+                <button className="sl-btn mavi" onClick={satisDuzenleKaydet} disabled={!subActive}>Kaydet</button>
+                <button className="sl-btn cizgi" onClick={() => setEditingSale(null)}>İptal</button>
               </div>
             </div>
           </div>
@@ -521,12 +507,8 @@ export default function Sales() {
             <h4>Silme Onayı</h4>
             <div className="sl-mini">Kaydı silmek istediğinize emin misiniz?</div>
             <div className="sl-modal-aks">
-              <button className="sl-btn kirmizi" onClick={satisSilGercek} disabled={!subActive}>
-                Evet, Sil
-              </button>
-              <button className="sl-btn cizgi" onClick={() => setConfirmDelete(null)}>
-                İptal
-              </button>
+              <button className="sl-btn kirmizi" onClick={satisSilGercek} disabled={!subActive}>Evet, Sil</button>
+              <button className="sl-btn cizgi" onClick={() => setConfirmDelete(null)}>İptal</button>
             </div>
           </div>
         </div>
@@ -541,12 +523,8 @@ export default function Sales() {
             <label className="sl-etiket">Açıklama</label>
             <input value={incomeDesc} onChange={(e) => setIncomeDesc(e.target.value)} className="sl-input" />
             <div className="sl-modal-aks">
-              <button className="sl-btn mavi" onClick={gelirKaydet} disabled={!subActive}>
-                Kaydet
-              </button>
-              <button className="sl-btn cizgi" onClick={() => setShowIncomeModal(false)}>
-                İptal
-              </button>
+              <button className="sl-btn mavi" onClick={gelirKaydet} disabled={!subActive}>Kaydet</button>
+              <button className="sl-btn cizgi" onClick={() => setShowIncomeModal(false)}>İptal</button>
             </div>
           </div>
         </div>
@@ -561,12 +539,8 @@ export default function Sales() {
             <label className="sl-etiket">Açıklama</label>
             <input value={expenseDesc} onChange={(e) => setExpenseDesc(e.target.value)} className="sl-input" />
             <div className="sl-modal-aks">
-              <button className="sl-btn mavi" onClick={giderKaydet} disabled={!subActive}>
-                Kaydet
-              </button>
-              <button className="sl-btn cizgi" onClick={() => setShowExpenseModal(false)}>
-                İptal
-              </button>
+              <button className="sl-btn mavi" onClick={giderKaydet} disabled={!subActive}>Kaydet</button>
+              <button className="sl-btn cizgi" onClick={() => setShowExpenseModal(false)}>İptal</button>
             </div>
           </div>
         </div>

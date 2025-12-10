@@ -10,76 +10,103 @@
   box-sizing: border-box;
 }
 
+/* Animasyon Tanımları */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .pf-form {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 16px; /* Boşluk artırıldı */
   background: var(--pf-beyaz);
   border: 1px solid #dbe3f3;
-  padding: 14px;
-  border-radius: 14px;
+  padding: 24px; /* Padding artırıldı (daha geniş alan) */
+  border-radius: 16px;
   box-shadow: 0 12px 30px rgba(31, 111, 235, 0.12);
   font-family: "Inter", system-ui, sans-serif;
+  
+  /* Giriş Animasyonu */
+  animation: fadeInUp 0.6s ease-out;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.pf-form:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 35px rgba(31, 111, 235, 0.16);
 }
 
 .pf-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); /* Kolon genişliği artırıldı */
+  gap: 16px;
 }
 
 .pf-satir {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px; /* Etiket ve input arası boşluk artırıldı */
 }
 
 .pf-etiket {
   font-weight: 700;
   color: #0f172a;
+  font-size: 15px; /* Font büyütüldü */
 }
 
 .pf-input {
-  padding: 11px 12px;
+  padding: 14px 16px; /* Input içi boşluk artırıldı (Büyük alan isteği) */
   border-radius: 12px;
   border: 1px solid #dbe3f3;
   background: #fdfefe;
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-  font-size: 15px;
+  transition: all 0.2s ease;
+  font-size: 16px; /* Yazı boyutu artırıldı */
 }
 
 .pf-input:focus {
   border-color: var(--pf-mavi);
-  box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.14);
+  box-shadow: 0 0 0 4px rgba(31, 111, 235, 0.14); /* Gölge efekti genişletildi */
+  background: #fff;
+  transform: translateY(-1px);
 }
 
 .pf-hata {
-  background: #fff2f2;
-  border: 1px solid #f7c5c5;
-  color: #b91c1c;
-  padding: 10px 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  padding: 12px 16px;
   border-radius: 12px;
+  font-size: 14px;
+  animation: fadeInUp 0.3s ease-out;
 }
 
 .pf-aks {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
+  margin-top: 8px;
 }
 
 .pf-btn {
   border: none;
   border-radius: 12px;
-  padding: 12px 14px;
+  padding: 14px 20px; /* Butonlar büyütüldü */
   font-weight: 800;
   cursor: pointer;
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  font-size: 15px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
 }
 
 .pf-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 12px 22px rgba(15, 23, 42, 0.12);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.15);
+  filter: brightness(1.05);
+}
+
+.pf-btn:active {
+  transform: translateY(0);
 }
 
 .pf-btn.mavi {
@@ -88,7 +115,11 @@
 }
 
 .pf-btn.cizgi {
-  background: #f5f7fb;
+  background: #f8fafc;
   color: #0f172a;
-  border: 1px solid #dbe3f3;
+  border: 1px solid #cbd5e1;
+}
+.pf-btn.cizgi:hover {
+  background: #fff;
+  border-color: var(--pf-mavi);
 }

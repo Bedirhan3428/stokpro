@@ -1,4 +1,4 @@
-import "../styles/Home.css";
+import "../styles/Home.css"; // Yeni CSS dosyasını import ediyoruz
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { getAuth } from "firebase/auth";
@@ -14,12 +14,17 @@ export default function Home() {
       <div className="home-kart">
         <h1 className="home-baslik">StokPro</h1>
         <p className="home-alt">
-          Basit, hızlı ve güvenilir stok yönetimi — satış, barkod, veresiye ve muhasebe entegrasyonu.
+          İşletmeniz için basit, hızlı ve güvenilir stok yönetimi. 
+          Satış, barkod, veresiye ve muhasebe işlemlerini tek bir yerden yönetin.
         </p>
 
         <div className="home-cta">
-          <button className="home-btn" onClick={() => nav(user ? "/dashboard" : "/register")}>
-            Hemen Başla
+          <button 
+            className="home-btn" 
+            onClick={() => nav(user ? "/dashboard" : "/register")}
+            aria-label="Hemen Başla"
+          >
+            {user ? "Panele Git" : "Hemen Başla"}
           </button>
         </div>
 

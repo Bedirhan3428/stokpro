@@ -1,4 +1,4 @@
-import "../styles/Products.css";
+import "../styles/Products.css"; // CSS dosya adınızın doğru olduğundan emin olun
 import React, { useEffect, useState } from "react";
 import {
   listProductsForCurrentUser,
@@ -23,11 +23,15 @@ export default function Products() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Form State
   const [name, setName] = useState("");
   const [barcode, setBarcode] = useState("");
   const [price, setPrice] = useState("");
   const [stock, setStock] = useState("");
   const [category, setCategory] = useState("");
+
+  // Arama State
+  const [searchTerm, setSearchTerm] = useState("");
 
   const [editing, setEditing] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
@@ -59,20 +63,40 @@ export default function Products() {
 
   async function urunEkle() {
     if (!subActive) return bildir({ type: "error", title: "Abonelik gerekli", message: "Ürün eklemek için abonelik gereklidir." });
+    
     const tName = (name || "").trim();
+    const tBarcode = (barcode || "").trim();
+
     if (!tName) return bildir({ type: "error", title: "Eksik bilgi", message: "Ürün ismi gerekli." });
+
+    // --- MÜKERRER KAYIT KONTROLÜ ---
+    const isDuplicate = products.some(p => {
+      // İsim kontrolü (büyük/küçük harf duyarsız)
+      const nameMatch = p.name.toLowerCase() === tName.toLowerCase();
+      // Barkod kontrolü (sadece barkod girildiyse)
+      const barcodeMatch = tBarcode && p.barcode && (p.barcode === tBarcode);
+      
+      return nameMatch || barcodeMatch;
+    });
+
+    if (isDuplicate) {
+      return bildir({ type: "error", title: "Mükerrer Kayıt", message: "Bu isimde veya barkodda bir ürün zaten mevcut." });
+    }
+    // -------------------------------
+
     const payload = {
       name: tName,
-      barcode: (barcode || "").trim() || null,
+      barcode: tBarcode || null,
       price: parseFloat(price || 0) || 0,
       stock: parseInt(stock || 0, 10) || 0,
       category: (category || "").trim() || null
     };
+
     try {
       await addProduct(payload);
       setName(""); setBarcode(""); setPrice(""); setStock(""); setCategory("");
       await yukle();
-      bildir({ type: "success", title: "Eklendi", message: "Ürün eklendi." });
+      bildir({ type: "success", title: "Eklendi", message: "Ürün başarıyla eklendi." });
     } catch (err) {
       bildir({ type: "error", title: "Ekleme Hatası", message: String(err.message || err) });
     }
@@ -93,14 +117,24 @@ export default function Products() {
     if (!editing) return;
     if (!subActive) return bildir({ type: "error", title: "Abonelik gerekli", message: "Ürün güncellemek için abonelik gereklidir." });
     const { id, name: n, barcode: b, price: pr, stock: st, category: cat } = editing;
-    if (!n || !String(n).trim()) return bildir({ type: "error", title: "Eksik bilgi", message: "Ürün ismi gerekli." });
+    
+    const tName = String(n).trim();
+    if (!tName) return bildir({ type: "error", title: "Eksik bilgi", message: "Ürün ismi gerekli." });
+
+    // Düzenleme sırasında da isim çakışması kontrol edilebilir (Opsiyonel, kendi haricinde)
+    const isDuplicate = products.some(p => p.id !== id && p.name.toLowerCase() === tName.toLowerCase());
+    if (isDuplicate) {
+       return bildir({ type: "error", title: "Mükerrer İsim", message: "Bu isimde başka bir ürün zaten var." });
+    }
+
     const updates = {
-      name: String(n).trim(),
+      name: tName,
       barcode: b ? String(b).trim() : null,
       price: Number(pr || 0),
       stock: Number(st || 0),
       category: cat ? String(cat).trim() : null
     };
+
     try {
       await updateProduct(id, updates);
       setEditing(null);
@@ -139,6 +173,16 @@ export default function Products() {
     }
   }
 
+  // --- ARAMA FİLTRESİ ---
+  const filteredProducts = products.filter(p => {
+    const term = searchTerm.toLowerCase();
+    const pName = (p.name || "").toLowerCase();
+    const pBarcode = (p.barcode || "").toLowerCase();
+    const pCategory = (p.category || "").toLowerCase();
+    
+    return pName.includes(term) || pBarcode.includes(term) || pCategory.includes(term);
+  });
+
   return (
     <div className="prd-sayfa">
       <Bildirim note={note} />
@@ -150,6 +194,7 @@ export default function Products() {
         </div>
       )}
 
+      {/* ÜRÜN EKLEME ALANI */}
       <div className="prd-kart prd-ekle">
         <h3 className="prd-baslik">Yeni Ürün Ekle</h3>
         <div className="prd-ekle-grid">
@@ -160,18 +205,34 @@ export default function Products() {
           <input placeholder="Kategori" value={category} onChange={(e) => setCategory(e.target.value)} className="prd-input" />
           <button className="prd-btn mavi" onClick={urunEkle} disabled={!subActive}>Ekle</button>
         </div>
-        <div className="prd-mini">En azından ürün adı girilmelidir.</div>
+        <div className="prd-mini">En azından ürün adı girilmelidir. Aynı isim veya barkodla 2. kayıt yapılamaz.</div>
       </div>
 
+      {/* ÜRÜN LİSTESİ ALANI */}
       <div className="prd-kart">
-        <h3 className="prd-baslik">Ürün Listesi</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '10px' }}>
+          <h3 className="prd-baslik" style={{ margin: 0 }}>Ürün Listesi ({filteredProducts.length})</h3>
+          
+          {/* ARAMA INPUT */}
+          <input 
+            type="text" 
+            placeholder="Ara: İsim, Barkod, Kategori..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="prd-input"
+            style={{ width: '250px', padding: '8px 12px' }}
+          />
+        </div>
+
         {loading ? (
           <div className="prd-yukleme"><div className="prd-spinner" /><p>Yükleniyor...</p></div>
-        ) : products.length === 0 ? (
-          <div className="prd-mini">Kayıtlı ürün yok.</div>
+        ) : filteredProducts.length === 0 ? (
+          <div className="prd-mini">
+            {searchTerm ? "Arama kriterlerine uygun ürün bulunamadı." : "Kayıtlı ürün yok."}
+          </div>
         ) : (
           <div className="prd-liste">
-            {products.map((p) => (
+            {filteredProducts.map((p) => (
               <div key={p.id} className="prd-satir">
                 <div className="prd-meta">
                   <div className="prd-isim" title={p.name}>{p.name}</div>
@@ -206,6 +267,7 @@ export default function Products() {
         )}
       </div>
 
+      {/* DÜZENLEME MODALI */}
       {editing && (
         <div className="prd-modal-kaplama" role="dialog" aria-modal="true" aria-label="Ürünü düzenle">
           <div className="prd-modal">
@@ -239,6 +301,7 @@ export default function Products() {
         </div>
       )}
 
+      {/* SİLME ONAY MODALI */}
       {confirmDelete && (
         <div className="prd-modal-kaplama" role="dialog" aria-modal="true" aria-label="Silme onayı">
           <div className="prd-modal kucuk">

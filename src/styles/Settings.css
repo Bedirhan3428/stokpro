@@ -8,99 +8,140 @@
 
 * { box-sizing: border-box; }
 
+/* Animasyon Tanımları */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
 .set-sayfa {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f6f9ff 0%, #eef3fb 100%);
-  padding: 18px;
+  /* background: linear-gradient(180deg, #f6f9ff 0%, #eef3fb 100%); <-- Kaldırıldı */
+  background: transparent;
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
   font-family: "Inter", system-ui, sans-serif;
+  
+  /* Giriş Animasyonu */
+  animation: fadeInUp 0.6s ease-out;
 }
 
 .set-kart {
   background: var(--set-beyaz);
   border-radius: 16px;
-  padding: 16px;
+  padding: 22px; /* Padding artırıldı */
   box-shadow: 0 16px 36px rgba(31, 111, 235, 0.14);
   border: 1px solid #dbe3f3;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.set-baslik { margin: 0 0 10px; color: #0f172a; font-weight: 900; }
+.set-kart:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 40px rgba(31, 111, 235, 0.18);
+}
+
+.set-baslik {
+  margin: 0 0 14px;
+  color: #0f172a;
+  font-weight: 900;
+  font-size: 1.1rem;
+}
 
 .set-bildirim {
-  padding: 10px 12px;
-  border-radius: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
   border: 1px solid #dbe3f3;
+  animation: scaleIn 0.3s ease-out;
 }
-.set-bildirim-baslik { font-weight: 800; }
-.set-bildirim-icerik { color: var(--set-gri); }
+.set-bildirim-baslik { font-weight: 800; font-size: 15px; }
+.set-bildirim-icerik { color: var(--set-gri); margin-top: 4px; font-size: 14px; }
 .set-bildirim.basari { background: #f2fff7; border-color: #c7f3df; }
 .set-bildirim.hata { background: #fff2f2; border-color: #f7c5c5; }
 
-.set-grid { display: flex; flex-direction: column; gap: 12px; }
+.set-grid { display: flex; flex-direction: column; gap: 16px; }
 
-.set-alan { display: flex; flex-direction: column; gap: 6px; }
+.set-alan { display: flex; flex-direction: column; gap: 8px; }
 
-.set-etiket { font-weight: 700; color: #0f172a; }
+.set-etiket { font-weight: 700; color: #0f172a; font-size: 15px; }
 
 .set-input {
-  padding: 11px 12px;
+  padding: 13px 15px; /* Inputlar büyütüldü */
   border-radius: 12px;
   border: 1px solid #dbe3f3;
   background: #fdfefe;
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-  font-size: 15px;
+  transition: all 0.2s ease;
+  font-size: 16px;
 }
-.set-input:focus { border-color: var(--set-mavi); box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.14); }
+.set-input:focus {
+  border-color: var(--set-mavi);
+  box-shadow: 0 0 0 4px rgba(31, 111, 235, 0.14);
+  background: #fff;
+  transform: translateY(-1px);
+}
 
 .set-iki {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
 }
 
 .set-kutu {
   border: 1px solid #e4ebf7;
-  border-radius: 12px;
-  padding: 10px;
+  border-radius: 14px;
+  padding: 14px;
   background: #f9fbff;
+  transition: all 0.2s ease;
+}
+.set-kutu:hover {
+  background: #fff;
+  border-color: var(--set-mavi);
+  transform: scale(1.01);
 }
 
-.set-deger { font-weight: 800; color: #0f172a; }
-.set-ince { color: var(--set-gri); font-weight: 600; }
+.set-deger { font-weight: 800; color: #0f172a; font-size: 16px; }
+.set-ince { color: var(--set-gri); font-weight: 600; font-size: 14px; margin-top: 4px; display: block; }
 
-.set-hr { border: none; border-top: 1px dashed #dbe3f3; }
+.set-hr { border: none; border-top: 2px dashed #e2e8f0; margin: 10px 0; }
 
 .set-buton-satir {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
+  margin-top: 8px;
 }
 
 .set-btn {
   border: none;
   border-radius: 12px;
-  padding: 11px 12px;
+  padding: 13px 16px; /* Butonlar büyütüldü */
   font-weight: 800;
   cursor: pointer;
   transition: transform 0.12s ease, box-shadow 0.12s ease;
+  font-size: 15px;
 }
-.set-btn:hover { transform: translateY(-1px); box-shadow: 0 12px 22px rgba(15, 23, 42, 0.12); }
-.set-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.set-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 22px rgba(15, 23, 42, 0.12); }
+.set-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 .set-btn.mavi { background: linear-gradient(135deg, var(--set-mavi), var(--set-mavi-orta)); color: #fff; }
-.set-btn.cizgi { background: #f5f7fb; color: #0f172a; border: 1px solid #dbe3f3; }
+.set-btn.cizgi { background: #f8fafc; color: #0f172a; border: 1px solid #cbd5e1; }
+.set-btn.cizgi:hover { background: #fff; border-color: var(--set-mavi); }
 
 .set-yukleme {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   color: var(--set-gri);
 }
 .set-spinner {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   border: 3px solid #d7e5ff;
   border-top-color: var(--set-mavi);
@@ -110,4 +151,58 @@
 
 @media (max-width: 720px) {
   .set-sayfa { padding: 14px; }
+}
+
+/* Koyu tema için kart, input, kutu ve metin renkleri */
+:root[data-theme="dark"] .set-kart,
+:root[data-theme="dark"] .set-kutu,
+:root[data-theme="dark"] .set-alan,
+:root[data-theme="dark"] .set-iki,
+:root[data-theme="dark"] .set-bildirim {
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+:root[data-theme="dark"] .set-etiket,
+:root[data-theme="dark"] .set-baslik,
+:root[data-theme="dark"] .set-deger {
+  color: var(--text);
+}
+
+:root[data-theme="dark"] .set-ince,
+:root[data-theme="dark"] .set-bildirim-icerik {
+  color: var(--subtext);
+}
+
+/* Input ve placeholder */
+:root[data-theme="dark"] .set-input {
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+:root[data-theme="dark"] .set-input::placeholder {
+  color: var(--subtext);
+}
+:root[data-theme="dark"] .set-input:focus {
+  background: var(--card);
+  color: var(--text);
+  border-color: var(--set-mavi);
+  box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.18);
+}
+
+/* Buton çizgi ve mavi varyantlar */
+:root[data-theme="dark"] .set-btn.cizgi {
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+:root[data-theme="dark"] .set-btn.mavi {
+  background: linear-gradient(135deg, var(--set-mavi), var(--set-mavi-orta));
+  color: #fff;
+}
+
+/* Ayırıcı çizgi kontrastı */
+:root[data-theme="dark"] .set-hr {
+  border-top: 2px dashed var(--border);
 }

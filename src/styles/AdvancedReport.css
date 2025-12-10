@@ -11,13 +11,26 @@
   box-sizing: border-box;
 }
 
+/* Animasyon Tanımları */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .rapor-kapsul {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  background: linear-gradient(180deg, #f7faff 0%, #eef3fb 100%);
+  /* Arka plan kaldırıldı */
+  background: transparent; 
   padding: 16px;
-  border-radius: 16px;
+  /* Kenarlık da isteğe bağlı kaldırılabilir, burada tuttum ama arka plan şeffaf */
 }
 
 .rapor-baslik-satir {
@@ -26,6 +39,7 @@
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
+  animation: fadeInUp 0.5s ease-out forwards;
 }
 
 .rapor-baslik {
@@ -73,14 +87,14 @@
   padding: 10px 14px;
   font-weight: 700;
   cursor: pointer;
-  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.2s ease;
+  transition: all 0.2s ease;
 }
 .rapor-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 .rapor-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   box-shadow: 0 8px 16px rgba(15, 23, 42, 0.14);
 }
 .rapor-btn.primary {
@@ -106,12 +120,20 @@
   gap: 14px;
 }
 
+/* Kartlara animasyon ve hover efektleri eklendi */
 .rapor-kart {
   background: var(--r-beyaz);
   border-radius: 14px;
   box-shadow: var(--r-golge);
   border: 1px solid #dbe5f5;
   padding: 14px 16px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+.rapor-kart:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 30px rgba(17, 59, 141, 0.15);
 }
 
 .rapor-kart h4,
@@ -154,6 +176,12 @@
   padding: 10px 12px;
   border-radius: 12px;
   border: 1px solid #e2ebff;
+  transition: transform 0.2s ease;
+}
+
+.rapor-anomali:hover {
+  transform: translateX(5px);
+  background: #f0f5ff;
 }
 
 .rapor-grafik {
@@ -175,6 +203,13 @@
   border: 1px solid #dfe8fb;
   padding: 10px 12px;
   border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.rapor-tahmin:hover {
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  border-color: var(--r-mavi);
 }
 
 .rapor-tarih {
@@ -202,6 +237,7 @@
   gap: 10px;
 }
 
+/* Ürün ve Müşteri kartlarına hover efektleri */
 .rapor-urun-karti,
 .rapor-musteri-karti {
   padding: 12px;
@@ -211,6 +247,16 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  transition: all 0.2s ease;
+  cursor: default;
+}
+
+.rapor-urun-karti:hover,
+.rapor-musteri-karti:hover {
+  background: #ffffff;
+  border-color: var(--r-mavi);
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(31, 111, 235, 0.1);
 }
 
 .rapor-musteri-listesi {
@@ -356,3 +402,53 @@
     gap: 8px;
   }
 }
+
+/* Koyu tema için kart, bant ve listeler */
+:root[data-theme="dark"] .rapor-kart,
+:root[data-theme="dark"] .rapor-bant,
+:root[data-theme="dark"] .rapor-bant-bilgi {
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+:root[data-theme="dark"] .rapor-baslik,
+:root[data-theme="dark"] .rapor-kalin { color: var(--text); }
+
+:root[data-theme="dark"] .rapor-alt,
+:root[data-theme="dark"] .rapor-mini,
+:root[data-theme="dark"] .rapor-tarih,
+:root[data-theme="dark"] .rapor-oneri-oge,
+:root[data-theme="dark"] .rapor-anomali { color: var(--subtext); }
+
+/* Küçük kartlar ve grid öğeleri */
+:root[data-theme="dark"] .rapor-tahmin,
+:root[data-theme="dark"] .rapor-urun-karti,
+:root[data-theme="dark"] .rapor-musteri-karti,
+:root[data-theme="dark"] .rapor-anomali {
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+/* Hover’larda mavi kenarlık ve gölge */
+:root[data-theme="dark"] .rapor-kart:hover,
+:root[data-theme="dark"] .rapor-urun-karti:hover,
+:root[data-theme="dark"] .rapor-musteri-karti:hover,
+:root[data-theme="dark"] .rapor-anomali:hover,
+:root[data-theme="dark"] .rapor-tahmin:hover {
+  background: var(--card);
+  border-color: var(--r-mavi);
+  box-shadow: 0 4px 14px rgba(96, 165, 250, 0.35);
+  color: var(--text);
+}
+
+/* Grafik efsanesi ve yardımcı metin */
+:root[data-theme="dark"] .rapor-grafik,
+:root[data-theme="dark"] .rapor-grafik-kucuk {
+  color: var(--text);
+}
+
+/* Liste alt metinlerini subtext’e çek */
+:root[data-theme="dark"] .rapor-urun-karti .rapor-mini,
+:root[data-theme="dark"] .rapor-musteri-karti .rapor-mini { color: var(--subtext); }

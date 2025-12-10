@@ -2,10 +2,12 @@ import "../styles/Navbar.css";
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { initTheme, toggleTheme } from "../utils/theme";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [theme, setTheme] = useState("light");
 
   const { user, logout } = useAuth();
   const loc = useLocation();
@@ -13,6 +15,10 @@ export default function Navbar() {
 
   const menuRef = useRef(null);
   const mobileRef = useRef(null);
+
+  useEffect(() => {
+    setTheme(initTheme());
+  }, []);
 
   useEffect(() => {
     function onDocClick(e) {
@@ -48,6 +54,10 @@ export default function Navbar() {
     }
   }
 
+  function handleToggleTheme() {
+    setTheme((prev) => toggleTheme(prev));
+  }
+
   const NavLinks = ({ className = "" }) => (
     <div className={`nb-linkler ${className}`}>
       <Link to="/dashboard" className={`nb-link ${loc.pathname === "/dashboard" ? "secili" : ""}`}>Dashboard</Link>
@@ -73,6 +83,17 @@ export default function Navbar() {
       <nav className="nb-sag" aria-label="Site navigation">
         <div className="nb-satir">
           {user && <NavLinks className="nb-masaustu" />}
+
+          {/* Tema anahtarı */}
+          <button
+            className="nb-profil-btn"
+            onClick={handleToggleTheme}
+            aria-label={theme === "dark" ? "Aydınlık tema" : "Karanlık tema"}
+            title={theme === "dark" ? "Aydınlık tema" : "Karanlık tema"}
+            style={{ marginRight: "6px" }}
+          >
+            {theme === "dark" ? "☀️" : "🌙"}
+          </button>
 
           {user && (
             <button

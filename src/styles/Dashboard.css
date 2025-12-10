@@ -10,9 +10,22 @@
   box-sizing: border-box;
 }
 
+/* Animasyon Tanımları */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .dash-sayfa {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f5f8ff 0%, #eaf0fb 100%);
+  /* background: linear-gradient(180deg, #f5f8ff 0%, #eaf0fb 100%);  <-- Arka plan kaldırıldı */
+  background: transparent;
   padding: 18px;
   display: flex;
   flex-direction: column;
@@ -32,6 +45,15 @@
   padding: 14px;
   box-shadow: var(--d-golge);
   border: 1px solid #dbe3f3;
+  
+  /* Animasyon ve Hover Geçişleri Eklendi */
+  animation: fadeUp 0.6s ease-out;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dash-kart:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 35px rgba(15, 67, 146, 0.2);
 }
 
 .dash-metrik-grid {
@@ -98,6 +120,16 @@
   border-radius: 12px;
   padding: 10px;
   background: #f9fbff;
+  
+  /* Kart Efektleri Eklendi */
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dash-mini-kart:hover,
+.dash-buyuk-kart:hover {
+  transform: translateY(-3px);
+  border-color: var(--d-mavi-orta);
+  box-shadow: 0 5px 15px rgba(31, 111, 235, 0.1);
 }
 
 .dash-buyuk-kart .dash-deger {
@@ -133,6 +165,14 @@
   display: flex;
   justify-content: space-between;
   gap: 8px;
+  
+  /* Liste Öğesi Efektleri Eklendi */
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.dash-recent:hover {
+  transform: scale(1.01);
+  background-color: #f0f6ff;
 }
 
 .dash-yukleme {
@@ -258,3 +298,51 @@
     height: 160px;
   }
 }
+
+.dash-kart {
+  /* ... */
+  border: 1px solid var(--border);
+}
+
+.dash-mini-kart,
+.dash-buyuk-kart {
+  border: 1px solid var(--border);
+}
+
+.dash-recent {
+  border: 1px solid var(--border);
+}
+
+.dash-recent:hover {
+  background-color: #f0f6ff;
+}
+:root[data-theme="dark"] .dash-recent:hover {
+  background-color: #1f2937;
+}
+
+.dash-kart {
+  background: var(--card);
+  border: 1px solid var(--border);
+}
+
+.dash-mini-kart,
+.dash-buyuk-kart,
+.dash-recent {
+  background: var(--card);
+  border: 1px solid var(--border);
+}
+
+.dash-recent:hover {
+  background-color: #f0f6ff;
+}
+:root[data-theme="dark"] .dash-recent:hover {
+  background-color: #1f2937;
+}
+
+/* Metin tonları */
+.dash-etiket,
+.dash-alt,
+.dash-mini { color: var(--subtext); }
+
+.dash-deger,
+.dash-kalin { color: var(--text); }
