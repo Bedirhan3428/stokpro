@@ -2,7 +2,7 @@ import "../styles/VerifyEmail.css";
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { sendEmailVerification } from "firebase/auth";
+import { sendEmailVerification, getAuth } from "firebase/auth";
 
 export default function VerifyEmail() {
   const { user, refreshUser } = useAuth();
@@ -23,7 +23,9 @@ export default function VerifyEmail() {
     setStatus(null);
     try {
       await refreshUser();
-      if (user.emailVerified) {
+      // Check the current user from Firebase auth after refresh
+      const auth = getAuth();
+      if (auth.currentUser && auth.currentUser.emailVerified) {
         setStatus({ type: "success", msg: "E-posta doğrulandı! Yönlendiriliyorsunuz..." });
         setTimeout(() => navigate("/dashboard", { replace: true }), 1500);
       } else {
