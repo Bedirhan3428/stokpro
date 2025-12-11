@@ -1,7 +1,7 @@
-import "../styles/ForgotPassword.css"; // basit stil için mevcut dosyayı kullandık
-import React, { useState } from "react";
+import "../styles/ForgotPassword.css";
+import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { getAuth, sendEmailVerification } from "firebase/auth";
+import { getAuth, sendEmailVerification, applyActionCode } from "firebase/auth";
 
 export default function VerifyEmail() {
   const auth = getAuth();
@@ -9,15 +9,54 @@ export default function VerifyEmail() {
   const location = useLocation();
   const user = auth.currentUser;
 
-  const [status, setStatus] = useState(null); // { type: "success"|"error", msg }
+  const [status, setStatus] = useState(null); // { type: "success"|"error"|"info", msg }
   const [loading, setLoading] = useState(false);
+
+  // Linkten gelen oobCode'u yakala ve doğrulamayı tamamla
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const mode = params.get("mode");
+    const oobCode = params.get("oobCode");
+
+    async function handleOob() {
+      if (mode !== "verifyEmail" || !oobCode) return;
+      setLoading(true);
+      setStatus({ type: "info", msg: "Doğrulama işleniyor..." });
+      try {
+        await applyActionCode(auth, oobCode); // doğrulamayı tamamla
+        if (auth.currentUser) {
+          await auth.currentUser.reload();
+          if (auth.currentUser.emailVerified) {
+            const dest = (location.state && location.state.from?.pathname) || "/dashboard";
+            setStatus({ type: "success", msg: "E-posta doğrulandı, yönlendiriliyorsunuz..." });
+            setTimeout(() => nav(dest, { replace: true }), 800);
+            return;
+          }
+        }
+        // Oturum yoksa da kod işlenmiştir; kullanıcı giriş yaptığında verified olur
+        setStatus({ type: "success", msg: "E-posta doğrulandı. Giriş yaptıktan sonra devam edebilirsiniz." });
+      } catch (err) {
+        setStatus({ type: "error", msg: err.message || "Doğrulama kodu işlenemedi." });
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    handleOob();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
 
   async function resend() {
     if (!user) return;
     setStatus(null);
     setLoading(true);
     try {
-      await sendEmailVerification(user);
+      // PROD domain sabit: stokpro.shop
+      const actionCodeSettings = {
+        url: "https://www.stokpro.shop/verify-email",
+        handleCodeInApp: true
+      };
+      await sendEmailVerification(user, actionCodeSettings);
       setStatus({ type: "success", msg: "Doğrulama e-postası tekrar gönderildi. Gelen kutunuzu kontrol edin." });
     } catch (err) {
       setStatus({ type: "error", msg: err.message || "E-posta gönderilemedi." });
@@ -32,7 +71,6 @@ export default function VerifyEmail() {
     try {
       await user.reload();
       if (user.emailVerified) {
-        // Doğrulanınca, geldiği sayfaya veya dashboard'a gönder
         const dest = (location.state && location.state.from?.pathname) || "/dashboard";
         nav(dest, { replace: true });
       } else {

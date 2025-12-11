@@ -1,5 +1,5 @@
-import React, { Suspense } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import React, { Suspense, useEffect } from "react";
+import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import "./index.css";
 import "./App.css";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -19,14 +19,29 @@ const Register = React.lazy(() => import("./components/Register"));
 const Settings = React.lazy(() => import("./components/Settings"));
 const Info = React.lazy(() => import("./components/info"));
 const ForgotPassword = React.lazy(() => import("./components/ForgotPassword"));
-// Yeni doğrulama sayfası
 const VerifyEmail = React.lazy(() => import("./components/VerifyEmail"));
+
+// mail linki stokpro.shop kökünde açılırsa, query'den oobCode'u yakalayıp /verify-email rotasına yönlendir
+function VerifyEmailRedirector() {
+  const location = useLocation();
+  const nav = useNavigate();
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const mode = params.get("mode");
+    const oobCode = params.get("oobCode");
+    if (mode === "verifyEmail" && oobCode) {
+      nav(`/verify-email?${params.toString()}`, { replace: true });
+    }
+  }, [location.search, nav]);
+  return null;
+}
 
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <Suspense fallback={<div className="app-loading"><div className="spinner" /><p>Yükleniyor...</p></div>}>
+          <VerifyEmailRedirector />
           <Navbar />
           <main className="app-container">
             <Routes>
