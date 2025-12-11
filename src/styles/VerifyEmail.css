@@ -1,0 +1,122 @@
+:root {
+  --ve-mavi: #1f6feb;
+  --ve-mavi-acik: #eaf2ff;
+  --ve-yesil: #1fab89;
+  --ve-kirmizi: #e74646;
+  --ve-beyaz: #ffffff;
+  --ve-gri: #5f6b7a;
+  --ve-gri-acik: #e5e7eb;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.ve-kapsul {
+  max-width: 480px;
+  margin: 40px auto;
+  padding: 24px;
+  background: var(--ve-beyaz);
+  border-radius: 16px;
+  box-shadow: 0 14px 36px rgba(31, 111, 235, 0.14);
+  border: 1px solid #dbe3f3;
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+.ve-baslik {
+  margin: 0 0 16px;
+  color: var(--ve-mavi);
+  font-weight: 800;
+  text-align: center;
+  font-size: 24px;
+}
+
+.ve-icerik {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ve-aciklama {
+  margin: 0;
+  color: var(--ve-gri);
+  text-align: center;
+  line-height: 1.5;
+}
+
+.ve-email {
+  margin: 0;
+  padding: 12px;
+  background: var(--ve-mavi-acik);
+  border-radius: 8px;
+  color: var(--ve-mavi);
+  font-weight: 600;
+  text-align: center;
+  word-break: break-word;
+}
+
+.ve-islemler {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.ve-btn {
+  border: none;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  font-size: 15px;
+}
+
+.ve-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ve-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 20px rgba(15, 23, 42, 0.12);
+}
+
+.ve-btn-mavi {
+  background: linear-gradient(135deg, var(--ve-mavi), #4a8df5);
+  color: #fff;
+}
+
+.ve-btn-gri {
+  background: var(--ve-gri-acik);
+  color: var(--ve-gri);
+}
+
+.ve-btn-gri:hover:not(:disabled) {
+  background: #d1d5db;
+}
+
+.ve-durum {
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.ve-basarili {
+  background: #f2fff7;
+  color: var(--ve-yesil);
+  border: 1px solid #c7f3df;
+}
+
+.ve-hata {
+  background: #fff2f2;
+  color: #b91c1c;
+  border: 1px solid #f7c5c5;
+}
+
+.ve-bilgi {
+  background: var(--ve-mavi-acik);
+  color: var(--ve-mavi);
+  border: 1px solid #bdd7ff;
+}

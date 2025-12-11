@@ -84,6 +84,13 @@ export function AuthProvider({ children }) {
     }
   }
 
+  async function refreshUser() {
+    if (auth.currentUser) {
+      await auth.currentUser.reload();
+      setUser({ ...auth.currentUser });
+    }
+  }
+
   const value = {
     user,
     loading,
@@ -91,6 +98,7 @@ export function AuthProvider({ children }) {
     login,
     logout,
     signInWithGoogle,
+    refreshUser,
     isAuthenticated: !!user
   };
 
