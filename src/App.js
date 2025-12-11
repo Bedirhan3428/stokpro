@@ -2,7 +2,6 @@ import React, { Suspense } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import "./index.css";
 import "./App.css";
- // THEME CSS IMPORT
 import { AuthProvider } from "./contexts/AuthContext";
 
 import RequireAuth from "./components/RequireAuth";
@@ -19,33 +18,36 @@ const Login = React.lazy(() => import("./components/Login"));
 const Register = React.lazy(() => import("./components/Register"));
 const Settings = React.lazy(() => import("./components/Settings"));
 const Info = React.lazy(() => import("./components/info"));
-const ForgotPassword = React. lazy(() => import("./components/ForgotPassword"));
+const ForgotPassword = React.lazy(() => import("./components/ForgotPassword"));
+// Yeni doğrulama sayfası
+const VerifyEmail = React.lazy(() => import("./components/VerifyEmail"));
 
 function App() {
   return (
     <BrowserRouter>
-      
-        <AuthProvider>
-          <Suspense fallback={<div className="app-loading"><div className="spinner" /><p>Yükleniyor...</p></div>}>
-            <Navbar />
-            <main className="app-container">
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
-                <Route path="/products" element={<RequireAuth><Products /></RequireAuth>} />
-                <Route path="/sales" element={<RequireAuth><Sales /></RequireAuth>} />
-                <Route path="/customers" element={<RequireAuth><Customers /></RequireAuth>} />
-                <Route path="/accounting" element={<RequireAuth><Accounting /></RequireAuth>} />
-                <Route path="/settings" element={<RequireAuth><Settings /></RequireAuth>} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </main>
-          </Suspense>
-        </AuthProvider>
-      
+      <AuthProvider>
+        <Suspense fallback={<div className="app-loading"><div className="spinner" /><p>Yükleniyor...</p></div>}>
+          <Navbar />
+          <main className="app-container">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
+
+              <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
+              <Route path="/products" element={<RequireAuth><Products /></RequireAuth>} />
+              <Route path="/sales" element={<RequireAuth><Sales /></RequireAuth>} />
+              <Route path="/customers" element={<RequireAuth><Customers /></RequireAuth>} />
+              <Route path="/accounting" element={<RequireAuth><Accounting /></RequireAuth>} />
+              <Route path="/settings" element={<RequireAuth><Settings /></RequireAuth>} />
+
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </main>
+        </Suspense>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

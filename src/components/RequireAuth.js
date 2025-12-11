@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
@@ -15,6 +14,13 @@ export default function RequireAuth({ children }) {
       </div>
     );
   }
+
   if (!user) return <Navigate to="/login" state={{ from: location }} replace />;
+
+  // E-posta doğrulanmadıysa, doğrulama sayfasına yönlendir
+  if (!user.emailVerified) {
+    return <Navigate to="/verify-email" state={{ from: location }} replace />;
+  }
+
   return children;
 }
