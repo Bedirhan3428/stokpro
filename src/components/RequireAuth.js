@@ -16,5 +16,11 @@ export default function RequireAuth({ children }) {
     );
   }
   if (!user) return <Navigate to="/login" state={{ from: location }} replace />;
+  
+  // Redirect to verify-email if user hasn't verified their email and isn't already on that page
+  if (user && !user.emailVerified && location.pathname !== "/verify-email") {
+    return <Navigate to="/verify-email" replace />;
+  }
+  
   return children;
 }

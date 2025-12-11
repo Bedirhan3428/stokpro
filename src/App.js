@@ -19,7 +19,8 @@ const Login = React.lazy(() => import("./components/Login"));
 const Register = React.lazy(() => import("./components/Register"));
 const Settings = React.lazy(() => import("./components/Settings"));
 const Info = React.lazy(() => import("./components/info"));
-const ForgotPassword = React. lazy(() => import("./components/ForgotPassword"));
+const ForgotPassword = React.lazy(() => import("./components/ForgotPassword"));
+const VerifyEmail = React.lazy(() => import("./components/VerifyEmail"));
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/verify-email" element={<RequireAuth><VerifyEmail /></RequireAuth>} />
                 <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
                 <Route path="/products" element={<RequireAuth><Products /></RequireAuth>} />
                 <Route path="/sales" element={<RequireAuth><Sales /></RequireAuth>} />
