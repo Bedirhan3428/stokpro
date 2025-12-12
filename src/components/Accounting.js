@@ -250,8 +250,7 @@ export default function Accounting() {
         <div className="acc-kart acc-uyari-kutu">
           <div className="acc-uyari-baslik">Abonelik gerekli</div>
           <div className="acc-yazi-ince">
-            Aboneliğiniz aktif değil; ekleme/güncelleme/silme işlemleri devre dışı. Ayarlar &gt; Ürün Anahtarı
-            bölümünden kontrol edebilirsiniz.
+           <a href="https://www.stokpro.shop/product-key" style={{color:"#1f6feb",fontWeight:"bold"}}>Satın Almak için tıklayın</a>
           </div>
         </div>
       )}

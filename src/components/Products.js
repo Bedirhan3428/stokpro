@@ -190,7 +190,7 @@ export default function Products() {
       {!subLoading && !subActive && (
         <div className="prd-kart prd-uyari">
           <div className="prd-uyari-baslik">Abonelik gerekli</div>
-          <div className="prd-uyari-icerik">Ürün ekleme/güncelleme/silme işlemleri abonelik gerektirir.</div>
+          <div className="prd-uyari-icerik"><a href="https://www.stokpro.shop/product-key" style={{color:"#1f6feb",fontWeight:"bold"}}>Satın Almak için tıklayın</a></div>
         </div>
       )}
 

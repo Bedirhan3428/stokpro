@@ -318,7 +318,7 @@ export default function Sales() {
       {!subLoading && !subActive && (
         <div className="sl-kart sl-uyari">
           <div className="sl-uyari-baslik">Abonelik gerekli</div>
-          <div className="sl-uyari-icerik">Yazma işlemleri devre dışı — aboneliğinizi Ayarlar sayfasından yönetebilirsiniz.</div>
+          <div className="sl-uyari-icerik"><a href="https://www.stokpro.shop/product-key" style={{color:"#1f6feb",fontWeight:"bold"}}>Satın almak için tıklayın.</a></div>
         </div>
       )}
 

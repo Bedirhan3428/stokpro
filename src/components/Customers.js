@@ -182,7 +182,7 @@ export default function Customers() {
       {!subLoading && !subActive && (
         <div className="musteri-kart musteri-uyari-kutu">
           <div className="musteri-uyari-baslik">Abonelik gerekli</div>
-          <div className="musteri-uyari-icerik">Yazma işlemleri devre dışı — aboneliğinizi Ayarlar sayfasından yönetebilirsiniz.</div>
+          <div className="musteri-uyari-icerik"><a href="https://www.stokpro.shop/product-key" style={{color:"#1f6feb",fontWeight:"bold"}}>Satın Almak için tıklayın</a></div>
         </div>
       )}
 

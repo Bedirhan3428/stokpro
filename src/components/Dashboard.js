@@ -11,6 +11,7 @@ import {
 } from "../utils/firebaseHelpers";
 import "../utils/chartSetup";
 import AdvancedReport from "./AdvancedReport";
+import useSubscription from "../hooks/useSubscription";
 
 function parseTimestamp(createdAt) {
   if (!createdAt) return null;
@@ -43,6 +44,7 @@ export default function Dashboard() {
   const [legacyExpenses, setLegacyExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { loading: subLoading, active: subActive } = useSubscription();
 
   useEffect(() => {
     let mounted = true;
@@ -293,6 +295,14 @@ export default function Dashboard() {
 
   return (
     <div className="dash-sayfa">
+       {!subLoading && !subActive && (
+        <div className="acc-kart acc-uyari-kutu">
+          <div className="acc-uyari-baslik">Abonelik gerekli</div>
+          <div className="acc-yazi-ince">
+           <a href="https://www.stokpro.shop/product-key" style={{color:"#1f6feb",fontWeight:"bold"}}>Satın Almak için tıklayın</a>
+          </div>
+        </div>
+      )}
       <h3 className="dash-baslik">Dashboard</h3>
       {error && <div className="dash-hata">Hata: {error}</div>}
 

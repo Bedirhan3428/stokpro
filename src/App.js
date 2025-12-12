@@ -20,6 +20,7 @@ const Settings = React.lazy(() => import("./components/Settings"));
 const Info = React.lazy(() => import("./components/info"));
 const ForgotPassword = React.lazy(() => import("./components/ForgotPassword"));
 const VerifyEmail = React.lazy(() => import("./components/VerifyEmail"));
+const ProductKeyPage = React.lazy(() => import("./components/ProductKey"));
 
 // mail linki stokpro.shop kökünde açılırsa, query'den oobCode'u yakalayıp /verify-email rotasına yönlendir
 function VerifyEmailRedirector() {
@@ -50,7 +51,7 @@ function App() {
               <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/verify-email" element={<VerifyEmail />} />
-
+              <Route path="/product-key" element={<ProductKeyPage />} />
               <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
               <Route path="/products" element={<RequireAuth><Products /></RequireAuth>} />
               <Route path="/sales" element={<RequireAuth><Sales /></RequireAuth>} />
