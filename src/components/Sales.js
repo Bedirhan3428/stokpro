@@ -73,6 +73,21 @@ export default function Sales() {
 
   const { loading: subLoading, active: subActive } = useSubscription();
 
+  // --- BARKOD OKUMA SONRASI BEEP SESİ ---
+  const beepAudio = useMemo(() => {
+    if (typeof Audio === "undefined") return null;
+    return new Audio(`${process.env.PUBLIC_URL || ""}/beep.wav`);
+  }, []);
+  const playBeep = () => {
+    if (!beepAudio) return;
+    try {
+      beepAudio.currentTime = 0;
+      beepAudio.play().catch(() => {});
+    } catch {
+      /* sessizce yut */
+    }
+  };
+
   function bildir(n) {
     setNote(n);
     setTimeout(() => setNote(null), 3500);
@@ -182,6 +197,7 @@ export default function Sales() {
 
     if (match) {
       sepeteEkle(match, 1);
+      playBeep(); // Başarılı barkod eklemesinden sonra beep sesi
       const msg = `Eklendi: ${match.name}`;
       setScanResult(msg);
       bildir({ type: "success", title: "Sepete eklendi", message: msg });

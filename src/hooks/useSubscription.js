@@ -2,16 +2,7 @@
 import { useEffect, useState } from "react";
 import { getUserProfile } from "../utils/firebaseHelpers";
 
-/**
- * useSubscription
- * - loading: profil okunuyor mu
- * - active: abonelik aktifse true
- * - profile: ham profil objesi
- *
- * Aktif kabul şartları:
- *  - subscriptionStatus === 'premium' || 'active'
- *  - veya subscriptionEndDate > now
- */
+
 export default function useSubscription() {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
