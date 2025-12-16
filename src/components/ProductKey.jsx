@@ -13,10 +13,10 @@ const packages = [
     title: "1 AY Lisans",
     desc: "Tek cihaz, anında teslim, otomatik aktivasyon.",
     extra:
-      "Önemli Not: Vergi mükellefiyetimiz bulunmadığı için satışımız güvenilirliğinden emin olduğumuz hesap.com.tr üzerinden gerçekleştirilmektedir. Anahtarınız satın alımdan sonra ile size ulaştırılacaktır.",
+      "Önemli Not: Vergi mükellefiyetimiz bulunmadığı için satışımız güvenilirliğinden emin olduğumuz itemsatis.com üzerinden gerçekleştirilmektedir. Anahtarınız satın alımdan sonra ile size ulaştırılacaktır.",
     price: "₺199",
     oldPrice: null,
-    ctaUrl: "https://hesap.com.tr/ilan/512002-stokpro-urun-anahtarilicense-key-1ay",
+    ctaUrl: "https://www.itemsatis.com/diger-urun-satislari/stokpro-lisans-anahtari-1-ay-4620619.html",
     tone: "mavi"
   },
   {
@@ -24,10 +24,10 @@ const packages = [
     title: "3 AY Lisans",
     desc: "Yaklaşık %17 tasarruf sağlayın ve üç aylık kullanımla ek avantajları cebinize koyun!",
     extra:
-      "Önemli Not: Vergi mükellefiyetimiz bulunmadığı için satışımız güvenilirliğinden emin olduğumuz hesap.com.tr üzerinden gerçekleştirilmektedir. Anahtarınız satın alımdan sonra ile size ulaştırılacaktır.",
+      "Önemli Not: Vergi mükellefiyetimiz bulunmadığı için satışımız güvenilirliğinden emin olduğumuz itemsatis.com üzerinden gerçekleştirilmektedir. Anahtarınız satın alımdan sonra ile size ulaştırılacaktır.",
     price: "₺499",
     oldPrice: "₺600",
-    ctaUrl: "https://hesap.com.tr/ilan/512010-stokpro-urun-anahtarilicense-key-3ay",
+    ctaUrl: "https://www.itemsatis.com/diger-urun-satislari/stokpro-lisans-anahtari-3-ay-4620642.html",
     tone: "kirmizi"
   }
 ];
