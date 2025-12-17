@@ -53,6 +53,7 @@ function App() {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/product-key" element={<ProductKey />} />
 
               <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
               <Route path="/products" element={<RequireAuth><Products /></RequireAuth>} />
