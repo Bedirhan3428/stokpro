@@ -19,12 +19,10 @@ export default function ForgotPassword() {
     setSending(true);
     const auth = getAuth();
     try {
+      // Dinamik origin: hangi domainde iseniz ona döner
       const origin = window.location.origin;
-      const isProd = origin.includes("stokpro.shop");
       const actionCodeSettings = {
-        url: isProd
-          ? "https://www.stokpro.shop/reset-password"
-          : "http://localhost:3000/reset-password",
+        url: `${origin}/reset-password`,
         handleCodeInApp: true,
       };
 
