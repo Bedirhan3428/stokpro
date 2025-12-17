@@ -6,7 +6,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 
 import RequireAuth from "./components/RequireAuth";
 const Home = React.lazy(() => import("./components/Home"));
-const Home = React.lazy(() => import("./components/productKey"));
+const Home = React.lazy(() => import("./components/ProductKey"));
 const Dashboard = React.lazy(() => import("./components/Dashboard"));
 const Products = React.lazy(() => import("./components/Products"));
 const Sales = React.lazy(() => import("./components/Sales"));
