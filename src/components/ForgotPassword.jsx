@@ -4,7 +4,7 @@ import { getAuth, sendPasswordResetEmail } from "firebase/auth";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
-  const [status, setStatus] = useState(null); // { type: "success"|"error", msg: string }
+  const [status, setStatus] = useState(null); // { type, msg }
   const [sending, setSending] = useState(false);
 
   async function handleSubmit(e) {
@@ -19,22 +19,27 @@ export default function ForgotPassword() {
     setSending(true);
     const auth = getAuth();
     try {
-      // PROD domain sabit: stokpro.shop (gerekirse localhost için koşullu ekleyebilirsiniz)
+      const origin = window.location.origin;
+      const isProd = origin.includes("stokpro.shop");
       const actionCodeSettings = {
-        url: "https://www.stokpro.shop/reset-password",
-        handleCodeInApp: true
+        url: isProd
+          ? "https://www.stokpro.shop/reset-password"
+          : "http://localhost:3000/reset-password",
+        handleCodeInApp: true,
       };
+
       await sendPasswordResetEmail(auth, email, actionCodeSettings);
       setStatus({
         type: "success",
-        msg: "Şifre sıfırlama bağlantısı e-postanıza gönderildi. Gelen kutunuzu kontrol edin."
+        msg: "Şifre sıfırlama bağlantısı e-postanıza gönderildi. Gelen kutunuzu kontrol edin.",
       });
     } catch (err) {
-      console.error("sendPasswordResetEmail error", err);
+      console.error("sendPasswordResetEmail", err.code, err.message);
       let message = err.message || "Şifre sıfırlama gönderilemedi.";
       if (err.code === "auth/user-not-found") message = "Bu e-posta ile kayıtlı kullanıcı bulunamadı.";
       if (err.code === "auth/invalid-email") message = "Geçersiz e-posta adresi.";
-      setStatus({ type: "error", msg: message });
+      if (err.code === "auth/unauthorized-continue-uri") message = "Domain yetkili listede değil (auth/unauthorized-continue-uri).";
+      setStatus({ type: "error", msg: `${message} (${err.code || "no-code"})` });
     } finally {
       setSending(false);
     }

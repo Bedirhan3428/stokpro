@@ -22,7 +22,7 @@ const ForgotPassword = React.lazy(() => import("./components/ForgotPassword"));
 const VerifyEmail = React.lazy(() => import("./components/VerifyEmail"));
 const ResetPassword = React.lazy(() => import("./components/ResetPassword"));
 
-// E-posta aksiyon linklerini yakala ve ilgili rotaya yönlendir
+// E-posta aksiyon linklerini yakala
 function ActionRedirector() {
   const location = useLocation();
   const nav = useNavigate();
