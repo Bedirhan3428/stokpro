@@ -19,7 +19,12 @@ export default function ForgotPassword() {
     setSending(true);
     const auth = getAuth();
     try {
-      await sendPasswordResetEmail(auth, email);
+      // PROD domain sabit: stokpro.shop (gerekirse localhost için koşullu ekleyebilirsiniz)
+      const actionCodeSettings = {
+        url: "https://www.stokpro.shop/reset-password",
+        handleCodeInApp: true
+      };
+      await sendPasswordResetEmail(auth, email, actionCodeSettings);
       setStatus({
         type: "success",
         msg: "Şifre sıfırlama bağlantısı e-postanıza gönderildi. Gelen kutunuzu kontrol edin."

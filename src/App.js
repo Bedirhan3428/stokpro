@@ -20,18 +20,19 @@ const Settings = React.lazy(() => import("./components/Settings"));
 const Info = React.lazy(() => import("./components/info"));
 const ForgotPassword = React.lazy(() => import("./components/ForgotPassword"));
 const VerifyEmail = React.lazy(() => import("./components/VerifyEmail"));
-const ProductKeyPage = React.lazy(() => import("./components/ProductKey"));
+const ResetPassword = React.lazy(() => import("./components/ResetPassword"));
 
-// mail linki stokpro.shop kökünde açılırsa, query'den oobCode'u yakalayıp /verify-email rotasına yönlendir
-function VerifyEmailRedirector() {
+// E-posta aksiyon linklerini yakala ve ilgili rotaya yönlendir
+function ActionRedirector() {
   const location = useLocation();
   const nav = useNavigate();
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const mode = params.get("mode");
     const oobCode = params.get("oobCode");
-    if (mode === "verifyEmail" && oobCode) {
-      nav(`/verify-email?${params.toString()}`, { replace: true });
+    if (oobCode && (mode === "verifyEmail" || mode === "resetPassword")) {
+      const target = mode === "verifyEmail" ? "/verify-email" : "/reset-password";
+      nav(`${target}?${params.toString()}`, { replace: true });
     }
   }, [location.search, nav]);
   return null;
@@ -42,7 +43,7 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <Suspense fallback={<div className="app-loading"><div className="spinner" /><p>Yükleniyor...</p></div>}>
-          <VerifyEmailRedirector />
+          <ActionRedirector />
           <Navbar />
           <main className="app-container">
             <Routes>
@@ -51,7 +52,8 @@ function App() {
               <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/verify-email" element={<VerifyEmail />} />
-              <Route path="/product-key" element={<ProductKeyPage />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+
               <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
               <Route path="/products" element={<RequireAuth><Products /></RequireAuth>} />
               <Route path="/sales" element={<RequireAuth><Sales /></RequireAuth>} />
