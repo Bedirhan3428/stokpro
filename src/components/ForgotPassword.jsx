@@ -11,37 +11,27 @@ export default function ForgotPassword() {
     e.preventDefault();
     setStatus(null);
 
-    if (!email || !email. includes("@")) {
+    if (!email || ! email. includes("@")) {
       setStatus({ type: "error", msg: "Lütfen geçerli bir e-posta girin." });
       return;
     }
 
     setSending(true);
     const auth = getAuth();
+    
     try {
-      // actionCodeSettings olmadan basit kullanım
+      // Sadece e-posta gönder, hiçbir ayar yok
       await sendPasswordResetEmail(auth, email);
       setStatus({
-        type: "success",
-        msg: "Şifre sıfırlama bağlantısı e-postanıza gönderildi.  Gelen kutunuzu kontrol edin.",
+        type:  "success",
+        msg: "Şifre sıfırlama bağlantısı e-postanıza gönderildi.",
       });
     } catch (err) {
-      console.error("sendPasswordResetEmail", err. code, err.message);
       let message = "Şifre sıfırlama gönderilemedi. ";
-      switch (err.code) {
-        case "auth/user-not-found":
-          message = "Bu e-posta ile kayıtlı kullanıcı bulunamadı. ";
-          break;
-        case "auth/invalid-email": 
-          message = "Geçersiz e-posta adresi. ";
-          break;
-        case "auth/too-many-requests":
-          message = "Çok fazla deneme yaptınız.  Lütfen daha sonra tekrar deneyin. ";
-          break;
-        default:
-          message = err.message || "Şifre sıfırlama gönderilemedi.";
-      }
-      setStatus({ type:  "error", msg:  message });
+      if (err.code === "auth/user-not-found") message = "Bu e-posta ile kayıtlı kullanıcı bulunamadı.";
+      if (err.code === "auth/invalid-email") message = "Geçersiz e-posta adresi.";
+      if (err. code === "auth/too-many-requests") message = "Çok fazla deneme.  Daha sonra tekrar deneyin.";
+      setStatus({ type: "error", msg: message });
     } finally {
       setSending(false);
     }
@@ -56,22 +46,16 @@ export default function ForgotPassword() {
           className="fp-input"
           type="email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => setEmail(e. target.value)}
           required
-          aria-label="E-posta"
         />
-
         <div className="fp-islem">
           <button className="fp-btn fp-btn-mavi" type="submit" disabled={sending}>
-            {sending ?  "Gönderiliyor..." : "Sıfırlama Bağlantısı Gönder"}
+            {sending ? "Gönderiliyor..." : "Gönder"}
           </button>
         </div>
-
         {status && (
-          <div
-            className={`fp-durum ${status.type === "error" ? "fp-hata" : "fp-basarili"}`}
-            role={status.type === "error" ? "alert" : "status"}
-          >
+          <div className={`fp-durum ${status.type === "error" ?  "fp-hata" : "fp-basarili"}`}>
             {status.msg}
           </div>
         )}
