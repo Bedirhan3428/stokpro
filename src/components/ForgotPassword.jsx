@@ -4,7 +4,7 @@ import { getAuth, sendPasswordResetEmail } from "firebase/auth";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
-  const [status, setStatus] = useState(null); // { type, msg }
+  const [status, setStatus] = useState(null); // { type: "success"|"error", msg: string }
   const [sending, setSending] = useState(false);
 
   async function handleSubmit(e) {
