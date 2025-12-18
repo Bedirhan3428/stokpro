@@ -62,9 +62,11 @@ export default function ProductKeyPage() {
     setProfileLoading(true);
     try {
       const p = await getUserProfile();
+      // Eğer kullanıcı daha önce deneme kullanmamışsa VE aktif aboneliği yoksa deneme göster
       const available = !p?.trialUsed && !hasActiveSubscription(p);
       setTrialAvailable(available);
     } catch (err) {
+      console.error("Profil yüklenirken hata:", err);
       setTrialAvailable(false);
     } finally {
       setProfileLoading(false);
@@ -120,7 +122,7 @@ export default function ProductKeyPage() {
         }
 
         const endDate = new Date();
-        endDate.setDate(endDate.getDate() + 14);
+        endDate.setDate(endDate.getDate() + 14); // 14 Gün ekle
         trialEndIso = endDate.toISOString();
 
         tx.set(profileRef, {
@@ -136,7 +138,7 @@ export default function ProductKeyPage() {
       showNote({
         type: "success",
         title: "Deneme tanımlandı",
-        message: `14 günlük deneme aktifleştirildi. Bitiş: ${new Date(trialEndIso).toLocaleString()}`
+        message: `14 günlük deneme aktifleştirildi. Bitiş: ${new Date(trialEndIso).toLocaleString("tr-TR")}`
       });
     } catch (err) {
       showNote({
@@ -174,10 +176,12 @@ export default function ProductKeyPage() {
 
       <section className="cards">
         {packages.map((p) => {
+          // Eğer 1 aylık paketse ve deneme hakkı varsa, kartı "Deneme Kartı"na dönüştür
           const isTrialCard = p.id === "1ay" && trialAvailable && !profileLoading;
           const title = isTrialCard ? "14 Gün Ücretsiz Deneme" : p.title;
           const priceLabel = isTrialCard ? "Ücretsiz" : p.price;
           const descLabel = isTrialCard ? "14 gün ücretsiz dene" : p.desc;
+
           return (
             <article key={p.id} className="card">
               <div className="card-head">
@@ -204,7 +208,12 @@ export default function ProductKeyPage() {
                       {trialLoading ? "Tanımlanıyor..." : "Ücretsiz Dene"}
                     </button>
                   ) : (
-                    <a className={`btn ${p.tone}`} href={p.ctaUrl} target="_blank" rel="noopener">
+                    <a 
+                      className={`btn ${p.tone}`} 
+                      href={p.ctaUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                    >
                       Satın Al
                     </a>
                   )}
