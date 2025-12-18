@@ -12,8 +12,7 @@ import {
   where,
   setDoc
 } from "firebase/firestore";
-import { db, firebaseEnabled } from "../firebase";
-import { auth } from "../firebase";
+import { db, firebaseEnabled, auth } from "../firebase";
 
 const ARTIFACT_DOC_ID = process.env.REACT_APP_FIREBASE_ARTIFACTS_COLLECTION || "";
 const LEGACY_ARTIFACT_DOC_ID =
@@ -26,6 +25,7 @@ function ensureDb() {
   if (!firebaseEnabled || !db) throw new Error("Firestore başlatılmadı.");
   if (!ARTIFACT_DOC_ID) throw new Error("REACT_APP_FIREBASE_ARTIFACTS_COLLECTION tanımlı değil.");
 }
+
 function getUidOrThrow() {
   const u = auth.currentUser;
   if (!u) throw new Error("Oturum bulunamadı. Lütfen giriş yapın.");
@@ -562,7 +562,18 @@ export async function createUserProfile(profile = {}, targetUid = null) {
 
 export async function getUserProfile(targetUid = null) {
   ensureDb();
-  const uid = targetUid || getUidOrThrow();
+  
+  // DÜZELTME: getUidOrThrow() yerine manuel kontrol yapıyoruz.
+  // Giriş yapılmamışsa hata fırlatmak yerine null dönüyoruz.
+  const currentUser = auth.currentUser;
+  const uid = targetUid || (currentUser ? currentUser.uid : null);
+
+  if (!uid) {
+    // Kullanıcı yoksa sessizce null dön, böylece UI tarafı hata almaz
+    // ve "giriş yapılmadı" durumunu kendi yönetir.
+    return null;
+  }
+
   const ref = doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "profile", "user_doc");
   const snap = await getDoc(ref);
   return snap.exists() ? { id: snap.id || "user_doc", ...snap.data() } : null;
