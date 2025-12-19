@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "../styles/product-key.css";
-import { getAuth } from "firebase/auth";
+// onAuthStateChanged eklendi
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { db } from "../firebase";
 import { doc, runTransaction } from "firebase/firestore";
 import { getUserProfile } from "../utils/firebaseHelpers";
@@ -44,6 +45,7 @@ function hasActiveSubscription(profile) {
 export default function ProductKeyPage() {
   const [note, setNote] = useState(null);
   const [trialLoading, setTrialLoading] = useState(false);
+  // Başlangıçta false yapıyoruz ki "yükleniyor" anında kart görünmesin
   const [trialAvailable, setTrialAvailable] = useState(false);
   const [profileLoading, setProfileLoading] = useState(true);
 
@@ -52,17 +54,23 @@ export default function ProductKeyPage() {
     setTimeout(() => setNote(null), 4500);
   }
 
-  async function loadProfile() {
+  // UID parametresi alacak şekilde güncellendi
+  async function loadProfile(uid) {
     setProfileLoading(true);
     try {
-      const p = await getUserProfile();
+      // Helper'a direkt UID veriyoruz, böylece hata payı kalmıyor
+      const p = await getUserProfile(uid);
       
-      // MANTIK: Profil dökümanı yoksa veya trialUsed alanı kesinlikle true değilse 
-      // VE aktif bir aboneliği yoksa denemeyi göster.
       const isUsed = p?.trialUsed === true;
       const isActive = hasActiveSubscription(p);
 
-      setTrialAvailable(!isUsed && !isActive);
+      // Kullanmışsa veya aboneyse GÖSTERME (false)
+      if (isUsed || isActive) {
+        setTrialAvailable(false);
+      } else {
+        // Kullanmamış ve abone değilse GÖSTER (true)
+        setTrialAvailable(true);
+      }
     } catch (err) {
       console.error("Profil yükleme hatası:", err);
       setTrialAvailable(false);
@@ -72,7 +80,22 @@ export default function ProductKeyPage() {
   }
 
   useEffect(() => {
-    loadProfile();
+    const auth = getAuth();
+    
+    // Oturum durumunu dinle (Sayfa yenilendiğinde Firebase hazır olana kadar bekler)
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // Kullanıcı giriş yapmış, şimdi profilini kontrol et
+        loadProfile(user.uid);
+      } else {
+        // Kullanıcı giriş yapmamışsa deneme kartını GİZLE
+        setTrialAvailable(false);
+        setProfileLoading(false);
+      }
+    });
+
+    // Component kapandığında dinleyiciyi kaldır
+    return () => unsubscribe();
   }, []);
 
   async function startTrial() {
@@ -136,7 +159,7 @@ export default function ProductKeyPage() {
       </header>
 
       <section className="cards">
-        {/* ÖZEL ÜCRETSİZ DENEME KARTI: Sadece hakkı varsa görünür */}
+        {/* DENEME KARTI: Sadece profileLoading bittiyse ve trialAvailable true ise göster */}
         {!profileLoading && trialAvailable && (
           <article className="card trial-card highlight-border">
             <div className="card-head">
@@ -158,7 +181,7 @@ export default function ProductKeyPage() {
           </article>
         )}
 
-        {/* STANDART SATIN ALMA PAKETLERİ: Her zaman görünür */}
+        {/* STANDART PAKETLER */}
         {packages.map((p) => (
           <article key={p.id} className="card">
             <div className="card-head">
