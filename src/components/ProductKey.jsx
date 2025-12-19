@@ -12,8 +12,7 @@ const packages = [
     id: "1ay",
     title: "1 AY Lisans",
     desc: "Tek cihaz, anında teslim, otomatik aktivasyon.",
-    extra:
-      "Önemli Not: Vergi mükellefiyetimiz bulunmadığı için satışımız güvenilirliğinden emin olduğumuz itemsatis.com üzerinden gerçekleştirilmektedir. Anahtarınız satın alımdan sonra ile size ulaştırılacaktır.",
+    extra: "Önemli Not: Satışlar itemsatis.com üzerinden gerçekleştirilmektedir. Anahtarınız satın alımdan sonra ile size ulaştırılacaktır.",
     price: "₺199",
     oldPrice: null,
     ctaUrl: "https://www.itemsatis.com/diger-urun-satislari/stokpro-lisans-anahtari-1-ay-4620619.html",
@@ -23,8 +22,7 @@ const packages = [
     id: "3ay",
     title: "3 AY Lisans",
     desc: "Yaklaşık %17 tasarruf sağlayın ve üç aylık kullanımla ek avantajları cebinize koyun!",
-    extra:
-      "Önemli Not: Vergi mükellefiyetimiz bulunmadığı için satışımız güvenilirliğinden emin olduğumuz itemsatis.com üzerinden gerçekleştirilmektedir. Anahtarınız satın alımdan sonra ile size ulaştırılacaktır.",
+    extra: "Önemli Not: Satışlar itemsatis.com üzerinden gerçekleştirilmektedir. Anahtarınız satın alımdan sonra ile size ulaştırılacaktır.",
     price: "₺499",
     oldPrice: "₺600",
     ctaUrl: "https://www.itemsatis.com/diger-urun-satislari/stokpro-lisans-anahtari-3-ay-4620642.html",
@@ -34,13 +32,9 @@ const packages = [
 
 function hasActiveSubscription(profile) {
   if (!profile) return false;
-  const endRaw =
-    profile.subscriptionEndDate ||
-    profile.subscription_end_date ||
-    profile.subscriptionEndsAt ||
-    null;
+  const endRaw = profile.subscriptionEndDate || profile.subscription_end_date || profile.subscriptionEndsAt;
   if (!endRaw) return false;
-  let end = endRaw;
+  let end;
   if (typeof endRaw === "object" && typeof endRaw.toDate === "function") end = endRaw.toDate();
   else if (typeof endRaw === "object" && endRaw.seconds) end = new Date(endRaw.seconds * 1000);
   else end = new Date(endRaw);
@@ -55,18 +49,18 @@ export default function ProductKeyPage() {
 
   function showNote(n) {
     setNote(n);
-    setTimeout(() => setNote(null), 3500);
+    setTimeout(() => setNote(null), 4500);
   }
 
   async function loadProfile() {
     setProfileLoading(true);
     try {
       const p = await getUserProfile();
-      // Eğer kullanıcı daha önce deneme kullanmamışsa VE aktif aboneliği yoksa deneme göster
-      const available = !p?.trialUsed && !hasActiveSubscription(p);
-      setTrialAvailable(available);
+      // Deneme hakkı: Daha önce kullanmamışsa VE aktif bir aboneliği (deneme dahil) yoksa
+      const canStartTrial = p && p.trialUsed !== true && !hasActiveSubscription(p);
+      setTrialAvailable(canStartTrial);
     } catch (err) {
-      console.error("Profil yüklenirken hata:", err);
+      console.error("Profil hatası:", err);
       setTrialAvailable(false);
     } finally {
       setProfileLoading(false);
@@ -75,54 +69,27 @@ export default function ProductKeyPage() {
 
   useEffect(() => {
     loadProfile();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function startTrial() {
     if (trialLoading) return;
     const auth = getAuth();
     const user = auth.currentUser;
-    if (!user) {
-      return showNote({
-        type: "error",
-        title: "Giriş gerekli",
-        message: "Ücretsiz deneme için önce giriş yapın."
-      });
-    }
-    if (!ARTIFACT_DOC_ID) {
-      return showNote({
-        type: "error",
-        title: "Eksik yapılandırma",
-        message: "ARTIFACT kimliği tanımlı değil."
-      });
-    }
+    if (!user) return showNote({ type: "error", title: "Hata", message: "Giriş yapmalısın." });
 
     setTrialLoading(true);
     try {
-      const profileRef = doc(
-        db,
-        "artifacts",
-        ARTIFACT_DOC_ID,
-        "users",
-        user.uid,
-        "profile",
-        "user_doc"
-      );
+      const profileRef = doc(db, "artifacts", ARTIFACT_DOC_ID, "users", user.uid, "profile", "user_doc");
+      let trialEndIso;
 
-      let trialEndIso = null;
       await runTransaction(db, async (tx) => {
         const snap = await tx.get(profileRef);
         const existing = snap.exists() ? snap.data() : {};
-        const now = new Date();
-
-        const alreadyActive = hasActiveSubscription(existing);
-        if (existing.trialUsed) throw new Error("Ücretsiz deneme daha önce kullanılmış.");
-        if (alreadyActive && existing.subscriptionStatus !== "trial") {
-          throw new Error("Aktif aboneliğiniz var. Deneme uygulanamadı.");
-        }
-
+        
+        if (existing.trialUsed) throw new Error("Deneme hakkınızı zaten kullandınız.");
+        
         const endDate = new Date();
-        endDate.setDate(endDate.getDate() + 14); // 14 Gün ekle
+        endDate.setDate(endDate.getDate() + 14);
         trialEndIso = endDate.toISOString();
 
         tx.set(profileRef, {
@@ -130,22 +97,18 @@ export default function ProductKeyPage() {
           trialUsed: true,
           subscriptionStatus: "trial",
           subscriptionEndDate: trialEndIso,
-          updatedAt: now.toISOString()
-        });
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
       });
 
       setTrialAvailable(false);
-      showNote({
-        type: "success",
-        title: "Deneme tanımlandı",
-        message: `14 günlük deneme aktifleştirildi. Bitiş: ${new Date(trialEndIso).toLocaleString("tr-TR")}`
+      showNote({ 
+        type: "success", 
+        title: "Başarılı", 
+        message: "14 günlük deneme tanımlandı! Sayfayı yenileyebilirsiniz." 
       });
     } catch (err) {
-      showNote({
-        type: "error",
-        title: "Deneme başlatılamadı",
-        message: err?.message || "Bilinmeyen hata"
-      });
+      showNote({ type: "error", title: "Hata", message: err.message });
     } finally {
       setTrialLoading(false);
     }
@@ -154,74 +117,54 @@ export default function ProductKeyPage() {
   return (
     <div className="page">
       {note && (
-        <div
-          className={`trial-note ${note.type === "error" ? "trial-error" : "trial-success"}`}
-          role={note.type === "error" ? "alert" : "status"}
-        >
-          <strong>{note.title}</strong> — {note.message}
+        <div className={`trial-note ${note.type === "error" ? "trial-error" : "trial-success"}`}>
+          {note.message}
         </div>
       )}
 
       <header className="hero">
-        <p className="pill">Ürün Anahtarı</p>
-        <h1>Hızlı Aktivasyon Paketleri</h1>
-        <p className="subtitle">
-          İhtiyacınıza uygun süre seçenekleriyle hemen kullanmaya başlayın. Anahtarı aktive etmek için{" "}
-          <a href="https://www.stokpro.shop/settings" style={{ color: "#1f6feb", fontWeight: "bold" }}>
-            Ayarlar
-          </a>{" "}
-          sayfasını ziyaret edin.
-        </p>
+        <p className="pill">Lisans</p>
+        <h1>Aktivasyon Paketleri</h1>
       </header>
 
       <section className="cards">
-        {packages.map((p) => {
-          // Eğer 1 aylık paketse ve deneme hakkı varsa, kartı "Deneme Kartı"na dönüştür
-          const isTrialCard = p.id === "1ay" && trialAvailable && !profileLoading;
-          const title = isTrialCard ? "14 Gün Ücretsiz Deneme" : p.title;
-          const priceLabel = isTrialCard ? "Ücretsiz" : p.price;
-          const descLabel = isTrialCard ? "14 gün ücretsiz dene" : p.desc;
+        {/* ÜCRETSİZ DENEME KARTI: Sadece kullanıcı kullanmadıysa gösterilir */}
+        {!profileLoading && trialAvailable && (
+          <article className="card trial-card" style={{ border: "2px solid #1f6feb" }}>
+            <div className="card-head">
+              <h2>14 Günlük Deneme</h2>
+              <div className="tag tag-blue">Ücretsiz</div>
+            </div>
+            <p className="desc">StokPro'yu 2 hafta boyunca tüm özellikleriyle test edin.</p>
+            <div className="card-foot">
+              <button className="btn mavi" onClick={startTrial} disabled={trialLoading}>
+                {trialLoading ? "Tanımlanıyor..." : "Ücretsiz Başlat"}
+              </button>
+            </div>
+          </article>
+        )}
 
-          return (
-            <article key={p.id} className="card">
-              <div className="card-head">
-                <h2>{title}</h2>
-                <div className={`tag ${p.tone === "mavi" ? "tag-blue" : "tag-red"}`}>
-                  {isTrialCard ? "Deneme" : p.tone === "mavi" ? "Hızlı Teslim" : "İndirimli"}
-                </div>
+        {/* SATIN ALMA PAKETLERİ: Her zaman gösterilir */}
+        {packages.map((p) => (
+          <article key={p.id} className="card">
+            <div className="card-head">
+              <h2>{p.title}</h2>
+              <div className={`tag ${p.tone === "mavi" ? "tag-blue" : "tag-red"}`}>
+                {p.tone === "mavi" ? "Popüler" : "Avantajlı"}
               </div>
-              <p className="desc">{descLabel}</p>
-              <p className="extra">{p.extra}</p>
-              <div className="card-foot">
-                <div className="price-wrap">
-                  {!isTrialCard && p.oldPrice && <span className="old-price">{p.oldPrice}</span>}
-                  <div className="price">{priceLabel}</div>
-                </div>
-                <div className="card-actions">
-                  {isTrialCard ? (
-                    <button
-                      type="button"
-                      className="btn mavi"
-                      onClick={startTrial}
-                      disabled={trialLoading}
-                    >
-                      {trialLoading ? "Tanımlanıyor..." : "Ücretsiz Dene"}
-                    </button>
-                  ) : (
-                    <a 
-                      className={`btn ${p.tone}`} 
-                      href={p.ctaUrl} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                    >
-                      Satın Al
-                    </a>
-                  )}
-                </div>
+            </div>
+            <p className="desc">{p.desc}</p>
+            <div className="card-foot">
+              <div className="price-wrap">
+                {p.oldPrice && <span className="old-price">{p.oldPrice}</span>}
+                <div className="price">{p.price}</div>
               </div>
-            </article>
-          );
-        })}
+              <a className={`btn ${p.tone}`} href={p.ctaUrl} target="_blank" rel="noopener noreferrer">
+                Satın Al
+              </a>
+            </div>
+          </article>
+        ))}
       </section>
     </div>
   );
