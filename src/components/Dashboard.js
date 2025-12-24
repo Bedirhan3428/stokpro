@@ -9,6 +9,8 @@ import {
   listLegacyIncomes,
   listLegacyExpenses
 } from "../utils/firebaseHelpers";
+// Ürün kategorilerini bulabilmek için ürün listesine ihtiyacımız var
+import { listProductsForCurrentUser } from "../utils/artifactUserProducts"; 
 import "../utils/chartSetup";
 import AdvancedReport from "./AdvancedReport";
 import useSubscription from "../hooks/useSubscription";
@@ -37,6 +39,7 @@ function labelForLedgerEntry(l) {
 
 export default function Dashboard() {
   const [sales, setSales] = useState([]);
+  const [products, setProducts] = useState([]); // Ürünleri tutmak için state
   const [ledger, setLedger] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [customerPaymentsMap, setCustomerPaymentsMap] = useState({});
@@ -52,12 +55,13 @@ export default function Dashboard() {
       setLoading(true);
       setError(null);
       try {
-        const [salesData, ledgerData, customersData, legacyInc, legacyExp] = await Promise.all([
+        const [salesData, ledgerData, customersData, legacyInc, legacyExp, productsData] = await Promise.all([
           listSales(),
           listLedger(),
           listCustomers(),
           listLegacyIncomes(),
-          listLegacyExpenses()
+          listLegacyExpenses(),
+          listProductsForCurrentUser() // Ürünleri de çekiyoruz
         ]);
 
         if (!mounted) return;
@@ -66,6 +70,7 @@ export default function Dashboard() {
         setCustomers(Array.isArray(customersData) ? customersData : []);
         setLegacyIncomes(Array.isArray(legacyInc) ? legacyInc : []);
         setLegacyExpenses(Array.isArray(legacyExp) ? legacyExp : []);
+        setProducts(Array.isArray(productsData) ? productsData : []); // State'e atıyoruz
 
         const paymentsMap = {};
         await Promise.all(
@@ -82,12 +87,14 @@ export default function Dashboard() {
         setCustomerPaymentsMap(paymentsMap);
       } catch (err) {
         if (mounted) setError(String(err?.message || err));
+        // Hata durumunda state'leri temizle
         setSales([]);
         setLedger([]);
         setCustomers([]);
         setCustomerPaymentsMap({});
         setLegacyIncomes([]);
         setLegacyExpenses([]);
+        setProducts([]);
       } finally {
         if (mounted) setLoading(false);
       }
@@ -203,6 +210,38 @@ export default function Dashboard() {
       profitLoss
     };
   }, [sales, legacyIncomes, legacyExpenses, customerPaymentsMap, last30]);
+
+  // --- KATEGORİ HESAPLAMASI (YENİ) ---
+  const categoryStats = useMemo(() => {
+    const stats = {};
+    if (!sales.length || !products.length) return [];
+
+    sales.forEach(sale => {
+      const items = Array.isArray(sale.items) ? sale.items : [];
+      items.forEach(item => {
+        // Ürünü ID ile bul
+        const product = products.find(p => p.id === item.productId);
+        // Kategori yoksa "Diğer"
+        const cat = product?.category || "Diğer";
+        const total = (Number(item.price) || 0) * (Number(item.qty) || 0);
+        stats[cat] = (stats[cat] || 0) + total;
+      });
+    });
+
+    // Array'e çevir ve ciroya göre sırala
+    const sorted = Object.entries(stats)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+    
+    // Toplam ciro (yüzdelik hesaplamak için)
+    const grandTotal = sorted.reduce((acc, curr) => acc + curr.value, 0);
+
+    return sorted.map(s => ({
+      ...s,
+      percent: grandTotal > 0 ? ((s.value / grandTotal) * 100).toFixed(1) : 0
+    }));
+
+  }, [sales, products]);
 
   const recentTransactions = useMemo(() => {
     const txs = [];
@@ -386,6 +425,29 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* --- KATEGORİ BAZLI SATIŞLAR (YENİ BÖLÜM) --- */}
+      {categoryStats.length > 0 && (
+        <div className="dash-kart">
+          <h4 className="dash-etiket-buyuk">Kategori Bazlı Satış Dağılımı</h4>
+          <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+            {categoryStats.map((cat, idx) => (
+              <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ width: '120px', fontSize: '0.9rem', fontWeight: 500, color: '#333' }}>
+                  {cat.name}
+                </div>
+                <div style={{ flex: 1, backgroundColor: '#e5e7eb', borderRadius: '4px', height: '10px', overflow: 'hidden' }}>
+                  <div style={{ width: `${cat.percent}%`, backgroundColor: '#1f6feb', height: '100%' }}></div>
+                </div>
+                <div style={{ minWidth: '100px', textAlign: 'right', fontSize: '0.9rem', color: '#555' }}>
+                  {cat.value.toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}
+                  <span style={{ fontSize: '0.8rem', color: '#888', marginLeft: '5px' }}>({cat.percent}%)</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="dash-kart">
         <h4 className="dash-etiket-buyuk">Son İşlemler (son 20)</h4>
         <div className="dash-recent-kapsul">
@@ -409,3 +471,4 @@ export default function Dashboard() {
     </div>
   );
 }
+
