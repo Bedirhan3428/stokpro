@@ -20,7 +20,7 @@ function Bildirim({ note }) {
 }
 
 // Varsayılan kategoriler (Liste boş kalmasın diye)
-const DEFAULT_CATEGORIES = ["Genel", "Gıda", "Temizlik", "Elektronik", "Giyim", "Hizmet", "Kırtasiye"];
+const DEFAULT_CATEGORIES = ["Genel"];
 
 export default function Products() {
   const [products, setProducts] = useState([]);
