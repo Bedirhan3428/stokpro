@@ -5,7 +5,7 @@ import { listProductsForCurrentUser } from "../utils/artifactUserProducts";
 import {
   listCustomers,
   finalizeSaleTransaction,
-  listSales,
+  listRecentSales, // listSales yerine bunu kullanacağız
   updateSale,
   deleteSale,
   addLegacyIncome,
@@ -58,9 +58,7 @@ export default function Sales() {
   const [loading, setLoading] = useState(true);
   const [note, setNote] = useState(null);
 
-  // --- KAMERA KONTROL STATE'İ ---
   const [showCamera, setShowCamera] = useState(false);
-
   const [editingSale, setEditingSale] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
 
@@ -73,19 +71,17 @@ export default function Sales() {
 
   const { loading: subLoading, active: subActive } = useSubscription();
 
-  // --- BARKOD OKUMA SONRASI BEEP SESİ ---
   const beepAudio = useMemo(() => {
     if (typeof Audio === "undefined") return null;
     return new Audio(`${process.env.PUBLIC_URL || ""}/beep.wav`);
   }, []);
+
   const playBeep = () => {
     if (!beepAudio) return;
     try {
       beepAudio.currentTime = 0;
       beepAudio.play().catch(() => {});
-    } catch {
-      /* sessizce yut */
-    }
+    } catch { /* sessizce yut */ }
   };
 
   function bildir(n) {
@@ -93,14 +89,22 @@ export default function Sales() {
     setTimeout(() => setNote(null), 3500);
   }
 
-  async function yenile() {
-    setLoading(true);
+  // isSilent: True ise kullanıcıya 'Yükleniyor' ekranı göstermez (Arka planda yeniler)
+  async function yenile(isSilent = false) {
+    if (!isSilent) setLoading(true);
     try {
-      const [prods, custs, allSales] = await Promise.all([listProductsForCurrentUser(), listCustomers(), listSales()]);
+      // DÜZELTME: listSales() yerine listRecentSales(50) kullanıyoruz.
+      // Binlerce satış varsa hepsini çekmek sistemi kilitler.
+      const [prods, custs, recentSales] = await Promise.all([
+        listProductsForCurrentUser(), 
+        listCustomers(), 
+        listRecentSales(50) 
+      ]);
+      
       setProducts(Array.isArray(prods) ? prods : []);
       setCustomers(Array.isArray(custs) ? custs : []);
 
-      const normalized = (Array.isArray(allSales) ? allSales : []).map((s) => {
+      const normalized = (Array.isArray(recentSales) ? recentSales : []).map((s) => {
         const itemsArr = Array.isArray(s.items) ? s.items : [];
         const items = itemsArr.map((it) => {
           const quantity = Number(it.qty ?? it.quantity ?? 1);
@@ -135,13 +139,13 @@ export default function Sales() {
         };
       });
 
+      // Zaten recentSales sıralı geliyor ama garanti olsun
       normalized.sort((a, b) => parseDateKey(b.createdAt) - parseDateKey(a.createdAt));
-      setSalesList(normalized.slice(0, 100));
+      setSalesList(normalized);
     } catch (err) {
       bildir({ type: "error", title: "Yükleme hatası", message: String(err?.message ?? err) });
-      setSalesList([]);
     } finally {
-      setLoading(false);
+      if (!isSilent) setLoading(false);
     }
   }
 
@@ -181,8 +185,8 @@ export default function Sales() {
     const code = norm(rawCode);
     if (!code) return false;
     
-    // Tarama yapıldığında kamerayı kapat (opsiyonel, seri okuma için bu satırı kaldırabilirsiniz)
-    // setShowCamera(false); 
+    // Tarama anında kamerayı kapatmak isterseniz bu satırı açın:
+    // setShowCamera(false);
 
     const match = products.find((x) => {
       const bc = norm(x.barcode);
@@ -197,7 +201,7 @@ export default function Sales() {
 
     if (match) {
       sepeteEkle(match, 1);
-      playBeep(); // Başarılı barkod eklemesinden sonra beep sesi
+      playBeep();
       const msg = `Eklendi: ${match.name}`;
       setScanResult(msg);
       bildir({ type: "success", title: "Sepete eklendi", message: msg });
@@ -211,18 +215,31 @@ export default function Sales() {
     }
   }
 
-  // --- KAMERA AÇ/KAPAT FONKSİYONU ---
   function toggleCamera() {
     setShowCamera((prev) => !prev);
-    setScanResult(""); // Kamera açılıp kapandığında eski mesajı temizle
+    setScanResult("");
   }
 
+  // --- KRİTİK PERFORMANS GÜNCELLEMESİ ---
   async function satisTamamla() {
     if (cart.length === 0) return bildir({ type: "error", title: "Sepet boş", message: "Satış için önce ürün ekleyin." });
     if (!subActive) return bildir({ type: "error", title: "Abonelik gerekli", message: "Satışı tamamlamak için abonelik gereklidir." });
+
+    // 1. Verileri hazırla
+    const itemsForSale = cart.map((it) => ({ productId: it.productId, name: it.name, qty: it.qty, price: it.price }));
+    const saleData = { items: itemsForSale, paymentType, customerId: selectedCustomer || null, totals };
+
+    // 2. YEDEĞİ AL (Hata olursa geri dönebilmek için)
+    const cartBackup = [...cart];
+
+    // 3. ANINDA UI TEMİZLİĞİ (OPTIMISTIC UI)
+    // Veritabanını beklemeden kullanıcıya "Bitti" hissi veriyoruz.
+    setCart([]);
+    bildir({ type: "success", title: "İşlem Alındı", message: "Satış tamamlandı." });
+
     try {
-      const itemsForSale = cart.map((it) => ({ productId: it.productId, name: it.name, qty: it.qty, price: it.price }));
-      await finalizeSaleTransaction({ items: itemsForSale, paymentType, customerId: selectedCustomer || null, totals });
+      // 4. ARKA PLAN İŞLEMİ
+      await finalizeSaleTransaction(saleData);
 
       if (paymentType === "credit" && selectedCustomer) {
         const amt = Number(totals.total || 0);
@@ -232,11 +249,18 @@ export default function Sales() {
           )
         );
       }
-      setCart([]);
-      await yenile();
-      bildir({ type: "success", title: "Satış kaydedildi", message: "Satış başarıyla kaydedildi." });
+
+      // 5. SESSİZ GÜNCELLEME
+      // Ekranı "Yükleniyor"a sokmadan, sadece verileri tazeler.
+      // await koymuyoruz ki UI bloklanmasın, ama React state güncellemeleri sıraya girsin diye await de diyebiliriz, 
+      // sessiz olduğu için kullanıcı hissetmez.
+      await yenile(true); 
+
     } catch (err) {
-      bildir({ type: "error", title: "Satış başarısız", message: String(err?.message ?? err) });
+      // HATA DURUMUNDA GERİ AL
+      console.error("Satış hatası:", err);
+      setCart(cartBackup); // Sepeti geri getir
+      bildir({ type: "error", title: "Satış başarısız", message: "Bir hata oluştu, sepet geri yüklendi: " + err.message });
     }
   }
 
@@ -257,7 +281,7 @@ export default function Sales() {
     try {
       await updateSale(editingSale.id, { saleType: editingSale.saleType, totals: { total: Number(editingSale.total || 0) } });
       setEditingSale(null);
-      await yenile();
+      await yenile(true); // Sessiz güncelleme
       bildir({ type: "success", title: "Güncellendi", message: "Satış kaydı güncellendi." });
     } catch (err) {
       bildir({ type: "error", title: "Güncelleme hatası", message: String(err?.message ?? err) });
@@ -274,7 +298,7 @@ export default function Sales() {
     try {
       await deleteSale(confirmDelete.id);
       setConfirmDelete(null);
-      await yenile();
+      await yenile(true); // Sessiz güncelleme
       bildir({ type: "success", title: "Silindi", message: "Satış silindi." });
     } catch (err) {
       bildir({ type: "error", title: "Silme hatası", message: String(err?.message ?? err) });
@@ -290,11 +314,10 @@ export default function Sales() {
   async function gelirKaydet() {
     const amt = Number(incomeAmount);
     if (!amt || amt <= 0) return bildir({ type: "error", title: "Geçersiz tutar", message: "Geçerli tutar girin." });
-    if (!subActive) return bildir({ type: "error", title: "Abonelik gerekli", message: "Gelir eklemek için abonelik gereklidir." });
     try {
       await addLegacyIncome({ amount: amt, description: incomeDesc || "Manuel gelir" });
       setShowIncomeModal(false);
-      await yenile();
+      await yenile(true);
       bildir({ type: "success", title: "Gelir kaydedildi", message: `Gelir: ${amt} kaydedildi.` });
     } catch (err) {
       bildir({ type: "error", title: "Hata", message: String(err?.message ?? err) });
@@ -310,11 +333,10 @@ export default function Sales() {
   async function giderKaydet() {
     const amt = Number(expenseAmount);
     if (!amt || amt <= 0) return bildir({ type: "error", title: "Geçersiz tutar", message: "Geçerli tutar girin." });
-    if (!subActive) return bildir({ type: "error", title: "Abonelik gerekli", message: "Gider eklemek için abonelik gereklidir." });
     try {
       await addLegacyExpense({ amount: amt, description: expenseDesc || "Manuel gider" });
       setShowExpenseModal(false);
-      await yenile();
+      await yenile(true);
       bildir({ type: "success", title: "Gider kaydedildi", message: `Gider: ${amt} kaydedildi.` });
     } catch (err) {
       bildir({ type: "error", title: "Hata", message: String(err?.message ?? err) });
@@ -342,7 +364,6 @@ export default function Sales() {
       <section className="sl-kart sl-hizli">
         <h3 className="sl-baslik">Satış (Hızlı)</h3>
 
-        {/* KAMERA AÇ/KAPAT BUTONU: En üstte sabit */}
         <button 
           className={`sl-btn ${showCamera ? "kirmizi" : "mavi"}`} 
           onClick={toggleCamera} 
@@ -351,7 +372,6 @@ export default function Sales() {
           {showCamera ? "Kamerayı Kapat" : "Barkod Tara (Kamerayı Aç)"}
         </button>
 
-        {/* KAMERA ALANI: Sadece showCamera true ise görünür */}
         {showCamera && (
           <div className="sl-kamera-kapsayici">
             <BarcodeScanner onDetected={(code) => barkodlaEkle(code)} />
@@ -369,7 +389,6 @@ export default function Sales() {
           />
         </div>
 
-        {/* ÜRÜN LİSTESİ */}
         <h4 className="sl-altbaslik">Ürünler</h4>
         <div className="sl-urun-grid">
           {filteredProducts.map((p) => (
@@ -394,7 +413,7 @@ export default function Sales() {
       {/* --- SAĞ TARA (Sepet ve Geçmiş) --- */}
       <aside className="sl-kart sl-sepet">
         <h3 className="sl-baslik">Sepet</h3>
-        
+
         <div className="sl-sepet-liste">
           {cart.length === 0 && <div className="sl-mini">Sepet boş</div>}
           {cart.map((it) => (
@@ -461,9 +480,9 @@ export default function Sales() {
 
         <hr className="sl-hr" />
 
-        <h4 className="sl-altbaslik">Son Satışlar</h4>
+        <h4 className="sl-altbaslik">Son İşlemler</h4>
         {loading && <div className="sl-yukleme"><div className="sl-spinner" /><p>Yükleniyor...</p></div>}
-        
+
         <div className="sl-recent">
           {salesList.length === 0 ? (
             <div className="sl-mini">Satış kaydı yok.</div>
@@ -492,7 +511,7 @@ export default function Sales() {
         </div>
       </aside>
 
-      {/* MODALLAR AYNEN KALDI */}
+      {/* MODALLAR */}
       {editingSale && (
         <div className="sl-modal-kaplama" role="dialog" aria-modal="true" aria-label="Satışı düzenle">
           <div className="sl-modal">
@@ -564,3 +583,4 @@ export default function Sales() {
     </div>
   );
 }
+
