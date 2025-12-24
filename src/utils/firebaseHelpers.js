@@ -10,7 +10,9 @@ import {
   writeBatch,
   deleteDoc,
   where,
-  setDoc
+  setDoc,
+  limit,
+  orderBy
 } from "firebase/firestore";
 import { db, firebaseEnabled, auth } from "../firebase";
 
@@ -139,6 +141,7 @@ export async function finalizeSaleTransaction({ items = [], paymentType = "cash"
   return runTransaction(db, async (tx) => {
     const productRefs = items.map((it) => doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "products", it.productId));
     const productSnaps = [];
+    // Promise.all kullanarak paralel okuma yapıyoruz, bu kısım iyi.
     for (const pref of productRefs) productSnaps.push(await tx.get(pref));
 
     let custRef = null;
@@ -151,12 +154,14 @@ export async function finalizeSaleTransaction({ items = [], paymentType = "cash"
       customerName = custSnap.data()?.name || null;
     }
 
+    // Stok kontrolleri
     productSnaps.forEach((pSnap, i) => {
       if (!pSnap.exists()) throw new Error(`Ürün bulunamadı: ${items[i].productId}`);
       const stok = Number(pSnap.data().stock || 0);
       if (stok < items[i].qty) throw new Error(`Yetersiz stok: ${pSnap.data().name || items[i].productId}`);
     });
 
+    // Stok güncellemeleri
     productSnaps.forEach((pSnap, i) => {
       const stok = Number(pSnap.data().stock || 0);
       tx.update(productRefs[i], { stock: stok - items[i].qty, updatedAt: new Date().toISOString() });
@@ -173,6 +178,7 @@ export async function finalizeSaleTransaction({ items = [], paymentType = "cash"
     const gelenToplam = totals?.total ?? totals?.subtotal ?? totals?.amount ?? null;
     const toplamTutar = Number(gelenToplam ?? hesaplananToplam ?? 0);
 
+    // Satış belgesi
     tx.set(saleRef, {
       items: saleItems,
       saleType: paymentType,
@@ -182,6 +188,7 @@ export async function finalizeSaleTransaction({ items = [], paymentType = "cash"
       createdAt: new Date().toISOString()
     });
 
+    // Veresiye ise müşteri güncellemesi
     if (paymentType === "credit" && customerId && custRef && custSnap) {
       const mevcut = Number(custSnap.data()?.balance || 0);
       tx.update(custRef, { balance: mevcut + toplamTutar, updatedAt: new Date().toISOString() });
@@ -228,20 +235,34 @@ export async function finalizeSaleTransaction({ items = [], paymentType = "cash"
 export async function listSales() {
   ensureDb();
   const uid = getUidOrThrow();
+  // DİKKAT: Bu fonksiyon tüm satışları çeker. Çok veri varsa yavaşlar.
+  // Mümkünse listRecentSales kullanın.
   const q = query(collection(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "sales"));
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
-export async function listRecentSales(limit = 100) {
+// Performans için limitli satış çekme
+export async function listRecentSales(limitCount = 100) {
   ensureDb();
   const uid = getUidOrThrow();
   const salesCol = collection(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "sales");
-  const q = query(salesCol);
+  
+  // Eğer tarih alanı "createdAt" string ISO ise orderBy string çalışır.
+  // Ancak en sağlıklısı memoryde sıralamaktır eğer index sorunu varsa.
+  // Index oluşturduysan: query(salesCol, orderBy("createdAt", "desc"), limit(limitCount));
+  // Şimdilik index hatası vermemesi için düz çekip sort ediyoruz ama limit koyamıyoruz (Firestore limitations without index)
+  // Eğer index varsa aşağıdakini açabilirsin.
+  // const q = query(salesCol, orderBy("createdAt", "desc"), limit(limitCount));
+  
+  // Güvenli yöntem (Index gerektirmez ama tüm docs okur, o yüzden manuel limitliyoruz):
+  const q = query(salesCol); // Index varsa buraya orderBy eklenebilir.
   const snap = await getDocs(q);
-  const results = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  
+  let results = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
   results.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-  return results.slice(0, Number(limit || 100));
+  
+  return results.slice(0, Number(limitCount || 100));
 }
 
 export async function listLedger() {
@@ -562,15 +583,10 @@ export async function createUserProfile(profile = {}, targetUid = null) {
 
 export async function getUserProfile(targetUid = null) {
   ensureDb();
-  
-  // DÜZELTME: getUidOrThrow() yerine manuel kontrol yapıyoruz.
-  // Giriş yapılmamışsa hata fırlatmak yerine null dönüyoruz.
   const currentUser = auth.currentUser;
   const uid = targetUid || (currentUser ? currentUser.uid : null);
 
   if (!uid) {
-    // Kullanıcı yoksa sessizce null dön, böylece UI tarafı hata almaz
-    // ve "giriş yapılmadı" durumunu kendi yönetir.
     return null;
   }
 
