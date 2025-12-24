@@ -14,7 +14,7 @@ const packages = [
     title: "1 AY Lisans",
     desc: "Tek cihaz, anında teslim, otomatik aktivasyon.",
     extra: "Önemli Not: Satışlar itemsatis.com üzerinden güvenle gerçekleştirilmektedir.",
-    price: "₺199",
+    price: "₺99",
     oldPrice: null,
     ctaUrl: "https://www.itemsatis.com/diger-urun-satislari/stokpro-lisans-anahtari-1-ay-4620619.html",
     tone: "mavi"
@@ -24,8 +24,8 @@ const packages = [
     title: "3 AY Lisans",
     desc: "Üç aylık kullanımda ek avantajlar ve %17 tasarruf sağlayın!",
     extra: "Önemli Not: Satışlar itemsatis.com üzerinden güvenle gerçekleştirilmektedir.",
-    price: "₺499",
-    oldPrice: "₺600",
+    price: "₺249",
+    oldPrice: "₺300",
     ctaUrl: "https://www.itemsatis.com/diger-urun-satislari/stokpro-lisans-anahtari-3-ay-4620642.html",
     tone: "kirmizi"
   }
