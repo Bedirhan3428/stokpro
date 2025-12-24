@@ -19,6 +19,9 @@ function Bildirim({ note }) {
   );
 }
 
+// Varsayılan kategoriler (Liste boş kalmasın diye)
+const DEFAULT_CATEGORIES = ["Genel", "Gıda", "Temizlik", "Elektronik", "Giyim", "Hizmet", "Kırtasiye"];
+
 export default function Products() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -61,14 +64,18 @@ export default function Products() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // --- MEVCUT KATEGORİLERİ BULMA ---
-  // Ürün listesindeki benzersiz kategorileri çıkarır
-  const uniqueCategories = useMemo(() => {
-    const cats = products
+  // --- KATEGORİ LİSTESİ HAZIRLIĞI ---
+  const categoryOptions = useMemo(() => {
+    // 1. Mevcut ürünlerden kategorileri topla
+    const existingCats = products
       .map(p => p.category)
       .filter(c => c && typeof c === 'string' && c.trim() !== "");
-    // Set kullanarak tekrarları kaldır ve alfabetik sırala
-    return [...new Set(cats)].sort();
+    
+    // 2. Varsayılanlarla birleştir
+    const allCats = [...existingCats, ...DEFAULT_CATEGORIES];
+
+    // 3. Tekrarları temizle ve sırala
+    return [...new Set(allCats)].sort();
   }, [products]);
 
   async function urunEkle() {
@@ -94,8 +101,6 @@ export default function Products() {
       barcode: tBarcode || null,
       price: parseFloat(price || 0) || 0,
       stock: parseInt(stock || 0, 10) || 0,
-      // Kategori baş harfini otomatik büyütebiliriz veya olduğu gibi bırakabiliriz.
-      // Şimdilik trim yapıyoruz.
       category: (category || "").trim() || null
     };
 
@@ -217,14 +222,6 @@ export default function Products() {
         </div>
       )}
 
-      {/* --- KATEGORİ ÖNERİ LİSTESİ --- */}
-      {/* Bu liste görünmezdir, inputlardaki 'list' özelliği ile bağlanır */}
-      <datalist id="categoryList">
-        {uniqueCategories.map((cat, idx) => (
-          <option key={idx} value={cat} />
-        ))}
-      </datalist>
-
       {/* ÜRÜN EKLEME ALANI */}
       <div className="prd-kart prd-ekle">
         <h3 className="prd-baslik">Yeni Ürün Ekle</h3>
@@ -234,19 +231,34 @@ export default function Products() {
           <input placeholder="Fiyat" value={price} onChange={(e) => setPrice(e.target.value)} className="prd-input" />
           <input placeholder="Stok" value={stock} onChange={(e) => setStock(e.target.value)} className="prd-input" />
           
-          {/* Kategori Input - Datalist'e bağlandı */}
-          <input 
-            placeholder="Kategori" 
-            value={category} 
-            onChange={(e) => setCategory(e.target.value)} 
-            className="prd-input"
-            list="categoryList" 
-            autoComplete="off"
-          />
+          {/* GÜNCELLENMİŞ KATEGORİ ALANI */}
+          <div style={{ position: 'relative', display: 'flex' }}>
+            <input 
+              placeholder="Kategori" 
+              value={category} 
+              onChange={(e) => setCategory(e.target.value)} 
+              className="prd-input"
+              style={{ flex: 1, borderTopRightRadius: 0, borderBottomRightRadius: 0 }}
+            />
+            {/* Yan Taraftaki Seçim Kutusu */}
+            <select 
+              className="prd-input" 
+              style={{ width: '40px', padding: '0 5px', borderLeft: 'none', borderTopLeftRadius: 0, borderBottomLeftRadius: 0, cursor: 'pointer', backgroundColor: '#f9fafb' }}
+              onChange={(e) => {
+                if (e.target.value) setCategory(e.target.value);
+                e.target.value = ""; // Seçimi sıfırla ki aynı şeyi tekrar seçebilsin
+              }}
+            >
+              <option value="">▼</option>
+              {categoryOptions.map((cat, idx) => (
+                <option key={idx} value={cat}>{cat}</option>
+              ))}
+            </select>
+          </div>
           
           <button className="prd-btn mavi" onClick={urunEkle} disabled={!subActive}>Ekle</button>
         </div>
-        <div className="prd-mini">En azından ürün adı girilmelidir. Aynı isim veya barkodla 2. kayıt yapılamaz.</div>
+        <div className="prd-mini">Ürün adı zorunludur. Yan taraftaki ok (▼) ile kayıtlı kategorilerden seçebilirsiniz.</div>
       </div>
 
       {/* ÜRÜN LİSTESİ ALANI */}
@@ -331,13 +343,28 @@ export default function Products() {
               <input type="number" value={editing.stock} onChange={(e) => setEditing((s) => ({ ...s, stock: e.target.value }))} className="prd-input" />
 
               <label className="prd-etiket">Kategori</label>
-              <input 
-                value={editing.category} 
-                onChange={(e) => setEditing((s) => ({ ...s, category: e.target.value }))} 
-                className="prd-input" 
-                list="categoryList"
-                autoComplete="off"
-              />
+              <div style={{ display: 'flex' }}>
+                <input 
+                  value={editing.category} 
+                  onChange={(e) => setEditing((s) => ({ ...s, category: e.target.value }))} 
+                  className="prd-input"
+                  style={{ flex: 1, borderTopRightRadius: 0, borderBottomRightRadius: 0 }}
+                />
+                 <select 
+                  className="prd-input" 
+                  style={{ width: '40px', padding: '0 5px', borderLeft: 'none', borderTopLeftRadius: 0, borderBottomLeftRadius: 0, cursor: 'pointer', backgroundColor: '#f9fafb' }}
+                  onChange={(e) => {
+                    if (e.target.value) setEditing((s) => ({ ...s, category: e.target.value }));
+                    e.target.value = "";
+                  }}
+                >
+                  <option value="">▼</option>
+                  {categoryOptions.map((cat, idx) => (
+                    <option key={idx} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+
             </div>
 
             <div className="prd-modal-aks">
