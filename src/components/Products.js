@@ -1,4 +1,4 @@
-import "../styles/Products.css"; // CSS dosya adınızın doğru olduğundan emin olun
+import "../styles/Products.css"; 
 import React, { useEffect, useState } from "react";
 import {
   listProductsForCurrentUser,
@@ -63,26 +63,21 @@ export default function Products() {
 
   async function urunEkle() {
     if (!subActive) return bildir({ type: "error", title: "Abonelik gerekli", message: "Ürün eklemek için abonelik gereklidir." });
-    
+
     const tName = (name || "").trim();
     const tBarcode = (barcode || "").trim();
 
     if (!tName) return bildir({ type: "error", title: "Eksik bilgi", message: "Ürün ismi gerekli." });
 
-    // --- MÜKERRER KAYIT KONTROLÜ ---
     const isDuplicate = products.some(p => {
-      // İsim kontrolü (büyük/küçük harf duyarsız)
       const nameMatch = p.name.toLowerCase() === tName.toLowerCase();
-      // Barkod kontrolü (sadece barkod girildiyse)
       const barcodeMatch = tBarcode && p.barcode && (p.barcode === tBarcode);
-      
       return nameMatch || barcodeMatch;
     });
 
     if (isDuplicate) {
       return bildir({ type: "error", title: "Mükerrer Kayıt", message: "Bu isimde veya barkodda bir ürün zaten mevcut." });
     }
-    // -------------------------------
 
     const payload = {
       name: tName,
@@ -117,11 +112,10 @@ export default function Products() {
     if (!editing) return;
     if (!subActive) return bildir({ type: "error", title: "Abonelik gerekli", message: "Ürün güncellemek için abonelik gereklidir." });
     const { id, name: n, barcode: b, price: pr, stock: st, category: cat } = editing;
-    
+
     const tName = String(n).trim();
     if (!tName) return bildir({ type: "error", title: "Eksik bilgi", message: "Ürün ismi gerekli." });
 
-    // Düzenleme sırasında da isim çakışması kontrol edilebilir (Opsiyonel, kendi haricinde)
     const isDuplicate = products.some(p => p.id !== id && p.name.toLowerCase() === tName.toLowerCase());
     if (isDuplicate) {
        return bildir({ type: "error", title: "Mükerrer İsim", message: "Bu isimde başka bir ürün zaten var." });
@@ -162,24 +156,52 @@ export default function Products() {
     }
   }
 
-  async function hizliStok(id, newStock) {
-    if (!subActive) return bildir({ type: "error", title: "Abonelik gerekli", message: "Stok güncellemek için abonelik gereklidir." });
+  // --- KRİTİK GÜNCELLEME: HIZLI STOK ---
+  async function hizliStok(id, rawVal) {
+    if (!subActive) {
+      bildir({ type: "error", title: "Abonelik gerekli", message: "Stok güncellemek için abonelik gereklidir." });
+      return; // Değer değişse bile abonelik yoksa işlem yapma
+    }
+
+    const newVal = Number(rawVal || 0);
+
+    // 1. Mevcut ürünü bul
+    const productIndex = products.findIndex(p => p.id === id);
+    if (productIndex === -1) return;
+    
+    // 2. Eğer değer değişmediyse sunucuyu yorma
+    if (products[productIndex].stock === newVal) return;
+
+    // 3. YEDEK AL (Hata olursa geri dönmek için)
+    const oldProducts = [...products];
+
+    // 4. ANINDA GÜNCELLE (Optimistic Update)
+    // Bekleme yok, UI hemen değişir
+    setProducts(prev => {
+      const copy = [...prev];
+      copy[productIndex] = { ...copy[productIndex], stock: newVal };
+      return copy;
+    });
+
+    bildir({ type: "success", title: "Güncellendi", message: `Stok: ${newVal}` });
+
     try {
-      await updateProduct(id, { stock: Number(newStock || 0) });
-      await yukle();
-      bildir({ type: "success", title: "Stok güncellendi", message: `Yeni stok: ${newStock}` });
+      // 5. Arka planda sunucuya gönder
+      await updateProduct(id, { stock: newVal });
+      // Not: Buraya 'await yukle()' KOYMUYORUZ. Zaten elimizdeki veri doğru.
     } catch (err) {
+      // Hata olursa eski haline döndür
+      setProducts(oldProducts);
       bildir({ type: "error", title: "Stok Hatası", message: String(err.message || err) });
     }
   }
 
-  // --- ARAMA FİLTRESİ ---
   const filteredProducts = products.filter(p => {
     const term = searchTerm.toLowerCase();
     const pName = (p.name || "").toLowerCase();
     const pBarcode = (p.barcode || "").toLowerCase();
     const pCategory = (p.category || "").toLowerCase();
-    
+
     return pName.includes(term) || pBarcode.includes(term) || pCategory.includes(term);
   });
 
@@ -212,7 +234,7 @@ export default function Products() {
       <div className="prd-kart">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '10px' }}>
           <h3 className="prd-baslik" style={{ margin: 0 }}>Ürün Listesi ({filteredProducts.length})</h3>
-          
+
           {/* ARAMA INPUT */}
           <input 
             type="text" 
@@ -247,10 +269,14 @@ export default function Products() {
                     <div className="prd-mini">Stok</div>
                   </div>
 
+                  {/* HIZLI STOK INPUT - Değişiklik anında 'defaultValue' ile değil, onBlur ile yönetilir */}
                   <input
                     type="number"
+                    // defaultValue={p.stock} // React uncontrolled input yerine value kullanmak daha güvenli olabilir ama onBlur için bu yeterli
+                    // Ancak UI anında güncellensin diye key ekleyebiliriz veya en temizi:
+                    key={p.stock} // Stok değişince input re-render olsun
                     defaultValue={p.stock}
-                    onBlur={(e) => hizliStok(p.id, Number(e.target.value || 0))}
+                    onBlur={(e) => hizliStok(p.id, e.target.value)}
                     className="prd-hizli-input"
                     disabled={!subActive}
                     aria-label={`Hızlı stok ${p.name}`}
@@ -317,3 +343,4 @@ export default function Products() {
     </div>
   );
 }
+
