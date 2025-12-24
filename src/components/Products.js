@@ -1,5 +1,5 @@
 import "../styles/Products.css"; 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   listProductsForCurrentUser,
   addProduct,
@@ -61,6 +61,16 @@ export default function Products() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // --- MEVCUT KATEGORİLERİ BULMA ---
+  // Ürün listesindeki benzersiz kategorileri çıkarır
+  const uniqueCategories = useMemo(() => {
+    const cats = products
+      .map(p => p.category)
+      .filter(c => c && typeof c === 'string' && c.trim() !== "");
+    // Set kullanarak tekrarları kaldır ve alfabetik sırala
+    return [...new Set(cats)].sort();
+  }, [products]);
+
   async function urunEkle() {
     if (!subActive) return bildir({ type: "error", title: "Abonelik gerekli", message: "Ürün eklemek için abonelik gereklidir." });
 
@@ -84,6 +94,8 @@ export default function Products() {
       barcode: tBarcode || null,
       price: parseFloat(price || 0) || 0,
       stock: parseInt(stock || 0, 10) || 0,
+      // Kategori baş harfini otomatik büyütebiliriz veya olduğu gibi bırakabiliriz.
+      // Şimdilik trim yapıyoruz.
       category: (category || "").trim() || null
     };
 
@@ -156,27 +168,19 @@ export default function Products() {
     }
   }
 
-  // --- KRİTİK GÜNCELLEME: HIZLI STOK ---
   async function hizliStok(id, rawVal) {
     if (!subActive) {
       bildir({ type: "error", title: "Abonelik gerekli", message: "Stok güncellemek için abonelik gereklidir." });
-      return; // Değer değişse bile abonelik yoksa işlem yapma
+      return; 
     }
 
     const newVal = Number(rawVal || 0);
-
-    // 1. Mevcut ürünü bul
     const productIndex = products.findIndex(p => p.id === id);
     if (productIndex === -1) return;
-    
-    // 2. Eğer değer değişmediyse sunucuyu yorma
     if (products[productIndex].stock === newVal) return;
 
-    // 3. YEDEK AL (Hata olursa geri dönmek için)
     const oldProducts = [...products];
 
-    // 4. ANINDA GÜNCELLE (Optimistic Update)
-    // Bekleme yok, UI hemen değişir
     setProducts(prev => {
       const copy = [...prev];
       copy[productIndex] = { ...copy[productIndex], stock: newVal };
@@ -186,11 +190,8 @@ export default function Products() {
     bildir({ type: "success", title: "Güncellendi", message: `Stok: ${newVal}` });
 
     try {
-      // 5. Arka planda sunucuya gönder
       await updateProduct(id, { stock: newVal });
-      // Not: Buraya 'await yukle()' KOYMUYORUZ. Zaten elimizdeki veri doğru.
     } catch (err) {
-      // Hata olursa eski haline döndür
       setProducts(oldProducts);
       bildir({ type: "error", title: "Stok Hatası", message: String(err.message || err) });
     }
@@ -216,6 +217,14 @@ export default function Products() {
         </div>
       )}
 
+      {/* --- KATEGORİ ÖNERİ LİSTESİ --- */}
+      {/* Bu liste görünmezdir, inputlardaki 'list' özelliği ile bağlanır */}
+      <datalist id="categoryList">
+        {uniqueCategories.map((cat, idx) => (
+          <option key={idx} value={cat} />
+        ))}
+      </datalist>
+
       {/* ÜRÜN EKLEME ALANI */}
       <div className="prd-kart prd-ekle">
         <h3 className="prd-baslik">Yeni Ürün Ekle</h3>
@@ -224,7 +233,17 @@ export default function Products() {
           <input placeholder="Barkod" value={barcode} onChange={(e) => setBarcode(e.target.value)} className="prd-input" />
           <input placeholder="Fiyat" value={price} onChange={(e) => setPrice(e.target.value)} className="prd-input" />
           <input placeholder="Stok" value={stock} onChange={(e) => setStock(e.target.value)} className="prd-input" />
-          <input placeholder="Kategori" value={category} onChange={(e) => setCategory(e.target.value)} className="prd-input" />
+          
+          {/* Kategori Input - Datalist'e bağlandı */}
+          <input 
+            placeholder="Kategori" 
+            value={category} 
+            onChange={(e) => setCategory(e.target.value)} 
+            className="prd-input"
+            list="categoryList" 
+            autoComplete="off"
+          />
+          
           <button className="prd-btn mavi" onClick={urunEkle} disabled={!subActive}>Ekle</button>
         </div>
         <div className="prd-mini">En azından ürün adı girilmelidir. Aynı isim veya barkodla 2. kayıt yapılamaz.</div>
@@ -235,7 +254,6 @@ export default function Products() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '10px' }}>
           <h3 className="prd-baslik" style={{ margin: 0 }}>Ürün Listesi ({filteredProducts.length})</h3>
 
-          {/* ARAMA INPUT */}
           <input 
             type="text" 
             placeholder="Ara: İsim, Barkod, Kategori..." 
@@ -269,12 +287,9 @@ export default function Products() {
                     <div className="prd-mini">Stok</div>
                   </div>
 
-                  {/* HIZLI STOK INPUT - Değişiklik anında 'defaultValue' ile değil, onBlur ile yönetilir */}
                   <input
                     type="number"
-                    // defaultValue={p.stock} // React uncontrolled input yerine value kullanmak daha güvenli olabilir ama onBlur için bu yeterli
-                    // Ancak UI anında güncellensin diye key ekleyebiliriz veya en temizi:
-                    key={p.stock} // Stok değişince input re-render olsun
+                    key={p.stock} 
                     defaultValue={p.stock}
                     onBlur={(e) => hizliStok(p.id, e.target.value)}
                     className="prd-hizli-input"
@@ -316,7 +331,13 @@ export default function Products() {
               <input type="number" value={editing.stock} onChange={(e) => setEditing((s) => ({ ...s, stock: e.target.value }))} className="prd-input" />
 
               <label className="prd-etiket">Kategori</label>
-              <input value={editing.category} onChange={(e) => setEditing((s) => ({ ...s, category: e.target.value }))} className="prd-input" />
+              <input 
+                value={editing.category} 
+                onChange={(e) => setEditing((s) => ({ ...s, category: e.target.value }))} 
+                className="prd-input" 
+                list="categoryList"
+                autoComplete="off"
+              />
             </div>
 
             <div className="prd-modal-aks">
@@ -327,7 +348,6 @@ export default function Products() {
         </div>
       )}
 
-      {/* SİLME ONAY MODALI */}
       {confirmDelete && (
         <div className="prd-modal-kaplama" role="dialog" aria-modal="true" aria-label="Silme onayı">
           <div className="prd-modal kucuk">
@@ -343,4 +363,5 @@ export default function Products() {
     </div>
   );
 }
+
 
