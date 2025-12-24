@@ -1,13 +1,49 @@
 :root {
+  /* Gündüz */
   --adv-bg: #ffffff;
   --adv-text: #1e293b;
-  --adv-gray: #64748b;
+  --adv-text-sub: #64748b;
   --adv-border: #e2e8f0;
+  --adv-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+
   --adv-blue: #2563eb;
   --adv-green: #10b981;
   --adv-red: #ef4444;
   --adv-orange: #f59e0b;
-  --adv-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  
+  --adv-bg-highlight: #dbeafe;
+  --adv-text-highlight: #1e40af;
+  
+  --abc-bg-a: #f0fdf4;
+  --abc-border-a: #dcfce7;
+  --abc-text-a: #166534;
+  
+  --bg-suggestion: #f8fafc;
+  --border-suggestion: #ccc;
+}
+
+/* GECE MODU */
+body.dark-mode {
+  --adv-bg: #1e293b;
+  --adv-text: #f1f5f9;
+  --adv-text-sub: #94a3b8;
+  --adv-border: #334155;
+  --adv-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+
+  --adv-blue: #60a5fa;
+  --adv-green: #34d399;
+  --adv-red: #f87171;
+  --adv-orange: #fbbf24;
+
+  --adv-bg-highlight: rgba(37, 99, 235, 0.2);
+  --adv-text-highlight: #93c5fd;
+
+  --abc-bg-a: rgba(16, 185, 129, 0.1);
+  --abc-border-a: rgba(16, 185, 129, 0.3);
+  --abc-text-a: #6ee7b7;
+
+  --bg-suggestion: #334155;
+  --border-suggestion: #475569;
 }
 
 .adv-container {
@@ -36,20 +72,19 @@
   font-size: 1.5rem;
   font-weight: 800;
   margin: 0;
-  background: linear-gradient(90deg, #1e293b, #334155);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  /* Dark mode'da gradient text bazen okunaksız olur, düz renk yapalım veya değişkene bağlayalım */
+  color: var(--adv-text); 
 }
 
 .adv-subtitle {
-  color: var(--adv-gray);
+  color: var(--adv-text-sub);
   font-size: 0.9rem;
   margin-top: 4px;
 }
 
 .adv-badge {
-  background: #dbeafe;
-  color: #1e40af;
+  background: var(--adv-bg-highlight);
+  color: var(--adv-text-highlight);
   padding: 4px 10px;
   border-radius: 20px;
   font-size: 0.75rem;
@@ -80,6 +115,7 @@
   display: flex;
   flex-direction: column;
   transition: transform 0.2s;
+  color: var(--adv-text);
 }
 
 .adv-card:hover {
@@ -92,8 +128,10 @@
   color: white;
   border: none;
 }
+/* Highlight blue kartı dark mode'da da aynı kalabilir çünkü yazıları beyaz zorluyoruz */
 .highlight-blue .adv-card-label { color: rgba(255,255,255,0.8); }
 .highlight-blue .adv-trend { color: rgba(255,255,255,0.9); background: rgba(255,255,255,0.2); }
+.highlight-blue .adv-big-number { color: #fff; } /* Zorla beyaz yapalım */
 
 .adv-card-header {
   display: flex;
@@ -103,11 +141,11 @@
   padding-bottom: 12px;
   border-bottom: 1px solid var(--adv-border);
 }
-.adv-card-header h4 { margin: 0; font-size: 1rem; font-weight: 700; }
+.adv-card-header h4 { margin: 0; font-size: 1rem; font-weight: 700; color: var(--adv-text); }
 
 .adv-card-label {
   font-size: 0.85rem;
-  color: var(--adv-gray);
+  color: var(--adv-text-sub);
   font-weight: 500;
   margin-bottom: 8px;
 }
@@ -116,11 +154,12 @@
   font-size: 1.8rem;
   font-weight: 800;
   letter-spacing: -1px;
+  color: var(--adv-text);
 }
 
 .adv-desc {
   font-size: 0.8rem;
-  color: var(--adv-gray);
+  color: var(--adv-text-sub);
   margin-top: 6px;
 }
 
@@ -129,7 +168,7 @@
   margin-top: 8px;
   padding: 4px 8px;
   border-radius: 6px;
-  background: #f1f5f9;
+  background: var(--adv-border);
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--adv-text);
@@ -143,8 +182,8 @@
 .abc-container { display: flex; flex-direction: column; gap: 16px; }
 
 .abc-group {
-  border: 1px solid #dcfce7;
-  background: #f0fdf4;
+  border: 1px solid var(--abc-border-a);
+  background: var(--abc-bg-a);
   border-radius: 12px;
   padding: 12px;
 }
@@ -153,7 +192,7 @@
   display: flex;
   justify-content: space-between;
   font-weight: 700;
-  color: #166534;
+  color: var(--abc-text-a);
   margin-bottom: 8px;
   font-size: 0.9rem;
 }
@@ -165,14 +204,15 @@
   justify-content: space-between;
   font-size: 0.85rem;
   padding: 6px 0;
-  border-bottom: 1px solid rgba(0,0,0,0.05);
+  border-bottom: 1px solid var(--adv-border);
+  color: var(--adv-text);
 }
 .abc-item:last-child { border-bottom: none; }
 
 .abc-stats { display: flex; gap: 10px; }
 .abc-stat-box {
   flex: 1;
-  background: #f8fafc;
+  background: var(--bg-suggestion);
   border: 1px solid var(--adv-border);
   border-radius: 10px;
   padding: 10px;
@@ -182,6 +222,7 @@
   align-items: center;
   gap: 4px;
 }
+.abc-stat-box small { color: var(--adv-text-sub); }
 
 .grade {
   width: 28px;
@@ -193,8 +234,8 @@
   font-weight: 800;
   font-size: 0.9rem;
 }
-.b-grade { background: #fef9c3; color: #ca8a04; }
-.c-grade { background: #fee2e2; color: #dc2626; }
+.b-grade { background: rgba(253, 224, 71, 0.2); color: var(--adv-orange); border: 1px solid var(--adv-orange); }
+.c-grade { background: rgba(239, 68, 68, 0.2); color: var(--adv-red); border: 1px solid var(--adv-red); }
 
 /* Suggestions */
 .suggestion-list {
@@ -211,20 +252,21 @@
   border-radius: 8px;
   font-size: 0.9rem;
   line-height: 1.4;
-  border-left: 4px solid #ccc;
-  background: #f8fafc;
+  border-left: 4px solid var(--border-suggestion);
+  background: var(--bg-suggestion);
+  color: var(--adv-text);
 }
 
-.suggestion-list li.warning { border-left-color: var(--adv-orange); background: #fffbeb; color: #92400e; }
-.suggestion-list li.danger { border-left-color: var(--adv-red); background: #fef2f2; color: #991b1b; }
-.suggestion-list li.success { border-left-color: var(--adv-green); background: #f0fdf4; color: #166534; }
-.suggestion-list li.info { border-left-color: var(--adv-blue); background: #eff6ff; color: #1e40af; }
+.suggestion-list li.warning { border-left-color: var(--adv-orange); background: rgba(245, 158, 11, 0.1); color: var(--adv-orange); }
+.suggestion-list li.danger { border-left-color: var(--adv-red); background: rgba(239, 68, 68, 0.1); color: var(--adv-red); }
+.suggestion-list li.success { border-left-color: var(--adv-green); background: rgba(16, 185, 129, 0.1); color: var(--adv-green); }
+.suggestion-list li.info { border-left-color: var(--adv-blue); background: rgba(37, 99, 235, 0.1); color: var(--adv-blue); }
 
 /* Loading */
 .adv-loading {
   text-align: center;
   padding: 40px;
-  color: var(--adv-gray);
+  color: var(--adv-text-sub);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -233,7 +275,7 @@
 .adv-spinner {
   width: 32px;
   height: 32px;
-  border: 4px solid #e2e8f0;
+  border: 4px solid var(--adv-border);
   border-top-color: var(--adv-blue);
   border-radius: 50%;
   animation: spin 1s linear infinite;
