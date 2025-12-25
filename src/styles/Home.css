@@ -1,157 +1,165 @@
-/* -------------------------------------------------------------------------- */
-/* ANA SAYFA ÖZEL DEĞİŞKENLERİ                                                */
-/* -------------------------------------------------------------------------- */
 :root {
   --h-primary: #3b82f6;
   --h-primary-hover: #2563eb;
-  /* Light mode için varsayılanlar */
-  --h-glass-bg: rgba(255, 255, 255, 0.75);
-  --h-glass-border: rgba(255, 255, 255, 0.8);
-  --h-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
-  --h-blob-1: #60a5fa;
-  --h-blob-2: #a78bfa;
+  --h-text-main: #1e293b;
+  --h-text-sub: #64748b;
+  --h-bg-card: rgba(255, 255, 255, 0.9);
+  --h-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
 }
 
-/* DARK MODE (Zorunlu) */
-body.dark-mode, .dark-mode {
-  --h-glass-bg: rgba(30, 41, 59, 0.7); /* Koyu şeffaf */
-  --h-glass-border: rgba(255, 255, 255, 0.1);
-  --h-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
-  --h-blob-1: #1d4ed8; /* Daha koyu mavi */
-  --h-blob-2: #7c3aed; /* Daha koyu mor */
+* {
+  box-sizing: border-box;
 }
 
-/* -------------------------------------------------------------------------- */
-/* STİLLER                                                                    */
-/* -------------------------------------------------------------------------- */
-* { box-sizing: border-box; }
+/* Sayfa Giriş Animasyonu */
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
 
 .home-kapsul {
-  min-height: 90vh;
+  min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
   padding: 20px;
-  position: relative;
-  overflow: hidden;
   font-family: "Inter", system-ui, sans-serif;
-  background: transparent; /* Ana arka plan rengini body'den alır */
+  /* Arka plan şeffaf bırakıldı, ana layout'un rengini alacak */
+  background: transparent; 
 }
 
-/* Blob Efektleri */
-.home-bg-blob {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  z-index: -1;
-  opacity: 0.5;
-  animation: floatBlob 10s infinite alternate ease-in-out;
-}
-
-.blob-1 {
-  width: 350px; height: 350px;
-  background: var(--h-blob-1);
-  top: 5%; left: 10%;
-}
-
-.blob-2 {
-  width: 400px; height: 400px;
-  background: var(--h-blob-2);
-  bottom: 5%; right: 5%;
-  animation-delay: -5s;
-}
-
-@keyframes floatBlob {
-  from { transform: translate(0, 0) scale(1); }
-  to { transform: translate(20px, -20px) scale(1.1); }
-}
-
-/* Glass Kart */
 .home-kart {
-  max-width: 650px;
+  max-width: 700px;
   width: 100%;
-  background: var(--h-glass-bg);
-  border: 1px solid var(--h-glass-border);
-  box-shadow: var(--h-shadow);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: var(--h-bg-card);
   border-radius: 24px;
-  padding: 48px 32px;
+  padding: 40px;
   text-align: center;
-  position: relative;
-  z-index: 10;
-  transition: all 0.3s ease;
-}
+  box-shadow: var(--h-shadow);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(12px); /* Glassmorphism */
 
-.home-kart:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
-}
-
-.home-ikon-kutusu {
-  font-size: 3.5rem;
-  margin-bottom: 20px;
-  display: inline-block;
-  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+  /* Animasyon */
+  animation: slideUpFade 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .home-baslik {
-  font-size: 3rem;
-  font-weight: 900;
   margin: 0 0 16px;
+  color: var(--h-text-main);
+  font-weight: 900;
+  font-size: 3rem; /* Daha büyük ve etkileyici başlık */
   letter-spacing: -1px;
-  /* Global text rengini kullanıyoruz */
-  color: var(--text, #1e293b); 
+  background: linear-gradient(135deg, #1e293b 0%, #3b82f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent; /* Gradient metin */
 }
 
 .home-alt {
+  color: var(--h-text-sub);
   font-size: 1.1rem;
   line-height: 1.6;
-  /* Global subtext rengini kullanıyoruz */
-  color: var(--subtext, #64748b);
+  margin-bottom: 32px;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.home-cta {
   margin-bottom: 32px;
 }
 
-.home-alt strong {
-  /* Global text rengini kullanıyoruz */
-  color: var(--text, #1e293b);
-  font-weight: 700;
-}
-
-/* Buton */
-.home-cta {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 40px;
-}
-
 .home-btn {
-  padding: 16px 48px;
-  border-radius: 16px;
+  padding: 16px 32px;
+  border: none;
+  border-radius: 14px;
   font-weight: 700;
   font-size: 1.1rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border: none;
-  /* Buton rengi sabit kalabilir veya global primary ile eşleşebilir */
+  color: #fff;
   background: linear-gradient(135deg, var(--h-primary), var(--h-primary-hover));
-  color: #ffffff;
-  box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  position: relative;
+  overflow: hidden;
 }
 
 .home-btn:hover {
   transform: translateY(-3px);
-  box-shadow: 0 15px 30px rgba(59, 130, 246, 0.4);
+  box-shadow: 0 12px 24px rgba(59, 130, 246, 0.4);
 }
 
-/* Info Alanı */
-.home-info-wrapper {
+.home-btn:active {
+  transform: scale(0.98);
+}
+
+/* Buton Parlama Efekti */
+.home-btn::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: 0.5s;
+}
+.home-btn:hover::after {
+  left: 100%;
+}
+
+.home-info {
+  margin-top: 24px;
   padding-top: 24px;
-  border-top: 1px dashed var(--border, rgba(0,0,0,0.1));
+  border-top: 1px dashed #e2e8f0;
 }
 
+/* Mobilde başlık boyutu ayarı */
 @media (max-width: 600px) {
-  .home-baslik { font-size: 2.2rem; }
-  .home-kart { padding: 32px 20px; }
-  .home-btn { width: 100%; }
+  .home-kart {
+    padding: 30px 20px;
+  }
+  .home-baslik {
+    font-size: 2.2rem;
+  }
+}
+
+/* Koyu tema override */
+:root[data-theme="dark"] .h-kapsul {
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  box-shadow: 0 20px 35px rgba(0, 0, 0, 0.55);
+}
+
+:root[data-theme="dark"] .h-baslik { color: var(--text); }
+:root[data-theme="dark"] .h-alt { color: var(--subtext); }
+
+/* CTA butonu */
+:root[data-theme="dark"] .h-btn {
+  background: linear-gradient(135deg, var(--h-primary), var(--h-primary-hover));
+  color: #fff;
+  box-shadow: 0 10px 25px rgba(96, 165, 250, 0.35);
+}
+:root[data-theme="dark"] .h-btn:hover {
+  background: var(--h-primary-hover);
+}
+
+/* Footer metinleri ve linkleri */
+:root[data-theme="dark"] .h-footer,
+:root[data-theme="dark"] .h-footer a {
+  color: var(--subtext);
+}
+:root[data-theme="dark"] .h-footer a:hover {
+  color: var(--h-primary);
+}
+
+/* Ayraç çizgisi */
+:root[data-theme="dark"] .h-hr {
+  border-top: 1px dashed var(--border);
 }
