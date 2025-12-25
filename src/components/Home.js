@@ -11,7 +11,7 @@ export default function Home() {
 
   return (
     <div className="home-kapsul">
-      {/* Arka Plan Efektleri (Blur için gerekli) */}
+      {/* Arka Plan Efektleri */}
       <div className="home-bg-blob blob-1"></div>
       <div className="home-bg-blob blob-2"></div>
 
@@ -21,7 +21,7 @@ export default function Home() {
         <p className="home-alt">
           İşletmeniz için <strong>basit, hızlı ve güvenilir</strong> stok yönetimi. 
           <br />
-          Satış, barkod, veresiye ve muhasebe işlemlerini tek bir yerden, profesyonelce yönetin.
+          Satış, barkod, veresiye ve muhasebe işlemlerini tek bir yerden yönetin.
         </p>
 
         <div className="home-cta">
@@ -31,15 +31,6 @@ export default function Home() {
           >
             {user ? "Panele Git" : "Hemen Başla"}
           </button>
-          
-          {!user && (
-            <button 
-              className="home-btn secondary" 
-              onClick={() => nav("/login")}
-            >
-              Giriş Yap
-            </button>
-          )}
         </div>
 
         <div className="home-info-wrapper">
@@ -49,3 +40,4 @@ export default function Home() {
     </div>
   );
 }
+
