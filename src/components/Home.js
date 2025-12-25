@@ -2,7 +2,6 @@ import "../styles/Home.css";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { getAuth } from "firebase/auth";
-// Info bileşeninin yolunu projenize göre kontrol edin, genelde components klasöründedir
 import Info from "../components/Info"; 
 
 export default function Home() {
@@ -12,24 +11,38 @@ export default function Home() {
 
   return (
     <div className="home-kapsul">
+      {/* Arka Plan Efektleri (Blur için gerekli) */}
+      <div className="home-bg-blob blob-1"></div>
+      <div className="home-bg-blob blob-2"></div>
+
       <div className="home-kart">
+        <div className="home-ikon-kutusu">🚀</div>
         <h1 className="home-baslik">StokPro</h1>
         <p className="home-alt">
-          İşletmeniz için basit, hızlı ve güvenilir stok yönetimi. 
-          Satış, barkod, veresiye ve muhasebe işlemlerini tek bir yerden yönetin.
+          İşletmeniz için <strong>basit, hızlı ve güvenilir</strong> stok yönetimi. 
+          <br />
+          Satış, barkod, veresiye ve muhasebe işlemlerini tek bir yerden, profesyonelce yönetin.
         </p>
 
         <div className="home-cta">
           <button 
-            className="home-btn" 
+            className="home-btn primary" 
             onClick={() => nav(user ? "/dashboard" : "/register")}
-            aria-label={user ? "Panele Git" : "Hemen Başla"}
           >
             {user ? "Panele Git" : "Hemen Başla"}
           </button>
+          
+          {!user && (
+            <button 
+              className="home-btn secondary" 
+              onClick={() => nav("/login")}
+            >
+              Giriş Yap
+            </button>
+          )}
         </div>
 
-        <div className="home-info">
+        <div className="home-info-wrapper">
           <Info />
         </div>
       </div>
