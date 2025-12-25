@@ -2,7 +2,7 @@ import "../styles/Home.css";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { getAuth } from "firebase/auth";
-import Info from "../components/Info"; 
+import Info from "../components/info"; 
 
 export default function Home() {
   const nav = useNavigate();
