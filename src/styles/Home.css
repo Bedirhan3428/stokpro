@@ -1,161 +1,197 @@
 :root {
-  --home-primary: #3b82f6;
-  --home-primary-hover: #2563eb;
-  --home-text-main: #1e293b;
-  --home-text-sub: #64748b;
-  --home-bg-card: rgba(255, 255, 255, 0.85); /* Hafif transparan beyaz */
-  --home-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  --h-primary: #3b82f6;
+  --h-primary-hover: #2563eb;
+  --h-text: #1e293b;
+  --h-text-sub: #64748b;
+  --h-glass-bg: rgba(255, 255, 255, 0.7);
+  --h-glass-border: rgba(255, 255, 255, 0.8);
+  --h-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
 }
 
-* { box-sizing: border-box; }
-
-/* Giriş Animasyonu */
-@keyframes slideUpFade {
-  from { opacity: 0; transform: translateY(30px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
+/* Kapsayıcı */
 .home-kapsul {
-  min-height: 85vh; /* Footer varsa ekranı taşmasın diye biraz kıstım */
+  min-height: 90vh;
   display: flex;
   justify-content: center;
   align-items: center;
   padding: 20px;
+  position: relative;
+  overflow: hidden; /* Taşan balonları gizle */
   font-family: "Inter", system-ui, sans-serif;
-  background: transparent;
+  background: transparent; /* Ana body rengini alsın */
 }
 
+/* Arka Plan Balonları (Blob Effects) */
+.home-bg-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  z-index: -1;
+  opacity: 0.6;
+  animation: floatBlob 10s infinite alternate ease-in-out;
+}
+
+.blob-1 {
+  width: 300px; height: 300px;
+  background: #60a5fa;
+  top: 10%; left: 10%;
+}
+
+.blob-2 {
+  width: 400px; height: 400px;
+  background: #a78bfa;
+  bottom: 10%; right: 5%;
+  animation-delay: -5s;
+}
+
+@keyframes floatBlob {
+  from { transform: translate(0, 0) scale(1); }
+  to { transform: translate(20px, -40px) scale(1.1); }
+}
+
+/* Glassmorphism Kart */
 .home-kart {
-  max-width: 700px;
+  max-width: 650px;
   width: 100%;
-  background: var(--home-bg-card);
+  background: var(--h-glass-bg);
+  border: 1px solid var(--h-glass-border);
+  box-shadow: var(--h-shadow);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border-radius: 24px;
-  padding: 40px;
+  padding: 48px 32px;
   text-align: center;
-  box-shadow: var(--home-shadow);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(12px); /* Buzlu cam efekti */
-  
-  /* Animasyon */
-  animation: slideUpFade 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  
-  /* Temalar arası geçiş yumuşak olsun */
-  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
+  z-index: 10;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
+.home-kart:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 40px rgba(31, 38, 135, 0.2);
+}
+
+/* İkon */
+.home-ikon-kutusu {
+  font-size: 3rem;
+  margin-bottom: 16px;
+  display: inline-block;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+}
+
+/* Başlık */
 .home-baslik {
-  margin: 0 0 16px;
-  color: var(--home-text-main);
+  font-size: 3.5rem;
   font-weight: 900;
-  font-size: 3.5rem; /* Büyük ve iddialı */
+  margin: 0 0 16px;
   letter-spacing: -1.5px;
-  
-  /* Gradient Metin Efekti */
-  background: linear-gradient(135deg, #1e293b 0%, #3b82f6 100%);
+  color: var(--h-text);
+  background: linear-gradient(135deg, #1e293b 0%, #2563eb 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
+/* Alt Metin */
 .home-alt {
-  color: var(--home-text-sub);
   font-size: 1.15rem;
   line-height: 1.6;
+  color: var(--h-text-sub);
   margin-bottom: 32px;
-  max-width: 550px;
-  margin-left: auto;
-  margin-right: auto;
 }
+.home-alt strong { color: var(--h-text); font-weight: 600; }
 
+/* Butonlar */
 .home-cta {
-  margin-bottom: 32px;
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-bottom: 40px;
 }
 
 .home-btn {
-  padding: 16px 36px;
-  border: none;
-  border-radius: 16px;
+  padding: 14px 32px;
+  border-radius: 14px;
   font-weight: 700;
-  font-size: 1.1rem;
-  color: #fff;
-  background: linear-gradient(135deg, var(--home-primary), var(--home-primary-hover));
+  font-size: 1rem;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-  position: relative;
-  overflow: hidden;
+  transition: all 0.2s ease;
+  border: none;
 }
 
-.home-btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 24px rgba(59, 130, 246, 0.4);
+.home-btn.primary {
+  background: linear-gradient(135deg, var(--h-primary), var(--h-primary-hover));
+  color: #fff;
+  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3);
+}
+.home-btn.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 30px rgba(37, 99, 235, 0.4);
 }
 
-.home-btn:active { transform: scale(0.98); }
-
-/* Buton Parlama Efekti */
-.home-btn::after {
-  content: "";
-  position: absolute;
-  top: 0; left: -100%;
-  width: 100%; height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-  transition: 0.5s;
+.home-btn.secondary {
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--h-text);
+  border: 1px solid rgba(0,0,0,0.05);
 }
-.home-btn:hover::after { left: 100%; }
-
-.home-info {
-  margin-top: 30px;
-  padding-top: 30px;
-  border-top: 1px dashed #e2e8f0;
+.home-btn.secondary:hover {
+  background: #fff;
+  color: var(--h-primary);
 }
 
-/* Mobilde Responsive Ayarlar */
-@media (max-width: 600px) {
-  .home-kart { padding: 30px 20px; }
-  .home-baslik { font-size: 2.5rem; }
-  .home-alt { font-size: 1rem; }
+.home-info-wrapper {
+  padding-top: 24px;
+  border-top: 1px dashed rgba(0,0,0,0.1);
 }
 
 /* -------------------------------------------------------------------------- */
-/* DARK MODE ENTEGRASYONU (Global Değişkenlerle)                              */
+/* DARK MODE (Otomatik Uyum)                                                  */
 /* -------------------------------------------------------------------------- */
-/* Body veya HTML üzerinde 'dark-mode' class'ı varsa devreye girer */
-body.dark-mode .home-kart,
-html.dark-mode .home-kart,
-.dark-mode .home-kart {
-  /* Global değişkenleri kullanıyoruz */
-  background: var(--card); 
-  border: 1px solid var(--border);
-  box-shadow: 0 20px 35px rgba(0, 0, 0, 0.5); /* Daha koyu gölge */
-}
-
-/* Başlık */
 body.dark-mode .home-baslik,
 .dark-mode .home-baslik {
-  /* Dark modda gradient metin bazen okunmaz, o yüzden beyaza yakın bir renk veriyoruz */
   background: none;
   -webkit-text-fill-color: initial;
-  color: var(--text); 
+  color: var(--text);
 }
 
-/* Alt Metin */
+body.dark-mode .home-kart,
+.dark-mode .home-kart {
+  background: rgba(30, 41, 59, 0.7); /* Koyu şeffaf */
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+}
+
 body.dark-mode .home-alt,
 .dark-mode .home-alt {
   color: var(--subtext);
 }
-
-/* Ayraç Çizgisi */
-body.dark-mode .home-info,
-.dark-mode .home-info {
-  border-top-color: var(--border);
+body.dark-mode .home-alt strong,
+.dark-mode .home-alt strong {
+  color: var(--text);
 }
 
-/* Buton Dark Mode (Parlak kalsın, sadece gölgesi uyumlu olsun) */
-body.dark-mode .home-btn,
-.dark-mode .home-btn {
-  box-shadow: 0 10px 25px rgba(59, 130, 246, 0.25);
+body.dark-mode .blob-1 { background: #3b82f6; opacity: 0.3; }
+body.dark-mode .blob-2 { background: #8b5cf6; opacity: 0.3; }
+
+body.dark-mode .home-btn.secondary,
+.dark-mode .home-btn.secondary {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  border-color: rgba(255,255,255,0.1);
 }
-body.dark-mode .home-btn:hover,
-.dark-mode .home-btn:hover {
-  box-shadow: 0 15px 30px rgba(59, 130, 246, 0.35);
+body.dark-mode .home-btn.secondary:hover,
+.dark-mode .home-btn.secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Info bileşeni için ayraç rengi */
+body.dark-mode .home-info-wrapper,
+.dark-mode .home-info-wrapper {
+  border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+@media (max-width: 600px) {
+  .home-baslik { font-size: 2.5rem; }
+  .home-kart { padding: 32px 20px; }
+  .home-cta { flex-direction: column; width: 100%; }
+  .home-btn { width: 100%; }
 }
