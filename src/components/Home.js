@@ -1,8 +1,9 @@
-import "../styles/Home.css"; // Yeni CSS dosyasını import ediyoruz
+import "../styles/Home.css"; 
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { getAuth } from "firebase/auth";
-import Info from "./info";
+// Info bileşeninin yolunu projenize göre kontrol edin, genelde components klasöründedir
+import Info from "../components/Info"; 
 
 export default function Home() {
   const nav = useNavigate();
@@ -22,7 +23,7 @@ export default function Home() {
           <button 
             className="home-btn" 
             onClick={() => nav(user ? "/dashboard" : "/register")}
-            aria-label="Hemen Başla"
+            aria-label={user ? "Panele Git" : "Hemen Başla"}
           >
             {user ? "Panele Git" : "Hemen Başla"}
           </button>
