@@ -1,7 +1,8 @@
 /* -------------------------------------------------------------------------- */
-/* GLOBAL DEĞİŞKENLER (Light Mode - Varsayılan)                               */
+/* GLOBAL DEĞİŞKENLER (Light Mode)                                            */
 /* -------------------------------------------------------------------------- */
 :root {
+  --adv-bg-page: transparent;
   --adv-bg: #ffffff;
   --adv-bg-secondary: #f8fafc;
   --adv-text: #1e293b;
@@ -23,17 +24,24 @@
   
   --sugg-bg: #f8fafc;
   --sugg-border: #cbd5e1;
+  
+  --adv-gradient-start: #1e293b;
+  --adv-gradient-end: #334155;
 }
 
 /* -------------------------------------------------------------------------- */
-/* DARK MODE (Zorunlu Geçiş)                                                  */
+/* DARK MODE (Her Durumda Yakala)                                             */
 /* -------------------------------------------------------------------------- */
-body.dark-mode, .dark-mode {
-  --adv-bg: #1e293b; /* Kart Arkaplanı */
-  --adv-bg-secondary: #334155; /* İkincil Alanlar */
-  --adv-text: #f8fafc; /* Beyaz Yazı */
-  --adv-text-sub: #94a3b8; /* Gri Yazı */
-  --adv-border: #334155; /* Kenarlık */
+body.dark-mode .adv-container,
+html.dark-mode .adv-container,
+.dark-mode .adv-container,
+.adv-container.dark-mode {
+  --adv-bg-page: #0f172a;
+  --adv-bg: #1e293b;
+  --adv-bg-secondary: #334155;
+  --adv-text: #f8fafc;
+  --adv-text-sub: #94a3b8;
+  --adv-border: #334155;
   --adv-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
 
   --adv-blue: #60a5fa;
@@ -47,9 +55,12 @@ body.dark-mode, .dark-mode {
   --abc-bg-a: rgba(16, 185, 129, 0.1);
   --abc-border-a: rgba(16, 185, 129, 0.3);
   --abc-text-a: #6ee7b7;
-  
+
   --sugg-bg: #334155;
   --sugg-border: #475569;
+  
+  --adv-gradient-start: #f1f5f9;
+  --adv-gradient-end: #94a3b8;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -58,39 +69,38 @@ body.dark-mode, .dark-mode {
 .adv-container {
   font-family: 'Inter', sans-serif;
   color: var(--adv-text);
+  background-color: var(--adv-bg-page); /* Arkaplan garantisi */
   display: flex; flex-direction: column; gap: 24px; padding: 10px 0;
+  transition: all 0.3s ease;
 }
 
-/* Başlıklar */
+/* Header */
 .adv-header { display: flex; justify-content: space-between; align-items: flex-start; }
 .adv-title {
-  font-size: 1.5rem; font-weight: 800; margin: 0; color: var(--adv-text);
+  font-size: 1.5rem; font-weight: 800; margin: 0;
+  background: linear-gradient(90deg, var(--adv-gradient-start), var(--adv-gradient-end));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 .adv-subtitle { color: var(--adv-text-sub); font-size: 0.9rem; margin-top: 4px; }
-
 .adv-badge {
   background: var(--adv-bg-highlight); color: var(--adv-text-highlight);
-  padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
-  text-transform: uppercase;
+  padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
 }
 
-/* Grid */
-.adv-grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
-.adv-grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 16px; }
-
-/* KARTLAR */
+/* Kartlar */
 .adv-card {
-  background-color: var(--adv-bg) !important; /* Önemli */
+  background-color: var(--adv-bg) !important;
   border: 1px solid var(--adv-border);
   color: var(--adv-text);
   border-radius: 16px; padding: 20px;
   box-shadow: var(--adv-shadow);
   display: flex; flex-direction: column;
-  transition: transform 0.2s;
+  transition: transform 0.2s, background-color 0.3s;
 }
 .adv-card:hover { transform: translateY(-2px); }
 
-/* Mavi Özel Kart */
+/* Mavi Vurgulu Kart */
 .highlight-blue {
   background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
   color: white !important; border: none;
@@ -117,12 +127,14 @@ body.dark-mode, .dark-mode {
   border: 1px solid var(--adv-border);
 }
 
+.adv-grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.adv-grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 16px; }
+
 .graph-container { height: 320px; }
 .chart-wrapper { flex: 1; position: relative; min-height: 0; }
 
-/* ABC Analizi */
+/* ABC */
 .abc-container { display: flex; flex-direction: column; gap: 16px; }
-
 .abc-group {
   border: 1px solid var(--abc-border-a); background: var(--abc-bg-a);
   border-radius: 12px; padding: 12px;
@@ -135,8 +147,7 @@ body.dark-mode, .dark-mode {
 
 .abc-item {
   display: flex; justify-content: space-between; font-size: 0.85rem;
-  padding: 6px 0; border-bottom: 1px solid var(--adv-border);
-  color: var(--adv-text);
+  padding: 6px 0; border-bottom: 1px solid var(--adv-border); color: var(--adv-text);
 }
 .abc-item:last-child { border-bottom: none; }
 
@@ -144,28 +155,24 @@ body.dark-mode, .dark-mode {
 .abc-stat-box {
   flex: 1; background: var(--adv-bg-secondary);
   border: 1px solid var(--adv-border); border-radius: 10px;
-  padding: 10px; text-align: center;
-  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 10px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px;
 }
 .abc-stat-box small { color: var(--adv-text-sub); }
 
 .grade {
-  width: 28px; height: 28px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
   font-weight: 800; font-size: 0.9rem;
 }
 .b-grade { background: rgba(253, 224, 71, 0.2); color: var(--adv-orange); border: 1px solid var(--adv-orange); }
 .c-grade { background: rgba(239, 68, 68, 0.2); color: var(--adv-red); border: 1px solid var(--adv-red); }
 
-/* Öneriler */
+/* Suggestions */
 .suggestion-list {
-  list-style: none; padding: 0; margin: 0;
-  display: flex; flex-direction: column; gap: 10px;
+  list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px;
 }
 .suggestion-list li {
   padding: 12px; border-radius: 8px; font-size: 0.9rem; line-height: 1.4;
-  border-left: 4px solid var(--sugg-border);
-  background: var(--sugg-bg); color: var(--adv-text);
+  border-left: 4px solid var(--sugg-border); background: var(--sugg-bg); color: var(--adv-text);
 }
 .suggestion-list li.warning { border-left-color: var(--adv-orange); background: rgba(245, 158, 11, 0.1); color: var(--adv-orange); }
 .suggestion-list li.danger { border-left-color: var(--adv-red); background: rgba(239, 68, 68, 0.1); color: var(--adv-red); }
@@ -178,8 +185,7 @@ body.dark-mode, .dark-mode {
 }
 .adv-spinner {
   width: 32px; height: 32px; border: 4px solid var(--adv-border);
-  border-top-color: var(--adv-blue); border-radius: 50%;
-  animation: spin 1s linear infinite;
+  border-top-color: var(--adv-blue); border-radius: 50%; animation: spin 1s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
