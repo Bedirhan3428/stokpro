@@ -1,14 +1,31 @@
+/* -------------------------------------------------------------------------- */
+/* ANA SAYFA ÖZEL DEĞİŞKENLERİ                                                */
+/* -------------------------------------------------------------------------- */
 :root {
   --h-primary: #3b82f6;
   --h-primary-hover: #2563eb;
-  --h-text: #1e293b;
-  --h-text-sub: #64748b;
-  --h-glass-bg: rgba(255, 255, 255, 0.7);
+  /* Light mode için varsayılanlar */
+  --h-glass-bg: rgba(255, 255, 255, 0.75);
   --h-glass-border: rgba(255, 255, 255, 0.8);
   --h-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+  --h-blob-1: #60a5fa;
+  --h-blob-2: #a78bfa;
 }
 
-/* Kapsayıcı */
+/* DARK MODE (Zorunlu) */
+body.dark-mode, .dark-mode {
+  --h-glass-bg: rgba(30, 41, 59, 0.7); /* Koyu şeffaf */
+  --h-glass-border: rgba(255, 255, 255, 0.1);
+  --h-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+  --h-blob-1: #1d4ed8; /* Daha koyu mavi */
+  --h-blob-2: #7c3aed; /* Daha koyu mor */
+}
+
+/* -------------------------------------------------------------------------- */
+/* STİLLER                                                                    */
+/* -------------------------------------------------------------------------- */
+* { box-sizing: border-box; }
+
 .home-kapsul {
   min-height: 90vh;
   display: flex;
@@ -16,40 +33,40 @@
   align-items: center;
   padding: 20px;
   position: relative;
-  overflow: hidden; /* Taşan balonları gizle */
+  overflow: hidden;
   font-family: "Inter", system-ui, sans-serif;
-  background: transparent; /* Ana body rengini alsın */
+  background: transparent; /* Ana arka plan rengini body'den alır */
 }
 
-/* Arka Plan Balonları (Blob Effects) */
+/* Blob Efektleri */
 .home-bg-blob {
   position: absolute;
   border-radius: 50%;
   filter: blur(80px);
   z-index: -1;
-  opacity: 0.6;
+  opacity: 0.5;
   animation: floatBlob 10s infinite alternate ease-in-out;
 }
 
 .blob-1 {
-  width: 300px; height: 300px;
-  background: #60a5fa;
-  top: 10%; left: 10%;
+  width: 350px; height: 350px;
+  background: var(--h-blob-1);
+  top: 5%; left: 10%;
 }
 
 .blob-2 {
   width: 400px; height: 400px;
-  background: #a78bfa;
-  bottom: 10%; right: 5%;
+  background: var(--h-blob-2);
+  bottom: 5%; right: 5%;
   animation-delay: -5s;
 }
 
 @keyframes floatBlob {
   from { transform: translate(0, 0) scale(1); }
-  to { transform: translate(20px, -40px) scale(1.1); }
+  to { transform: translate(20px, -20px) scale(1.1); }
 }
 
-/* Glassmorphism Kart */
+/* Glass Kart */
 .home-kart {
   max-width: 650px;
   width: 100%;
@@ -63,135 +80,78 @@
   text-align: center;
   position: relative;
   z-index: 10;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 .home-kart:hover {
   transform: translateY(-5px);
-  box-shadow: 0 15px 40px rgba(31, 38, 135, 0.2);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
 }
 
-/* İkon */
 .home-ikon-kutusu {
-  font-size: 3rem;
-  margin-bottom: 16px;
+  font-size: 3.5rem;
+  margin-bottom: 20px;
   display: inline-block;
   filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
 }
 
-/* Başlık */
 .home-baslik {
-  font-size: 3.5rem;
+  font-size: 3rem;
   font-weight: 900;
   margin: 0 0 16px;
-  letter-spacing: -1.5px;
-  color: var(--h-text);
-  background: linear-gradient(135deg, #1e293b 0%, #2563eb 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  letter-spacing: -1px;
+  /* Global text rengini kullanıyoruz */
+  color: var(--text, #1e293b); 
 }
 
-/* Alt Metin */
 .home-alt {
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   line-height: 1.6;
-  color: var(--h-text-sub);
+  /* Global subtext rengini kullanıyoruz */
+  color: var(--subtext, #64748b);
   margin-bottom: 32px;
 }
-.home-alt strong { color: var(--h-text); font-weight: 600; }
 
-/* Butonlar */
+.home-alt strong {
+  /* Global text rengini kullanıyoruz */
+  color: var(--text, #1e293b);
+  font-weight: 700;
+}
+
+/* Buton */
 .home-cta {
   display: flex;
-  gap: 16px;
   justify-content: center;
   margin-bottom: 40px;
 }
 
 .home-btn {
-  padding: 14px 32px;
-  border-radius: 14px;
+  padding: 16px 48px;
+  border-radius: 16px;
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 1.1rem;
   cursor: pointer;
   transition: all 0.2s ease;
   border: none;
-}
-
-.home-btn.primary {
+  /* Buton rengi sabit kalabilir veya global primary ile eşleşebilir */
   background: linear-gradient(135deg, var(--h-primary), var(--h-primary-hover));
-  color: #fff;
-  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3);
-}
-.home-btn.primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 15px 30px rgba(37, 99, 235, 0.4);
+  color: #ffffff;
+  box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
 }
 
-.home-btn.secondary {
-  background: rgba(255, 255, 255, 0.5);
-  color: var(--h-text);
-  border: 1px solid rgba(0,0,0,0.05);
-}
-.home-btn.secondary:hover {
-  background: #fff;
-  color: var(--h-primary);
+.home-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 15px 30px rgba(59, 130, 246, 0.4);
 }
 
+/* Info Alanı */
 .home-info-wrapper {
   padding-top: 24px;
-  border-top: 1px dashed rgba(0,0,0,0.1);
-}
-
-/* -------------------------------------------------------------------------- */
-/* DARK MODE (Otomatik Uyum)                                                  */
-/* -------------------------------------------------------------------------- */
-body.dark-mode .home-baslik,
-.dark-mode .home-baslik {
-  background: none;
-  -webkit-text-fill-color: initial;
-  color: var(--text);
-}
-
-body.dark-mode .home-kart,
-.dark-mode .home-kart {
-  background: rgba(30, 41, 59, 0.7); /* Koyu şeffaf */
-  border-color: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
-}
-
-body.dark-mode .home-alt,
-.dark-mode .home-alt {
-  color: var(--subtext);
-}
-body.dark-mode .home-alt strong,
-.dark-mode .home-alt strong {
-  color: var(--text);
-}
-
-body.dark-mode .blob-1 { background: #3b82f6; opacity: 0.3; }
-body.dark-mode .blob-2 { background: #8b5cf6; opacity: 0.3; }
-
-body.dark-mode .home-btn.secondary,
-.dark-mode .home-btn.secondary {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text);
-  border-color: rgba(255,255,255,0.1);
-}
-body.dark-mode .home-btn.secondary:hover,
-.dark-mode .home-btn.secondary:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-/* Info bileşeni için ayraç rengi */
-body.dark-mode .home-info-wrapper,
-.dark-mode .home-info-wrapper {
-  border-top-color: rgba(255, 255, 255, 0.1);
+  border-top: 1px dashed var(--border, rgba(0,0,0,0.1));
 }
 
 @media (max-width: 600px) {
-  .home-baslik { font-size: 2.5rem; }
+  .home-baslik { font-size: 2.2rem; }
   .home-kart { padding: 32px 20px; }
-  .home-cta { flex-direction: column; width: 100%; }
   .home-btn { width: 100%; }
 }
