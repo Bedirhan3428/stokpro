@@ -1,8 +1,8 @@
-import "../styles/Home.css"; 
+İmport "../styles/Home.css"; // Yeni CSS dosyasını import ediyoruz
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { getAuth } from "firebase/auth";
-import Info from "../components/info"; 
+import Info from "./info";
 
 export default function Home() {
   const nav = useNavigate();
@@ -11,33 +11,27 @@ export default function Home() {
 
   return (
     <div className="home-kapsul">
-      {/* Arka Plan Efektleri */}
-      <div className="home-bg-blob blob-1"></div>
-      <div className="home-bg-blob blob-2"></div>
-
       <div className="home-kart">
-        <div className="home-ikon-kutusu">🚀</div>
         <h1 className="home-baslik">StokPro</h1>
         <p className="home-alt">
-          İşletmeniz için <strong>basit, hızlı ve güvenilir</strong> stok yönetimi. 
-          <br />
+          İşletmeniz için basit, hızlı ve güvenilir stok yönetimi. 
           Satış, barkod, veresiye ve muhasebe işlemlerini tek bir yerden yönetin.
         </p>
 
         <div className="home-cta">
           <button 
-            className="home-btn primary" 
+            className="home-btn" 
             onClick={() => nav(user ? "/dashboard" : "/register")}
+            aria-label="Hemen Başla"
           >
             {user ? "Panele Git" : "Hemen Başla"}
           </button>
         </div>
 
-        <div className="home-info-wrapper">
+        <div className="home-info">
           <Info />
         </div>
       </div>
     </div>
   );
-}
-
+} 
