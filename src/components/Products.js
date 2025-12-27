@@ -255,8 +255,16 @@ export default function Products() {
                       disabled={!subActive}
                     />
                   </div>
-                  <button onClick={() => duzenlemeAc(p)} className="prd-btn icon" title="Düzenle">✏️</button>
-                  <button onClick={() => setConfirmDelete({id:p.id, label:p.name})} className="prd-btn icon delete" title="Sil">🗑️</button>
+                  
+                  {/* Buton Grubu: Düzenle ve Sil */}
+                  <div className="prd-action-btns">
+                    <button onClick={() => duzenlemeAc(p)} className="prd-btn icon-btn edit" title="Düzenle">
+                      ✏️
+                    </button>
+                    <button onClick={() => setConfirmDelete({id:p.id, label:p.name})} className="prd-btn icon-btn delete" title="Sil">
+                      🗑️
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -334,4 +342,5 @@ export default function Products() {
     </div>
   );
 }
+
 
