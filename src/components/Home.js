@@ -1,14 +1,13 @@
 import "../styles/Home.css";
 import React, { useEffect, useState } from "react";
-import { useHistory } from "react-router-dom";
+import { useNavigate } from "react-router-dom"; // useHistory yerine useNavigate
 import { auth } from "../firebase";
-import Info from "./info"; // Dosya adı büyük/küçük harf duyarlı olabilir
+import Info from "./Info"; 
 
 export default function Home() {
-  const history = useHistory();
+  const navigate = useNavigate(); // Hook değişti
   const [user, setUser] = useState(null);
 
-  // Kullanıcı durumunu dinlemek için useEffect ekledik
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((u) => {
       setUser(u);
@@ -28,7 +27,7 @@ export default function Home() {
         <div className="home-cta">
           <button 
             className="home-btn" 
-            onClick={() => history.push(user ? "/dashboard" : "/register")}
+            onClick={() => navigate(user ? "/dashboard" : "/register")}
             aria-label="Hemen Başla"
           >
             {user ? "Panele Git" : "Hemen Başla"}
@@ -36,10 +35,11 @@ export default function Home() {
         </div>
 
         <div className="home-info">
-          {/* Info bileşeni varsa gösterir, yoksa hata vermemesi için kontrol edebilirsin */}
           <Info />
         </div>
       </div>
     </div>
   );
 }
+
+
