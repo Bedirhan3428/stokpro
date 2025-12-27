@@ -6,9 +6,22 @@
   --nb-primary: #1f6feb;
   --nb-primary-light: #eff6ff;
   --nb-danger: #ef4444;
-  --nb-danger-bg: #fee2e2;
+  --nb-danger-bg: #fef2f2;
   --nb-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
   --nb-overlay: rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] {
+  --nb-bg: #1f2937;
+  --nb-border: #374151;
+  --nb-text: #f9fafb;
+  --nb-text-sub: #9ca3af;
+  --nb-primary: #60a5fa;
+  --nb-primary-light: #1e3a8a;
+  --nb-danger: #f87171;
+  --nb-danger-bg: #450a0a;
+  --nb-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+  --nb-overlay: rgba(0, 0, 0, 0.7);
 }
 
 * { box-sizing: border-box; }
@@ -23,11 +36,12 @@
   top: 0;
   z-index: 100;
   box-shadow: var(--nb-shadow);
+  transition: background-color 0.3s, border-color 0.3s;
 }
 
 .nb-container {
-  max-width: 1200px;
   width: 100%;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px;
   height: 100%;
@@ -56,11 +70,19 @@
   color: var(--nb-text-sub); font-weight: 600; font-size: 0.95rem; transition: all 0.2s;
   white-space: nowrap;
 }
-.nb-link:hover { background-color: #f3f4f6; color: var(--nb-text); }
+.nb-link:hover { background-color: var(--nb-primary-light); color: var(--nb-primary); }
 .nb-link.aktif { background-color: var(--nb-primary-light); color: var(--nb-primary); }
 
 /* SAĞ TARAF */
 .nb-aksiyonlar { display: flex; align-items: center; gap: 12px; }
+
+.nb-icon-btn {
+  background: transparent; border: 1px solid var(--nb-border);
+  width: 40px; height: 40px; border-radius: 10px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem; color: var(--nb-text); transition: all 0.2s;
+}
+.nb-icon-btn:hover { background-color: var(--nb-primary-light); color: var(--nb-primary); border-color: var(--nb-primary); }
 
 /* PROFIL DROPDOWN */
 .nb-profil-wrapper { position: relative; }
@@ -68,7 +90,7 @@
   display: flex; align-items: center; gap: 10px; background: transparent;
   border: none; cursor: pointer; padding: 6px 10px; border-radius: 10px; transition: background 0.2s;
 }
-.nb-profil-btn:hover, .nb-profil-btn.acik { background-color: #f3f4f6; }
+.nb-profil-btn:hover, .nb-profil-btn.acik { background-color: var(--nb-primary-light); }
 
 .nb-avatar {
   width: 36px; height: 36px; background-color: var(--nb-primary); color: white;
@@ -83,12 +105,12 @@
 .nb-dropdown {
   position: absolute; top: 130%; right: 0; width: 240px;
   background-color: var(--nb-bg); border: 1px solid var(--nb-border);
-  border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+  border-radius: 12px; box-shadow: var(--nb-shadow);
   overflow: hidden; animation: slideDown 0.2s ease-out;
 }
 @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
-.nb-dropdown-header { padding: 16px; border-bottom: 1px solid var(--nb-border); background-color: #f9fafb; }
+.nb-dropdown-header { padding: 16px; border-bottom: 1px solid var(--nb-border); background-color: var(--nb-primary-light); }
 .nb-dropdown-header strong { display: block; color: var(--nb-text); font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; }
 .nb-dropdown-header small { color: var(--nb-text-sub); }
 
@@ -97,7 +119,7 @@
   text-align: left; background: transparent; border: none; padding: 12px 14px;
   border-radius: 8px; cursor: pointer; color: var(--nb-text); font-weight: 500; font-size: 0.95rem;
 }
-.nb-dropdown-items button:hover { background-color: #f3f4f6; }
+.nb-dropdown-items button:hover { background-color: var(--nb-primary-light); color: var(--nb-primary); }
 .nb-dropdown-items button.nb-danger { color: var(--nb-danger); }
 .nb-dropdown-items button.nb-danger:hover { background-color: var(--nb-danger-bg); }
 
@@ -121,7 +143,7 @@
 
 .nb-mobil-menu {
   position: fixed; top: 0; right: 0; width: 85%; max-width: 320px;
-  height: 100dvh; /* TAM EKRAN ÇÖZÜMÜ */
+  height: 100dvh; /* TAM YÜKSEKLİK */
   background-color: var(--nb-bg); z-index: 200;
   box-shadow: -5px 0 20px rgba(0,0,0,0.2); display: flex; flex-direction: column;
   transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -140,7 +162,7 @@
 .nb-mobil-list .nb-link { font-size: 1.1rem; padding: 14px; border: 1px solid var(--nb-border); }
 
 .nb-mobil-footer {
-  padding: 20px; border-top: 1px solid var(--nb-border); background-color: #f9fafb;
+  padding: 20px; border-top: 1px solid var(--nb-border); background-color: var(--nb-primary-light);
   flex-shrink: 0; padding-bottom: max(20px, env(safe-area-inset-bottom));
 }
 
