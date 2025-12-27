@@ -1,19 +1,21 @@
 import "../styles/Dashboard.css";
 import React, { useEffect, useMemo, useState } from "react";
 import { Doughnut } from "react-chartjs-2";
+import { useHistory } from "react-router-dom"; // Yönlendirme için
 import {
   listSales,
   listLedger,
   listCustomers,
   listCustomerPayments,
   listLegacyIncomes,
-  listLegacyExpenses
+  listLegacyExpenses,
+  getUserProfile // Profil çekmek için ekledik
 } from "../utils/firebaseHelpers";
-// Ürün kategorilerini bulabilmek için ürün listesine ihtiyacımız var
 import { listProductsForCurrentUser } from "../utils/artifactUserProducts"; 
 import "../utils/chartSetup";
 import AdvancedReport from "./AdvancedReport";
 import useSubscription from "../hooks/useSubscription";
+import { auth } from "../firebase"; // Auth importu gerekli
 
 function parseTimestamp(createdAt) {
   if (!createdAt) return null;
@@ -38,8 +40,9 @@ function labelForLedgerEntry(l) {
 }
 
 export default function Dashboard() {
+  const history = useHistory();
   const [sales, setSales] = useState([]);
-  const [products, setProducts] = useState([]); // Ürünleri tutmak için state
+  const [products, setProducts] = useState([]); 
   const [ledger, setLedger] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [customerPaymentsMap, setCustomerPaymentsMap] = useState({});
@@ -47,6 +50,12 @@ export default function Dashboard() {
   const [legacyExpenses, setLegacyExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Yeni State'ler
+  const [userName, setUserName] = useState("");
+  const [isTrialEligible, setIsTrialEligible] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
+
   const { loading: subLoading, active: subActive } = useSubscription();
 
   useEffect(() => {
@@ -55,22 +64,43 @@ export default function Dashboard() {
       setLoading(true);
       setError(null);
       try {
-        const [salesData, ledgerData, customersData, legacyInc, legacyExp, productsData] = await Promise.all([
+        const uid = auth.currentUser?.uid;
+        
+        // Paralel veri çekme
+        const [salesData, ledgerData, customersData, legacyInc, legacyExp, productsData, userProfile] = await Promise.all([
           listSales(),
           listLedger(),
           listCustomers(),
           listLegacyIncomes(),
           listLegacyExpenses(),
-          listProductsForCurrentUser() // Ürünleri de çekiyoruz
+          listProductsForCurrentUser(),
+          uid ? getUserProfile(uid) : Promise.resolve(null)
         ]);
 
         if (!mounted) return;
+
         setSales(Array.isArray(salesData) ? salesData : []);
         setLedger(Array.isArray(ledgerData) ? ledgerData : []);
         setCustomers(Array.isArray(customersData) ? customersData : []);
         setLegacyIncomes(Array.isArray(legacyInc) ? legacyInc : []);
         setLegacyExpenses(Array.isArray(legacyExp) ? legacyExp : []);
-        setProducts(Array.isArray(productsData) ? productsData : []); // State'e atıyoruz
+        setProducts(Array.isArray(productsData) ? productsData : []);
+
+        // Kullanıcı Adı ve Deneme Hakkı Kontrolü
+        if (userProfile) {
+          setUserName(userProfile.name || "Kullanıcı");
+          
+          // Basit deneme kontrolü: Hesap 14 günden yeniyse deneme hakkı var sayalım
+          const createdAt = parseTimestamp(userProfile.createdAt) || new Date();
+          const now = new Date();
+          const diffDays = (now - createdAt) / (1000 * 60 * 60 * 24);
+          setIsTrialEligible(diffDays < 14);
+        }
+
+        // Hoş geldin popup kontrolü: Ürün yoksa göster
+        if ((!productsData || productsData.length === 0)) {
+          setShowWelcome(true);
+        }
 
         const paymentsMap = {};
         await Promise.all(
@@ -87,7 +117,6 @@ export default function Dashboard() {
         setCustomerPaymentsMap(paymentsMap);
       } catch (err) {
         if (mounted) setError(String(err?.message || err));
-        // Hata durumunda state'leri temizle
         setSales([]);
         setLedger([]);
         setCustomers([]);
@@ -211,7 +240,6 @@ export default function Dashboard() {
     };
   }, [sales, legacyIncomes, legacyExpenses, customerPaymentsMap, last30]);
 
-  // --- KATEGORİ HESAPLAMASI (YENİ) ---
   const categoryStats = useMemo(() => {
     const stats = {};
     if (!sales.length || !products.length) return [];
@@ -219,21 +247,17 @@ export default function Dashboard() {
     sales.forEach(sale => {
       const items = Array.isArray(sale.items) ? sale.items : [];
       items.forEach(item => {
-        // Ürünü ID ile bul
         const product = products.find(p => p.id === item.productId);
-        // Kategori yoksa "Diğer"
         const cat = product?.category || "Diğer";
         const total = (Number(item.price) || 0) * (Number(item.qty) || 0);
         stats[cat] = (stats[cat] || 0) + total;
       });
     });
 
-    // Array'e çevir ve ciroya göre sırala
     const sorted = Object.entries(stats)
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value);
-    
-    // Toplam ciro (yüzdelik hesaplamak için)
+
     const grandTotal = sorted.reduce((acc, curr) => acc + curr.value, 0);
 
     return sorted.map(s => ({
@@ -333,15 +357,63 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="dash-sayfa">
+    <div className="dash-sayfa" style={{ position: 'relative' }}>
+       {/* --- YENİ EKLENEN POPUP --- */}
+       {showWelcome && !loading && (
+        <div 
+          className="dash-kart" 
+          style={{
+            background: 'linear-gradient(135deg, #e3f2fd, #bbdefb)', 
+            borderLeft: '5px solid #1f6feb',
+            marginBottom: '1.5rem',
+            position: 'relative'
+          }}
+        >
+          <button 
+            onClick={() => setShowWelcome(false)} 
+            style={{ position: 'absolute', top: '10px', right: '15px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '1.2rem', color: '#555'}}
+          >
+            ×
+          </button>
+          <h4 style={{ color: '#0d47a1', margin: '0 0 0.5rem 0' }}>Hoş geldin {userName}! 👋</h4>
+          <p style={{ margin: 0, color: '#333' }}>
+            Hadi ilk ürününü ekleyerek işe koyulalım! Ürünlerinizi ekledikten sonra buradan satışları takip edebilirsiniz.
+          </p>
+          <button 
+            onClick={() => history.push('/products')} // Ürünler sayfasına yönlendirme (route'un '/products' olduğunu varsayıyorum)
+            style={{ 
+              marginTop: '10px', 
+              padding: '8px 16px', 
+              backgroundColor: '#1f6feb', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '6px', 
+              cursor: 'pointer',
+              fontWeight: '500'
+            }}
+          >
+            Ürün Ekle
+          </button>
+        </div>
+      )}
+
+      {/* --- ABONELİK UYARISI / DENEME TEKLİFİ --- */}
        {!subLoading && !subActive && (
-        <div className="acc-kart acc-uyari-kutu">
-          <div className="acc-uyari-baslik">Abonelik gerekli</div>
-          <div className="acc-yazi-ince">
-           <a href="https://www.stokpro.shop/product-key" style={{color:"#1f6feb",fontWeight:"bold"}}>Satın Almak için tıklayın</a>
+        <div className="acc-kart acc-uyari-kutu" style={{
+          backgroundColor: isTrialEligible ? '#ecfdf5' : '#fef2f2', 
+          borderColor: isTrialEligible ? '#34d399' : '#ef4444'
+        }}>
+          <div className="acc-uyari-baslik" style={{ color: isTrialEligible ? '#047857' : '#991b1b' }}>
+            {isTrialEligible ? "Ücretsiz Deneme Fırsatı" : "Abonelik Gerekli"}
+          </div>
+          <div className="acc-yazi-ince" style={{ color: isTrialEligible ? '#065f46' : '#991b1b' }}>
+           <a href="https://www.stokpro.shop/product-key" style={{color: isTrialEligible ? "#059669" : "#dc2626", fontWeight:"bold"}}>
+             {isTrialEligible ? "Şimdi Ücretsiz Dene" : "Satın Almak için tıklayın"}
+           </a>
           </div>
         </div>
       )}
+
       <h3 className="dash-baslik">Dashboard</h3>
       {error && <div className="dash-hata">Hata: {error}</div>}
 
@@ -425,7 +497,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* --- KATEGORİ BAZLI SATIŞLAR (YENİ BÖLÜM) --- */}
       {categoryStats.length > 0 && (
         <div className="dash-kart">
           <h4 className="dash-etiket-buyuk">Kategori Bazlı Satış Dağılımı</h4>
