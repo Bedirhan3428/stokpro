@@ -1,221 +1,205 @@
-/* ✨ Beyaz-Siyah Gölge Geçişli Animasyon ✨ */
-html, body, #root { 
-  height: 100%; 
-  margin: 0;
-}
-
+/* --- GLOBAL DEĞİŞKENLER & TEMA --- */
 :root {
-  --bg: #f8fafc;
-  --text: #0f172a;
-  --subtext: #64748b;
-  --border: #dbe3f3;
-  --card: #ffffff;
-  --shadow: 0 12px 30px rgba(15, 67, 146, 0.12);
-}
-
-/* Karanlık tema değişkenleri */
-:root[data-theme="dark"] {
-  --bg: #0b1220;
-  --text: #e5e7eb;
-  --subtext: #94a3b8;
-  --border: #1f2937;
-  --card: #0f172a;
-  --shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
-
-  /* Accounting */
-  --acc-beyaz: #0f172a;
-  --acc-gri: #cbd5e1;
-  --acc-gri-acik: #1f2937;
-  --acc-mavi: #60a5fa;
-  --acc-mavi-orta: #3b82f6;
-  --acc-mavi-acik: #1f3a63;
-
-  /* AdvancedReport */
-  --r-beyaz: #0f172a;
-  --r-arka: #0b1220;
-  --r-gri: #cbd5e1;
-  --r-mavi: #60a5fa;
-  --r-mavi-acik: #1e293b;
-
-  /* Customers */
-  --m-beyaz: #0f172a;
-  --m-gri: #cbd5e1;
-  --m-mavi: #60a5fa;
-  --m-mavi-orta: #3b82f6;
-
-  /* Dashboard */
-  --d-beyaz: #0f172a;
-  --d-gri: #cbd5e1;
-  --d-mavi: #60a5fa;
-  --d-mavi-orta: #3b82f6;
-
-  /* ForgotPassword */
-  --fp-beyaz: #0f172a;
-  --fp-gri: #cbd5e1;
-  --fp-mavi: #60a5fa;
-
-  /* Home */
-  --h-bg-card: rgba(15, 23, 42, 0.92);
-  --h-text-main: #e5e7eb;
-  --h-text-sub: #cbd5e1;
-  --h-primary: #60a5fa;
-  --h-primary-hover: #3b82f6;
-  --h-shadow: 0 20px 25px -5px rgba(0,0,0,0.45), 0 8px 10px -6px rgba(0,0,0,0.5);
-
-  /* Info */
-  --i-mavi: #60a5fa;
-  --i-gri: #cbd5e1;
-
-  /* Login */
-  --lg-bg: #0b1220;
-  --lg-surface: #0f172a;
-  --lg-text-main: #e5e7eb;
-  --lg-text-sub: #94a3b8;
-  --lg-border: #1f2937;
-  --lg-shadow: 0 20px 25px -5px rgba(0,0,0,0.55), 0 8px 10px -6px rgba(0,0,0,0.6);
-
-  /* Navbar */
-  --nb-beyaz: #0f172a;
-  --nb-gri: #cbd5e1;
-  --nb-mavi: #60a5fa;
-  --nb-mavi-orta: #3b82f6;
-
-  /* NotFound */
-  --nf-beyaz: #0f172a;
-  --nf-gri: #cbd5e1;
-  --nf-mavi: #60a5fa;
-
-  /* ProductForm */
-  --pf-beyaz: #0f172a;
-  --pf-gri: #cbd5e1;
-  --pf-mavi: #60a5fa;
-  --pf-mavi-orta: #3b82f6;
-
-  /* Products */
-  --prd-beyaz: #0f172a;
-  --prd-gri: #cbd5e1;
-  --prd-mavi: #60a5fa;
-  --prd-mavi-orta: #3b82f6;
-
-  /* Register */
-  --reg-bg: #0b1220;
-  --reg-surface: #0f172a;
-  --reg-text-main: #e5e7eb;
-  --reg-text-sub: #94a3b8;
-  --reg-border: #1f2937;
-  --reg-shadow: 0 20px 25px -5px rgba(0,0,0,0.55), 0 8px 10px -6px rgba(0,0,0,0.6);
-
-  /* Sales */
-  --sl-beyaz: #0f172a;
-  --sl-gri: #cbd5e1;
-  --sl-mavi: #60a5fa;
-  --sl-mavi-orta: #3b82f6;
-
-  /* Settings */
-  --set-beyaz: #0f172a;
-  --set-gri: #cbd5e1;
-  --set-mavi: #60a5fa;
-  --set-mavi-orta: #3b82f6;
-}
-
-body {
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-  background: var(--bg);
-  color: var(--text);
-  transition: background-color 0.25s ease, color 0.25s ease;
-  min-height: 100vh;
-  position: relative;
-  overflow-x: hidden;
-}
-
-/* Light Tema Animasyonu (Mevcut) */
-:root:not([data-theme="dark"]) body {
-  background:  linear-gradient(
-    -45deg,
-    #ffffff,
-    #e0e0e0,
-    #9a9a9a,
-    #ffffff,
-    #d0d0d0,
-    #7a7a7a,
-    #ffffff,
-    #b0b0b0
-  );
-  background-size: 400% 400%;
-  animation: shadowGradient 60s ease infinite;
-}
-
-@keyframes shadowGradient {
-  0% { background-position: 0% 50%; }
-  25% { background-position: 50% 100%; }
-  50% { background-position: 100% 50%; }
-  75% { background-position: 50% 0%; }
-  100% { background-position: 0% 50%; }
-}
-
-/* ✨ DARK MODE ÖZEL ANİMASYON (Tam Ekran Mavi Geçiş) ✨ */
-:root[data-theme="dark"] body::before {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: -1; /* İçeriğin arkasında kalsın */
+  /* --- AYDINLIK MOD (Varsayılan) - YUMUŞATILDI --- */
   
-  /* Daha geniş ve yumuşak mavi geçiş gradyanı */
-  background: linear-gradient(
-    180deg, 
-    transparent 0%, 
-    transparent 40%, 
-    rgba(37, 99, 235, 0.05) 45%,  /* Çok hafif mavi başlangıç */
-    rgba(59, 130, 246, 0.15) 50%, /* Ana Mavi Parlama */
-    rgba(29, 78, 216, 0.20) 55%,  /* Koyu Mavi Yoğunluk */
-    rgba(37, 99, 235, 0.05) 60%,
-    transparent 65%,
-    transparent 100%
-  );
+  /* Arka Plan: Artık sert gradyanlar yok. Çok hafif, temiz bir gri-beyaz tonu. */
+  --bg-body: #f8f9fa; 
+  --bg-surface: #ffffff;
   
-  background-size: 100% 300%; /* Dikeyde daha uzun bir alan */
-  animation: blueScan 20s linear infinite; /* Çok yavaş akış */
+  /* Metin Renkleri */
+  --text-primary: #1e293b; /* Simsiyah yerine koyu lacivert-gri (daha yumuşak) */
+  --text-secondary: #64748b;
+  
+  /* Kenarlıklar */
+  --border-color: #e2e8f0;
+  
+  /* Marka Renkleri */
+  --brand-primary: #2563eb;
+  --brand-primary-hover: #1d4ed8;
+  --brand-accent: #eff6ff; /* Çok açık mavi (vurgular için) */
+  
+  /* Durum Renkleri */
+  --status-success: #10b981;
+  --status-danger: #ef4444;
+  --status-warning: #f59e0b;
+  
+  /* Gölgeler: Siyah yerine, rengin tonundan üretilen çok hafif gölgeler */
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.02);
+  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.06), 0 2px 4px -1px rgba(15, 23, 42, 0.03);
+  --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.06), 0 4px 6px -2px rgba(15, 23, 42, 0.03);
+  
+  /* Geçişler */
+  --transition-speed: 0.3s;
 }
 
-@keyframes blueScan {
-  0% {
-    background-position: 50% 100%; /* Aşağıdan başla */
-  }
-  100% {
-    background-position: 50% -50%; /* Yukarıya doğru akıp git */
-  }
+/* --- KARANLIK MOD (Beğendiğin hali korundu) --- */
+[data-theme="dark"] {
+  --bg-body: #0f172a;      /* Derin lacivert-siyah */
+  --bg-surface: #1e293b;   /* Kartlar için biraz daha açık */
+  
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  
+  --border-color: #334155;
+  
+  --brand-primary: #3b82f6;
+  --brand-primary-hover: #60a5fa;
+  --brand-accent: #1e3a8a;
+  
+  --status-success: #34d399;
+  --status-danger: #f87171;
+  --status-warning: #fbbf24;
+  
+  /* Koyu modda gölgeler daha belirgin olabilir ama yine de yumuşak */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
 }
 
-
-/* Global scrollbar teması */
+/* --- TEMEL AYARLAR --- */
 * {
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
+  box-sizing: border-box;
 }
 
-:root {
-  --border: #dbe3f3;
-  --card: #ffffff;
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  
+  /* Arka plan geçişi */
+  background-color: var(--bg-body);
+  color: var(--text-primary);
+  transition: background-color var(--transition-speed) ease, color var(--transition-speed) ease;
+  
+  /* Metin okuma kolaylığı */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-:root[data-theme="dark"] {
-  --border: #1f2937;
-  --card: #0f172a;
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
-:root {
-  --card: #ffffff;
-  --border: #dbe3f3;
-  --text: #0f172a;
-  --subtext: #64748b;
+/* --- ORTAK BİLEŞEN STİLLERİ --- */
+
+/* Butonlar */
+button {
+  font-family: inherit;
 }
-:root[data-theme="dark"] {
-  --card: #0f172a;
-  --border: #1f2937;
-  --text: #e5e7eb;
-  --subtext: #94a3b8;
+
+/* Kart Yapısı (Tüm sayfalarda standart) */
+.card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 16px; /* Daha modern yuvarlak köşeler */
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color var(--transition-speed) ease, border-color var(--transition-speed) ease;
+}
+
+.card:hover {
+  /* Hover efektini çok hafiflettim, zıplama hissini azalttım */
+  box-shadow: var(--shadow-md); 
+}
+
+/* Input ve Form Elemanları */
+input, select, textarea {
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.95rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--brand-primary);
+  /* Odaklanınca oluşan mavi halkayı (ring) çok daha şeffaf yaptım */
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); 
+}
+
+/* Linkler */
+a {
+  color: var(--brand-primary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+a:hover {
+  color: var(--brand-primary-hover);
+}
+
+/* --- SCROLLBAR (Modern Tarayıcılar İçin) --- */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent; 
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background-color: #475569;
+}
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background-color: #64748b;
+}
+
+/* --- YARDIMCI SINIFLAR --- */
+.text-muted { color: var(--text-secondary); }
+.text-danger { color: var(--status-danger); }
+.text-success { color: var(--status-success); }
+
+/* Yükleniyor Spinner (Merkezi) */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  width: 100%;
+  color: var(--text-secondary);
+  background-color: var(--bg-body);
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--brand-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* --- ANİMASYONLAR (Sayfa Geçişleri İçin) --- */
+.page-enter {
+  opacity: 0;
+  transform: translateY(10px);
+}
+.page-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
 }
