@@ -54,6 +54,9 @@ export default function Dashboard() {
   const [userName, setUserName] = useState("");
   const [isTrialEligible, setIsTrialEligible] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
+  
+  // Abonelik kalan gün sayısı için state
+  const [daysLeft, setDaysLeft] = useState(null);
 
   const { loading: subLoading, active: subActive } = useSubscription();
 
@@ -90,6 +93,16 @@ export default function Dashboard() {
           const now = new Date();
           const diffDays = (now - createdAt) / (1000 * 60 * 60 * 24);
           setIsTrialEligible(diffDays < 14);
+
+          // Abonelik Kalan Süre Hesaplama
+          if (userProfile.subscriptionEndDate) {
+            const endDate = parseTimestamp(userProfile.subscriptionEndDate);
+            if (endDate) {
+              const diffTime = endDate - now;
+              const remainingDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+              setDaysLeft(remainingDays);
+            }
+          }
         }
 
         if ((!productsData || productsData.length === 0)) {
@@ -313,17 +326,22 @@ export default function Dashboard() {
 
   return (
     <div className="dash-sayfa">
-       {/* --- POPUP --- */}
-       {showWelcome && !loading && (
-        <div className="dash-kart welcome-box">
-          <button onClick={() => setShowWelcome(false)} className="close-btn">×</button>
-          <h4>Hoş geldin {userName}! 👋</h4>
-          <p>Hadi ilk ürününü ekleyerek işe koyulalım!</p>
-          <button onClick={() => navigate('/products')} className="action-btn">Ürün Ekle</button>
-        </div>
-      )}
+       
+       {/* --- YENİ: ABONELİK BİTİŞ UYARISI --- */}
+       {subActive && daysLeft !== null && daysLeft <= 7 && daysLeft >= 0 && (
+         <div className="dash-expire-warning">
+           <div className="dash-expire-icon">⚠️</div>
+           <div className="dash-expire-content">
+             <div className="dash-expire-title">Abonelik Sona Eriyor!</div>
+             <div className="dash-expire-text">
+               Aboneliğinizin bitmesine <strong>{daysLeft} gün</strong> kaldı. Hizmet kesintisi yaşamamak için lütfen sürenizi uzatın.
+             </div>
+           </div>
+           <button onClick={() => navigate('/settings')} className="dash-expire-btn">Uzat</button>
+         </div>
+       )}
 
-       {/* --- ABONELİK UYARISI --- */}
+       {/* --- ABONELİK ZORUNLU UYARISI (Mevcut) --- */}
        {!subLoading && !subActive && (
           <div className={`acc-uyari-kutu ${isTrialEligible ? 'trial-box' : 'subscription-box'}`}>
             <div className={`acc-uyari-baslik ${isTrialEligible ? 'trial-eligible' : 'subscription-required'}`}>
@@ -335,6 +353,16 @@ export default function Dashboard() {
               </a>
             </div>
           </div>
+      )}
+
+       {/* --- HOŞ GELDİN POPUP --- */}
+       {showWelcome && !loading && (
+        <div className="dash-kart welcome-box">
+          <button onClick={() => setShowWelcome(false)} className="close-btn">×</button>
+          <h4>Hoş geldin {userName}! 👋</h4>
+          <p>Hadi ilk ürününü ekleyerek işe koyulalım!</p>
+          <button onClick={() => navigate('/products')} className="action-btn">Ürün Ekle</button>
+        </div>
       )}
 
       <h3 className="dash-baslik">Genel Bakış</h3>
@@ -354,7 +382,6 @@ export default function Dashboard() {
         </div>
 
         <div className="dash-kart">
-          {/* GİDER YAZISI BELİRGİN VE KIRMIZI */}
           <div className="dash-etiket expense-label">Haftalık Giderler</div>
           <div className="dash-deger expense-value">
             {(weekly.expensesTotal || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}
@@ -390,7 +417,6 @@ export default function Dashboard() {
                 <div className="dash-etiket">Tahsilatlar</div>
                 <div className="dash-kalin">{(monthly.customerPayments || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</div>
               </div>
-              {/* MİNİ KARTTA GİDERLER VURGULU */}
               <div className="dash-mini-kart expense-card-border">
                 <div className="dash-etiket expense-label-mini">Giderler</div>
                 <div className="dash-kalin expense-value-mini">{(monthly.legacyExpense || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</div>
@@ -459,4 +485,5 @@ export default function Dashboard() {
     </div>
   );
 }
+
 
