@@ -1,11 +1,8 @@
 import "../styles/AdvancedReport.css";
 import React, { useEffect, useMemo, useState } from "react";
-import { Line, Bar, Doughnut } from "react-chartjs-2";
+import { Line, Bar } from "react-chartjs-2";
 import {
   listSales,
-  listLedger,
-  listCustomers,
-  listCustomerPayments,
   listLegacyIncomes,
   listLegacyExpenses
 } from "../utils/firebaseHelpers";
@@ -29,10 +26,11 @@ function parseDateKey(date) {
   return `${y}-${m}-${d}`;
 }
 
-// Doğrusal Regresyon (Tahminleme için)
+// Doğrusal Regresyon
 function linearRegression(y) {
   const x = y.map((_, i) => i);
   const n = y.length;
+  if (n === 0) return { slope: 0, intercept: 0 };
   const sumX = x.reduce((a, b) => a + b, 0);
   const sumY = y.reduce((a, b) => a + b, 0);
   const sumXY = x.reduce((a, b, i) => a + b * y[i], 0);
@@ -45,11 +43,9 @@ function linearRegression(y) {
 export default function AdvancedReport() {
   const [salesRaw, setSalesRaw] = useState([]);
   const [products, setProducts] = useState([]);
-  const [legacyIncomes, setLegacyIncomes] = useState([]);
-  const [legacyExpenses, setLegacyExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Analiz periyodu (Son 30 gün varsayılan)
+  // Analiz periyodu
   const DAYS_LOOKBACK = 30;
 
   useEffect(() => {
@@ -59,16 +55,12 @@ export default function AdvancedReport() {
   async function loadData() {
     setLoading(true);
     try {
-      const [s, p, lInc, lExp] = await Promise.all([
+      const [s, p] = await Promise.all([
         listSales(),
         listProductsForCurrentUser(),
-        listLegacyIncomes(),
-        listLegacyExpenses()
       ]);
       setSalesRaw(Array.isArray(s) ? s : []);
       setProducts(Array.isArray(p) ? p : []);
-      setLegacyIncomes(Array.isArray(lInc) ? lInc : []);
-      setLegacyExpenses(Array.isArray(lExp) ? lExp : []);
     } catch (err) {
       console.error("Rapor hatası:", err);
     } finally {
@@ -82,7 +74,6 @@ export default function AdvancedReport() {
     const cutoffDate = new Date();
     cutoffDate.setDate(today.getDate() - DAYS_LOOKBACK);
 
-    // Trend analizi için son 3 gün sınırı
     const threeDaysAgo = new Date();
     threeDaysAgo.setDate(today.getDate() - 3);
 
@@ -91,20 +82,26 @@ export default function AdvancedReport() {
     let totalRevenue = 0;
     let totalSalesCount = 0;
 
-    // Ürün bazlı satış sayaçları (Stok analizi için)
-    const productSalesStats = {}; // { productId: { totalQty30: 0, recentQty3: 0 } }
-
-    // Ürün haritasını başlat
+    // Ürün İstatistikleri
+    const productStats = {}; 
+    
     products.forEach(p => {
-      productSalesStats[p.id] = { 
+      // Ürün yaşını hesapla (Gün cinsinden)
+      const createdAt = parseTimestamp(p.createdAt) || new Date(0); // Tarih yoksa eski say
+      const ageInDays = (today - createdAt) / (1000 * 60 * 60 * 24);
+
+      productStats[p.id] = { 
+        id: p.id,
         name: p.name, 
         stock: Number(p.stock || 0), 
         totalQty30: 0, 
-        recentQty3: 0 
+        recentQty3: 0,
+        revenue: 0,
+        ageInDays: ageInDays // Yeni ürün kontrolü için
       };
     });
 
-    // Satışları işle
+    // Satışları İşle
     const filteredSales = salesRaw.filter(s => {
       const d = parseTimestamp(s.createdAt || s.date);
       return d && d >= cutoffDate;
@@ -125,322 +122,239 @@ export default function AdvancedReport() {
       items.forEach(item => {
         const pid = item.productId;
         const qty = Number(item.qty || 0);
+        const price = Number(item.price || 0);
         
-        if (productSalesStats[pid]) {
-            productSalesStats[pid].totalQty30 += qty;
+        if (productStats[pid]) {
+            productStats[pid].totalQty30 += qty;
+            productStats[pid].revenue += (qty * price);
             if (d >= threeDaysAgo) {
-                productSalesStats[pid].recentQty3 += qty;
+                productStats[pid].recentQty3 += qty;
             }
         }
       });
     });
 
-    // --- YENİ EKLENEN ÖZELLİKLER: STOK & TREND ANALİZİ ---
-    const stockAlerts = [];
-
-    Object.values(productSalesStats).forEach(stat => {
-        // 1. Kritik Seviye Analizi
-        // Satış hızı (Günlük ortalama - son 30 gün)
-        const dailyVelocity = stat.totalQty30 / DAYS_LOOKBACK;
-        let daysToDeplete = 999;
+    // --- GRUPLAMA VE FİLTRELEME ---
+    
+    // 1. Kritik Stok Listesi (< 10 veya 3 gün içinde bitecek)
+    const criticalStockList = Object.values(productStats)
+      .filter(p => {
+        if (p.stock <= 0) return false; // Zaten bitmişleri sayma
         
-        if (dailyVelocity > 0) {
-            daysToDeplete = stat.stock / dailyVelocity;
-        }
+        const dailyVelocity = p.totalQty30 / DAYS_LOOKBACK;
+        const daysToDeplete = dailyVelocity > 0 ? p.stock / dailyVelocity : 999;
+        
+        // KURAL: Stok 10'dan azsa VEYA satış hızına göre 3 günde bitecekse
+        return p.stock < 10 || daysToDeplete <= 3;
+      })
+      .sort((a, b) => a.stock - b.stock) // En az stoktan en çoka
+      .slice(0, 5); // Sadece ilk 5
 
-        if (stat.stock > 0 && daysToDeplete <= 3) {
-            stockAlerts.push({
-                type: 'critical',
-                msg: `Dikkat! ${stat.name} stoğunuz bitmek üzere. Tedarik süresini hesaba katarak bugün sipariş geçmeniz önerilir. 🚨`
-            });
-        }
+    // 2. Ölü Stok Listesi (Hiç satmamış ama yeni de değil)
+    const deadStockList = Object.values(productStats)
+      .filter(p => {
+        // KURAL: Stokta var + Son 30 gün satmamış + En az 30 günlük ürün (yeni eklenen değil)
+        return p.stock > 0 && p.totalQty30 === 0 && p.ageInDays > 30;
+      })
+      .sort((a, b) => b.stock - a.stock) // En çok stokta bekleyenden aza
+      .slice(0, 5);
 
-        // 2. Trend Analizi
-        // Normal (beklenen) 3 günlük satış: (30 günlük ortalama * 3)
+    // 3. Trend Listesi (Ani artış)
+    const trendingList = Object.values(productStats)
+      .filter(p => {
+        const dailyVelocity = p.totalQty30 / DAYS_LOOKBACK;
         const expected3DaySales = dailyVelocity * 3;
-        // Eğer en az 3-5 satış varsa ve son 3 gün, normalden %30 fazlaysa
-        if (stat.recentQty3 > 5 && stat.recentQty3 > (expected3DaySales * 1.30)) {
-            stockAlerts.push({
-                type: 'trend',
-                msg: `Bu hafta ${stat.name} satışlarınızda ciddi bir artış var! Talebi karşılamak için stok takviyesi planlayabilirsiniz. 📈`
-            });
-        }
+        // KURAL: Son 3 günde 3'ten fazla satmış ve beklentinin %30 üzerinde
+        return p.recentQty3 > 3 && p.recentQty3 > (expected3DaySales * 1.3);
+      })
+      .sort((a, b) => b.recentQty3 - a.recentQty3)
+      .slice(0, 3);
 
-        // 3. Ölü Stok Analizi
-        // Son 30 gündür hiç satılmadıysa ve stokta varsa
-        if (stat.stock > 0 && stat.totalQty30 === 0) {
-            stockAlerts.push({
-                type: 'dead',
-                msg: `${stat.name} bir süredir rafta bekliyor. Depoda yer açmak için bir kampanya veya indirim yapmaya ne dersiniz.`
-            });
-        }
-    });
+    // 4. En İyi Gelir Getirenler (Top Performers)
+    const topRevenueList = Object.values(productStats)
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5);
 
-    // Grafikler için diziler
+
+    // Genel Grafik Verileri
     const sortedDays = Object.keys(dailyData).sort();
     const revenueSeries = sortedDays.map(d => dailyData[d]);
-
-    // 2. Trend Analizi (Genel Ciro Regresyonu)
     const { slope } = linearRegression(revenueSeries);
     const trendDirection = slope > 0 ? "up" : "down";
-
-    // 3. Haftanın En İyi Günü Analizi (Seasonality)
-    const dayPerformance = Array(7).fill(0); // 0: Pazar, 1: Pzt...
+    
+    // En yoğun gün
+    const dayPerformance = Array(7).fill(0);
     const dayCounts = Array(7).fill(0);
-
-    filteredSales.forEach(s => {
-      const d = parseTimestamp(s.createdAt || s.date);
-      if(d) {
-        const dayIdx = d.getDay();
-        dayPerformance[dayIdx] += Number(s.totals?.total || 0);
-        dayCounts[dayIdx]++;
-      }
-    });
-
-    const avgDayPerformance = dayPerformance.map((total, idx) => total / (dayCounts[idx] || 1));
-    const bestDayIndex = avgDayPerformance.indexOf(Math.max(...avgDayPerformance));
     const dayNames = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
-
-    // 4. ABC Analizi (Ürün Bazlı)
-    const productRevenue = {};
+    
     filteredSales.forEach(s => {
-      const items = Array.isArray(s.items) ? s.items : [];
-      items.forEach(item => {
-        const pid = item.productId || item.name;
-        const rev = (Number(item.price) || 0) * (Number(item.qty) || 0);
-        productRevenue[pid] = (productRevenue[pid] || 0) + rev;
-      });
+        const d = parseTimestamp(s.createdAt || s.date);
+        if(d) {
+            dayPerformance[d.getDay()] += Number(s.totals?.total || 0);
+            dayCounts[d.getDay()]++;
+        }
     });
+    const avgDayPerformance = dayPerformance.map((t, i) => t / (dayCounts[i] || 1));
+    const bestDayIndex = avgDayPerformance.indexOf(Math.max(...avgDayPerformance));
 
-    const sortedProducts = Object.entries(productRevenue)
-      .map(([id, rev]) => {
-        const pName = products.find(p => p.id === id)?.name || id;
-        return { id, name: pName, revenue: rev };
-      })
-      .sort((a, b) => b.revenue - a.revenue);
-
-    // Kümülatif hesapla ve sınıflara ayır
-    let accumulated = 0;
-    const abcList = sortedProducts.map(p => {
-      accumulated += p.revenue;
-      const percentage = (accumulated / totalRevenue) * 100;
-      let grade = 'C';
-      if (percentage <= 80) grade = 'A';
-      else if (percentage <= 95) grade = 'B';
-
-      return { ...p, grade, percentage };
-    });
-
-    // 5. Tahmini Ay Sonu (Projection)
     const avgDaily = totalRevenue / DAYS_LOOKBACK;
     const projectedMonth = avgDaily * 30;
 
     return {
       totalRevenue,
-      salesCount: totalSalesCount,
       chartLabels: sortedDays,
       chartData: revenueSeries,
-      trend: { slope, direction: trendDirection },
+      trend: { direction: trendDirection },
       bestDay: dayNames[bestDayIndex],
-      abc: {
-        aItems: abcList.filter(x => x.grade === 'A'),
-        bItems: abcList.filter(x => x.grade === 'B'),
-        cItems: abcList.filter(x => x.grade === 'C'),
-      },
-      stockAlerts, // Yeni hesaplanan uyarılar
-      projectedMonth
+      projectedMonth,
+      // Yeni Listeler
+      criticalStockList,
+      deadStockList,
+      trendingList,
+      topRevenueList,
+      salesCount: totalSalesCount
     };
 
   }, [salesRaw, products]);
 
-  // Grafik Ayarları
+  // Chart config
   const mainChartData = {
     labels: analysis.chartLabels,
-    datasets: [
-      {
-        label: 'Günlük Ciro',
-        data: analysis.chartData,
-        borderColor: '#1f6feb',
-        backgroundColor: (context) => {
-          const ctx = context.chart.ctx;
-          const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-          gradient.addColorStop(0, 'rgba(31, 111, 235, 0.2)');
-          gradient.addColorStop(1, 'rgba(31, 111, 235, 0)');
-          return gradient;
-        },
-        fill: true,
-        tension: 0.4, // Eğri çizgi
-        pointRadius: 2,
-      }
-    ]
+    datasets: [{
+      label: 'Ciro',
+      data: analysis.chartData,
+      borderColor: '#1f6feb',
+      backgroundColor: 'rgba(31, 111, 235, 0.1)',
+      fill: true,
+      tension: 0.4,
+      pointRadius: 2,
+    }]
   };
-
+  
   const mainChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        mode: 'index',
-        intersect: false,
-      }
-    },
-    scales: {
-      x: { grid: { display: false }, ticks: { maxTicksLimit: 7 } },
-      y: { grid: { color: '#f0f0f0' } }
-    }
+    plugins: { legend: { display: false } },
+    scales: { x: { display: false }, y: { grid: { color: '#f0f0f0' } } }
   };
 
-  if (loading) {
-    return <div className="adv-loading"><div className="adv-spinner"></div>Veriler analiz ediliyor...</div>;
-  }
+  if (loading) return <div className="adv-loading">Veriler analiz ediliyor...</div>;
 
   return (
     <div className="adv-container">
       <div className="adv-header">
         <div>
           <h2 className="adv-title">İş Zekası Raporu</h2>
-          <p className="adv-subtitle">Son 30 Günlük Yapay Zeka Destekli Analiz</p>
+          <p className="adv-subtitle">Hoşgeldin Bedirhan, işte işletmenin durumu.</p>
         </div>
-        <div className="adv-badge">Canlı Veri</div>
       </div>
 
-      {/* --- KPI KARTLARI --- */}
+      {/* KPI KARTLARI */}
       <div className="adv-grid-3">
         <div className="adv-card highlight-blue">
-          <div className="adv-card-label">Toplam Ciro (30 Gün)</div>
+          <div className="adv-card-label">30 Günlük Ciro</div>
           <div className="adv-big-number">
             {analysis.totalRevenue.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })}
           </div>
-          <div className="adv-trend">
-            {analysis.trend.direction === 'up' ? '📈 Yükseliş Trendi' : '📉 Düşüş Eğilimi'}
-          </div>
         </div>
-
         <div className="adv-card">
           <div className="adv-card-label">Tahmini Ay Sonu</div>
           <div className="adv-big-number">
             ~{analysis.projectedMonth.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })}
           </div>
-          <div className="adv-desc">Mevcut performansa göre</div>
         </div>
-
         <div className="adv-card">
           <div className="adv-card-label">En Yoğun Gün</div>
           <div className="adv-big-number">{analysis.bestDay}</div>
-          <div className="adv-desc">Ortalama satışın en yüksek olduğu gün</div>
         </div>
       </div>
 
-      {/* --- GRAFİK ALANI --- */}
+      {/* GRAFİK */}
       <div className="adv-card graph-container">
-        <div className="adv-card-header">
-          <h4>Satış Trendi</h4>
-          <span className="adv-tag">Günlük</span>
-        </div>
-        <div className="chart-wrapper">
-          <Line data={mainChartData} options={mainChartOptions} />
-        </div>
+        <div className="adv-card-header"><h4>Satış Grafiği</h4></div>
+        <div className="chart-wrapper"><Line data={mainChartData} options={mainChartOptions} /></div>
       </div>
 
-      {/* --- YENİ ALAN: STOK VE ENVANTER UYARILARI --- */}
-      {analysis.stockAlerts.length > 0 && (
+      {/* --- ANALİZ LİSTELERİ --- */}
+      <div className="adv-grid-2">
+        
+        {/* KRİTİK STOKLAR (Sol Üst) */}
         <div className="adv-card">
           <div className="adv-card-header">
-            <h4>Stok & Envanter Uyarıları</h4>
-            <span className="adv-tag warning-tag">Aksiyon Gerektirir</span>
+            <h4 style={{color: '#d93025'}}>🚨 Kritik Stok (Acil)</h4>
+            <small>10 adetin altı veya hızlı bitenler</small>
           </div>
-          <div className="stock-alerts-container">
-            {analysis.stockAlerts.slice(0, 5).map((alert, idx) => (
-              <div key={idx} className={`alert-item ${alert.type}`}>
-                <div className="alert-icon">
-                    {alert.type === 'critical' && '🚨'}
-                    {alert.type === 'trend' && '📈'}
-                    {alert.type === 'dead' && '📦'}
+          {analysis.criticalStockList.length === 0 ? (
+            <div className="empty-state">Stok durumu harika! Kritik ürün yok. ✅</div>
+          ) : (
+            <div className="list-group">
+              {analysis.criticalStockList.map(p => (
+                <div key={p.id} className="list-row critical-row">
+                  <span className="row-name">{p.name}</span>
+                  <span className="row-val bad-val">{p.stock} Adet</span>
                 </div>
-                <div className="alert-text">
-                  {alert.msg}
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* TREND OLANLAR (Sağ Üst) */}
+        <div className="adv-card">
+          <div className="adv-card-header">
+            <h4 style={{color: '#188038'}}>📈 Yükselen Yıldızlar</h4>
+            <small>Son 3 günde talep patlaması</small>
+          </div>
+          {analysis.trendingList.length === 0 ? (
+            <div className="empty-state">Ani bir satış sıçraması yok. Stabil.</div>
+          ) : (
+            <div className="list-group">
+              {analysis.trendingList.map(p => (
+                <div key={p.id} className="list-row trend-row">
+                  <span className="row-name">{p.name}</span>
+                  <span className="row-val good-val">+{p.recentQty3} Satış</span>
                 </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ÖLÜ STOKLAR (Sol Alt) */}
+        <div className="adv-card">
+          <div className="adv-card-header">
+            <h4 style={{color: '#e37400'}}>📦 Ölü Stoklar</h4>
+            <small>30+ gündür ekli ve hiç satmamış</small>
+          </div>
+          {analysis.deadStockList.length === 0 ? (
+            <div className="empty-state">Raf bekleyen ürün yok. Süper! 🚀</div>
+          ) : (
+            <div className="list-group">
+              {analysis.deadStockList.map(p => (
+                <div key={p.id} className="list-row dead-row">
+                  <span className="row-name">{p.name}</span>
+                  <span className="row-val">{p.stock} Adet Bekliyor</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* EN ÇOK GELİR GETİRENLER (Sağ Alt) */}
+        <div className="adv-card">
+          <div className="adv-card-header">
+            <h4 style={{color: '#1a73e8'}}>🏆 Gelir Şampiyonları</h4>
+            <small>Ciroya en çok katkı sağlayanlar</small>
+          </div>
+          <div className="list-group">
+            {analysis.topRevenueList.map((p, idx) => (
+              <div key={p.id} className="list-row">
+                <span className="row-name">
+                    <span className="rank-badge">{idx + 1}</span> {p.name}
+                </span>
+                <span className="row-val strong-val">
+                  {p.revenue.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })}
+                </span>
               </div>
             ))}
-            {analysis.stockAlerts.length > 5 && (
-              <div className="alert-more">
-                ve {analysis.stockAlerts.length - 5} diğer uyarı...
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* --- ABC ANALİZİ ve ÖNERİLER --- */}
-      <div className="adv-grid-2">
-
-        {/* ABC ANALİZİ */}
-        <div className="adv-card">
-          <div className="adv-card-header">
-            <h4>ABC Ürün Analizi</h4>
-            <span className="adv-info-icon" title="A: Cironun %80'ini yapanlar, B: %15, C: %5">?</span>
-          </div>
-          <div className="abc-container">
-            <div className="abc-group">
-              <div className="abc-header a-grade">
-                <span>A Sınıfı (Yıldızlar)</span>
-                <span>{analysis.abc.aItems.length} Ürün</span>
-              </div>
-              <div className="abc-list">
-                {analysis.abc.aItems.slice(0, 5).map(p => (
-                  <div key={p.id} className="abc-item">
-                    <span>{p.name}</span>
-                    <strong>{p.revenue.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 })}</strong>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="abc-stats">
-              <div className="abc-stat-box">
-                <span className="grade b-grade">B</span>
-                <small>{analysis.abc.bItems.length} Ürün (Standart)</small>
-              </div>
-              <div className="abc-stat-box">
-                <span className="grade c-grade">C</span>
-                <small>{analysis.abc.cItems.length} Ürün (Düşük Hacim)</small>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* AKILLI ÖNERİLER */}
-        <div className="adv-card">
-          <div className="adv-card-header">
-            <h4>Akıllı Asistan Önerileri</h4>
-          </div>
-          <div className="adv-suggestions">
-            <ul className="suggestion-list">
-              {analysis.trend.direction === 'down' && (
-                <li className="warning">
-                  ⚠️ Satışlarda düşüş eğilimi var. Son günlerdeki cirolar ortalamanın altında. Kampanya yapmayı düşünebilirsin.
-                </li>
-              )}
-              {analysis.bestDay && (
-                <li className="info">
-                  💡 <strong>{analysis.bestDay}</strong> günleri senin en bereketli günlerin. Stoklarını bugüne özel hazırlıklı tut.
-                </li>
-              )}
-              {analysis.abc.cItems.length > 5 && (
-                <li className="info">
-                  📦 C Sınıfı (Az satan) {analysis.abc.cItems.length} farklı ürünün var. Bunları eritmek için indirim yapabilirsin.
-                </li>
-              )}
-              {analysis.abc.aItems.length < 3 && (
-                <li className="danger">
-                  🚨 Cironun büyük kısmı sadece {analysis.abc.aItems.length} ürüne bağlı. Riskli durum, ürün çeşitliliğini artır.
-                </li>
-              )}
-              <li className="success">
-                ✅ Toplam {analysis.salesCount} adet satış işlemi analiz edildi. Veri akışı sağlıklı.
-              </li>
-            </ul>
           </div>
         </div>
 
@@ -448,3 +362,4 @@ export default function AdvancedReport() {
     </div>
   );
 }
+
