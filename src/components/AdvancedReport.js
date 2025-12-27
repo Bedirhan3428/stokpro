@@ -48,7 +48,7 @@ export default function AdvancedReport() {
   const [legacyIncomes, setLegacyIncomes] = useState([]);
   const [legacyExpenses, setLegacyExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   // Analiz periyodu (Son 30 gün varsayılan)
   const DAYS_LOOKBACK = 30;
 
@@ -82,11 +82,28 @@ export default function AdvancedReport() {
     const cutoffDate = new Date();
     cutoffDate.setDate(today.getDate() - DAYS_LOOKBACK);
 
+    // Trend analizi için son 3 gün sınırı
+    const threeDaysAgo = new Date();
+    threeDaysAgo.setDate(today.getDate() - 3);
+
     // 1. Veri Hazırlığı
     const dailyData = {};
     let totalRevenue = 0;
     let totalSalesCount = 0;
-    
+
+    // Ürün bazlı satış sayaçları (Stok analizi için)
+    const productSalesStats = {}; // { productId: { totalQty30: 0, recentQty3: 0 } }
+
+    // Ürün haritasını başlat
+    products.forEach(p => {
+      productSalesStats[p.id] = { 
+        name: p.name, 
+        stock: Number(p.stock || 0), 
+        totalQty30: 0, 
+        recentQty3: 0 
+      };
+    });
+
     // Satışları işle
     const filteredSales = salesRaw.filter(s => {
       const d = parseTimestamp(s.createdAt || s.date);
@@ -97,25 +114,80 @@ export default function AdvancedReport() {
       const d = parseTimestamp(s.createdAt || s.date);
       const key = parseDateKey(d);
       const amount = Number(s.totals?.total || s.total || 0);
-      
+
       if (!dailyData[key]) dailyData[key] = 0;
       dailyData[key] += amount;
       totalRevenue += amount;
       totalSalesCount++;
+
+      // Ürün detaylarına in
+      const items = Array.isArray(s.items) ? s.items : [];
+      items.forEach(item => {
+        const pid = item.productId;
+        const qty = Number(item.qty || 0);
+        
+        if (productSalesStats[pid]) {
+            productSalesStats[pid].totalQty30 += qty;
+            if (d >= threeDaysAgo) {
+                productSalesStats[pid].recentQty3 += qty;
+            }
+        }
+      });
+    });
+
+    // --- YENİ EKLENEN ÖZELLİKLER: STOK & TREND ANALİZİ ---
+    const stockAlerts = [];
+
+    Object.values(productSalesStats).forEach(stat => {
+        // 1. Kritik Seviye Analizi
+        // Satış hızı (Günlük ortalama - son 30 gün)
+        const dailyVelocity = stat.totalQty30 / DAYS_LOOKBACK;
+        let daysToDeplete = 999;
+        
+        if (dailyVelocity > 0) {
+            daysToDeplete = stat.stock / dailyVelocity;
+        }
+
+        if (stat.stock > 0 && daysToDeplete <= 3) {
+            stockAlerts.push({
+                type: 'critical',
+                msg: `Dikkat! ${stat.name} stoğunuz bitmek üzere. Tedarik süresini hesaba katarak bugün sipariş geçmeniz önerilir. 🚨`
+            });
+        }
+
+        // 2. Trend Analizi
+        // Normal (beklenen) 3 günlük satış: (30 günlük ortalama * 3)
+        const expected3DaySales = dailyVelocity * 3;
+        // Eğer en az 3-5 satış varsa ve son 3 gün, normalden %30 fazlaysa
+        if (stat.recentQty3 > 5 && stat.recentQty3 > (expected3DaySales * 1.30)) {
+            stockAlerts.push({
+                type: 'trend',
+                msg: `Bu hafta ${stat.name} satışlarınızda ciddi bir artış var! Talebi karşılamak için stok takviyesi planlayabilirsiniz. 📈`
+            });
+        }
+
+        // 3. Ölü Stok Analizi
+        // Son 30 gündür hiç satılmadıysa ve stokta varsa
+        if (stat.stock > 0 && stat.totalQty30 === 0) {
+            stockAlerts.push({
+                type: 'dead',
+                msg: `${stat.name} bir süredir rafta bekliyor. Depoda yer açmak için bir kampanya veya indirim yapmaya ne dersiniz.`
+            });
+        }
     });
 
     // Grafikler için diziler
     const sortedDays = Object.keys(dailyData).sort();
     const revenueSeries = sortedDays.map(d => dailyData[d]);
 
-    // 2. Trend Analizi (Regresyon)
+    // 2. Trend Analizi (Genel Ciro Regresyonu)
     const { slope } = linearRegression(revenueSeries);
     const trendDirection = slope > 0 ? "up" : "down";
 
     // 3. Haftanın En İyi Günü Analizi (Seasonality)
     const dayPerformance = Array(7).fill(0); // 0: Pazar, 1: Pzt...
     const dayCounts = Array(7).fill(0);
-    
+
     filteredSales.forEach(s => {
       const d = parseTimestamp(s.createdAt || s.date);
       if(d) {
@@ -155,7 +227,7 @@ export default function AdvancedReport() {
       let grade = 'C';
       if (percentage <= 80) grade = 'A';
       else if (percentage <= 95) grade = 'B';
-      
+
       return { ...p, grade, percentage };
     });
 
@@ -175,6 +247,7 @@ export default function AdvancedReport() {
         bItems: abcList.filter(x => x.grade === 'B'),
         cItems: abcList.filter(x => x.grade === 'C'),
       },
+      stockAlerts, // Yeni hesaplanan uyarılar
       projectedMonth
     };
 
@@ -270,9 +343,38 @@ export default function AdvancedReport() {
         </div>
       </div>
 
+      {/* --- YENİ ALAN: STOK VE ENVANTER UYARILARI --- */}
+      {analysis.stockAlerts.length > 0 && (
+        <div className="adv-card">
+          <div className="adv-card-header">
+            <h4>Stok & Envanter Uyarıları</h4>
+            <span className="adv-tag warning-tag">Aksiyon Gerektirir</span>
+          </div>
+          <div className="stock-alerts-container">
+            {analysis.stockAlerts.slice(0, 5).map((alert, idx) => (
+              <div key={idx} className={`alert-item ${alert.type}`}>
+                <div className="alert-icon">
+                    {alert.type === 'critical' && '🚨'}
+                    {alert.type === 'trend' && '📈'}
+                    {alert.type === 'dead' && '📦'}
+                </div>
+                <div className="alert-text">
+                  {alert.msg}
+                </div>
+              </div>
+            ))}
+            {analysis.stockAlerts.length > 5 && (
+              <div className="alert-more">
+                ve {analysis.stockAlerts.length - 5} diğer uyarı...
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* --- ABC ANALİZİ ve ÖNERİLER --- */}
       <div className="adv-grid-2">
-        
+
         {/* ABC ANALİZİ */}
         <div className="adv-card">
           <div className="adv-card-header">
@@ -294,7 +396,7 @@ export default function AdvancedReport() {
                 ))}
               </div>
             </div>
-            
+
             <div className="abc-stats">
               <div className="abc-stat-box">
                 <span className="grade b-grade">B</span>
@@ -346,4 +448,3 @@ export default function AdvancedReport() {
     </div>
   );
 }
-
