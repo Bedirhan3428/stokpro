@@ -248,6 +248,21 @@ export default function Sales() {
     }
   }
 
+  // --- EKLENEN KISIM: Modal Açma Fonksiyonları ---
+  function gelirModalAc() {
+    if (!subActive) return bildir({ type: "error", title: "Abonelik", message: "İşlem için abonelik gerekli." });
+    setIncomeAmount("");
+    setIncomeDesc("");
+    setShowIncomeModal(true);
+  }
+
+  function giderModalAc() {
+    if (!subActive) return bildir({ type: "error", title: "Abonelik", message: "İşlem için abonelik gerekli." });
+    setExpenseAmount("");
+    setExpenseDesc("");
+    setShowExpenseModal(true);
+  }
+
   // Gelir / Gider Kayıt
   async function gelirKaydet() {
     const amt = Number(incomeAmount);
@@ -493,4 +508,3 @@ export default function Sales() {
     </div>
   );
 }
-
