@@ -2,12 +2,10 @@ import "../styles/Navbar.css";
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { initTheme, toggleTheme } from "../utils/theme";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false); // Profil menüsü
   const [mobileOpen, setMobileOpen] = useState(false); // Mobil menü
-  const [theme, setTheme] = useState("light");
 
   const { user, logout } = useAuth();
   const loc = useLocation();
@@ -16,10 +14,7 @@ export default function Navbar() {
   const menuRef = useRef(null);
   const mobileRef = useRef(null);
 
-  // Tema Başlangıcı
-  useEffect(() => { setTheme(initTheme()); }, []);
-
-  // Dışarı Tıklama Kontrolü
+  // Dışarı tıklayınca kapatma
   useEffect(() => {
     function handleClickOutside(event) {
       if (menuRef.current && !menuRef.current.contains(event.target)) setOpen(false);
@@ -31,7 +26,7 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Sayfa Değişince Menüleri Kapat
+  // Sayfa değişince menüyü kapat
   useEffect(() => {
     setOpen(false);
     setMobileOpen(false);
@@ -41,9 +36,6 @@ export default function Navbar() {
     try { await logout(); nav("/"); } catch (e) { console.error(e); }
   };
 
-  const handleTheme = () => setTheme(prev => toggleTheme(prev));
-
-  // Linkler Bileşeni (Tekrar kullanımı için)
   const NavLinks = ({ mobile = false }) => (
     <div className={mobile ? "nb-mobil-list" : "nb-masaustu-list"}>
       <Link to="/dashboard" className={`nb-link ${loc.pathname === "/dashboard" ? "aktif" : ""}`}>Dashboard</Link>
@@ -58,7 +50,7 @@ export default function Navbar() {
     <header className="nb-header">
       <div className="nb-container">
         
-        {/* SOL: LOGO */}
+        {/* LOGO */}
         <div className="nb-logo-bolumu">
           <div className="nb-logo-ikon">S</div>
           <div className="nb-logo-yazi">
@@ -67,24 +59,16 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* ORTA: MASAÜSTÜ LİNKLER */}
+        {/* MASAÜSTÜ LİNKLER */}
         {user && <nav className="nb-nav-masaustu"><NavLinks /></nav>}
 
-        {/* SAG: AKSİYONLAR */}
+        {/* SAĞ TARAF */}
         <div className="nb-aksiyonlar">
-          {/* Tema Butonu */}
-          <button onClick={handleTheme} className="nb-icon-btn theme-toggle" title="Temayı Değiştir">
-            {theme === "dark" ? "☀️" : "🌙"}
-          </button>
-
           {user && (
             <>
-              {/* Profil Menüsü (Masaüstü) */}
+              {/* Profil Menüsü */}
               <div className="nb-profil-wrapper" ref={menuRef}>
-                <button 
-                  className={`nb-profil-btn ${open ? "acik" : ""}`} 
-                  onClick={() => setOpen(!open)}
-                >
+                <button className={`nb-profil-btn ${open ? "acik" : ""}`} onClick={() => setOpen(!open)}>
                   <div className="nb-avatar">{user.email[0].toUpperCase()}</div>
                   <span className="nb-kullanici-adi">Hesabım</span>
                 </button>
@@ -103,11 +87,8 @@ export default function Navbar() {
                 )}
               </div>
 
-              {/* Hamburger Butonu (Mobil) */}
-              <button 
-                className={`nb-hamburger ${mobileOpen ? "aktif" : ""}`} 
-                onClick={() => setMobileOpen(!mobileOpen)}
-              >
+              {/* Hamburger Butonu */}
+              <button className={`nb-hamburger ${mobileOpen ? "aktif" : ""}`} onClick={() => setMobileOpen(!mobileOpen)}>
                 <span></span>
                 <span></span>
                 <span></span>
@@ -117,7 +98,7 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* MOBİL MENÜ (Slide-in) */}
+      {/* MOBİL MENÜ */}
       {user && (
         <>
           <div className={`nb-overlay ${mobileOpen ? "acik" : ""}`} onClick={() => setMobileOpen(false)} />
@@ -150,4 +131,5 @@ export default function Navbar() {
     </header>
   );
 }
+
 
