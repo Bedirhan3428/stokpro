@@ -1,7 +1,7 @@
 import "../styles/Dashboard.css";
 import React, { useEffect, useMemo, useState } from "react";
 import { Doughnut } from "react-chartjs-2";
-import { useNavigate } from "react-router-dom"; // useHistory yerine useNavigate
+import { useNavigate } from "react-router-dom"; // useHistory YOK, useNavigate VAR
 import {
   listSales,
   listLedger,
@@ -40,7 +40,7 @@ function labelForLedgerEntry(l) {
 }
 
 export default function Dashboard() {
-  const navigate = useNavigate(); // Hook değişti
+  const navigate = useNavigate(); // Hook burada tanımlanıyor
   const [sales, setSales] = useState([]);
   const [products, setProducts] = useState([]); 
   const [ledger, setLedger] = useState([]);
@@ -353,7 +353,7 @@ export default function Dashboard() {
 
   return (
     <div className="dash-sayfa" style={{ position: 'relative' }}>
-       {/* --- YENİ EKLENEN POPUP --- */}
+       {/* --- POPUP --- */}
        {showWelcome && !loading && (
         <div 
           className="dash-kart" 
@@ -392,6 +392,7 @@ export default function Dashboard() {
         </div>
       )}
 
+       {/* --- ABONELİK BİLGİSİ --- */}
        {!subLoading && !subActive && (
         <div className="acc-kart acc-uyari-kutu" style={{
           backgroundColor: isTrialEligible ? '#ecfdf5' : '#fef2f2', 
