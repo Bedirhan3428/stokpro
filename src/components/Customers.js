@@ -13,14 +13,16 @@ import {
 } from "../utils/firebaseHelpers";
 import useSubscription from "../hooks/useSubscription";
 
-function MusteriBildirim({ note }) {
+// Bildirim Bileşeni
+function Bildirim({ note }) {
   if (!note) return null;
-  const tip =
-    note.type === "error" ? "musteri-uyari kirmizi" : note.type === "success" ? "musteri-uyari yesil" : "musteri-uyari mavi";
+  const tip = note.type === "error" ? "hata" : note.type === "success" ? "basari" : "bilgi";
   return (
-    <div className={tip}>
-      <div className="musteri-uyari-baslik">{note.title || (note.type === "error" ? "Hata" : "Bilgi")}</div>
-      <div className="musteri-uyari-icerik">{note.message}</div>
+    <div className="cst-bildirim-bar">
+      <div className={`cst-bildirim ${tip}`}>
+        <div className="cst-bildirim-baslik">{note.title || "Bilgi"}</div>
+        <div className="cst-bildirim-icerik">{note.message}</div>
+      </div>
     </div>
   );
 }
@@ -30,20 +32,23 @@ export default function Customers() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(true);
+  const [note, setNote] = useState(null);
 
+  // Detay & Düzenleme State
   const [detailCustomer, setDetailCustomer] = useState(null);
   const [custSales, setCustSales] = useState([]);
   const [custPayments, setCustPayments] = useState([]);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [tab, setTab] = useState("payment"); // payment, edit, balance
 
+  // Formlar
   const [payAmount, setPayAmount] = useState("");
   const [payNote, setPayNote] = useState("");
-  const [editMode, setEditMode] = useState(false);
+  
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editBalance, setEditBalance] = useState("");
 
-  const [note, setNote] = useState(null);
   const { loading: subLoading, active: subActive } = useSubscription();
 
   function bildir(n) {
@@ -51,14 +56,14 @@ export default function Customers() {
     setTimeout(() => setNote(null), 3500);
   }
 
+  // Veri Yükleme
   async function yenile() {
     setLoading(true);
     try {
       const data = await listCustomers();
       setCustomers((data || []).map((c) => ({ ...c, balance: Number(c.balance || 0) })));
     } catch (err) {
-      bildir({ type: "error", title: "Yükleme Hatası", message: String(err.message || err) });
-      setCustomers([]);
+      bildir({ type: "error", title: "Hata", message: "Müşteri listesi alınamadı." });
     } finally {
       setLoading(false);
     }
@@ -69,289 +74,272 @@ export default function Customers() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Müşteri Ekleme
   async function musteriEkle() {
-    if (!subActive) return bildir({ type: "error", title: "Abonelik gerekli", message: "Müşteri eklemek için abonelik gereklidir." });
-    const tName = (name || "").trim();
-    const tPhone = (phone || "").trim();
-    if (!tName) return bildir({ type: "error", title: "Eksik bilgi", message: "İsim gerekli." });
-    if (!tPhone || tPhone.length < 6) return bildir({ type: "error", title: "Telefon hatası", message: "Geçerli bir telefon girin." });
+    if (!subActive) return bildir({ type: "error", title: "Abonelik", message: "İşlem için abonelik gerekli." });
+    
+    const tName = name.trim();
+    if (!tName) return bildir({ type: "error", title: "Eksik", message: "Müşteri adı zorunludur." });
+
     try {
-      await addCustomer({ name: tName, phone: tPhone });
-      setName("");
-      setPhone("");
+      await addCustomer({ name: tName, phone: phone.trim() });
+      setName(""); setPhone("");
       await yenile();
       bildir({ type: "success", title: "Başarılı", message: "Müşteri eklendi." });
     } catch (err) {
-      bildir({ type: "error", title: "Kaydetme Hatası", message: String(err.message || err) });
+      bildir({ type: "error", title: "Hata", message: err.message });
     }
   }
 
-  async function detayAc(customerId) {
+  // Detay Açma
+  async function detayAc(cId) {
     setDetailLoading(true);
-    setEditMode(false);
+    setTab("payment"); // Varsayılan tab
     try {
-      const cust = await getCustomer(customerId);
-      const sales = await listCustomerSales(customerId);
-      const payments = await listCustomerPayments(customerId);
+      const [cust, sales, payments] = await Promise.all([
+        getCustomer(cId),
+        listCustomerSales(cId),
+        listCustomerPayments(cId)
+      ]);
+      
       setDetailCustomer(cust);
-      setCustSales(Array.isArray(sales) ? sales : []);
-      setCustPayments(Array.isArray(payments) ? payments : []);
+      setCustSales(sales || []);
+      setCustPayments(payments || []);
+      
+      // Formları doldur
       setEditName(cust?.name || "");
       setEditPhone(cust?.phone || "");
-      setEditBalance(cust?.balance != null ? String(Number(cust.balance || 0)) : "");
+      setEditBalance(cust?.balance || 0);
+
     } catch (err) {
-      bildir({ type: "error", title: "Yükleme Hatası", message: "Detaylar yüklenemedi." });
-      setDetailCustomer(null);
-      setCustSales([]);
-      setCustPayments([]);
+      bildir({ type: "error", title: "Hata", message: "Detaylar yüklenemedi." });
     } finally {
       setDetailLoading(false);
     }
   }
 
+  // İşlemler
   async function odemeEkle() {
-    if (!subActive) return bildir({ type: "error", title: "Abonelik gerekli", message: "Ödeme eklemek için abonelik gereklidir." });
+    if (!subActive) return;
     const amt = Number(payAmount);
-    if (!detailCustomer) return;
-    if (!amt || amt <= 0) return bildir({ type: "error", title: "Geçersiz tutar", message: "Geçerli tutar girin." });
-    const currentBalance = Number(detailCustomer.balance || 0);
-    if (currentBalance <= 0) return bildir({ type: "error", title: "Borç yok", message: "Müşterinin borcu yok." });
-    if (amt > currentBalance) return bildir({ type: "error", title: "Aşırı ödeme", message: `Maks: ${currentBalance}` });
+    if (!amt || amt <= 0) return bildir({ type: "error", title: "Hata", message: "Geçerli tutar girin." });
+    
     try {
-      const res = await addCustomerPayment(detailCustomer.id, { amount: amt, note: payNote });
+      await addCustomerPayment(detailCustomer.id, { amount: amt, note: payNote });
+      setPayAmount(""); setPayNote("");
       await detayAc(detailCustomer.id);
-      await yenile();
-      setPayAmount("");
-      setPayNote("");
-      bildir({ type: "success", title: "Ödeme kaydedildi", message: `Yeni bakiye: ${res?.newBalance ?? ""}` });
+      await yenile(); // Ana listeyi de güncelle (bakiye değişti)
+      bildir({ type: "success", title: "Başarılı", message: "Ödeme alındı." });
     } catch (err) {
-      bildir({ type: "error", title: "Ödeme hatası", message: String(err.message || err) });
+      bildir({ type: "error", title: "Hata", message: err.message });
     }
   }
 
-  async function musteriKaydet() {
-    if (!subActive) return bildir({ type: "error", title: "Abonelik gerekli", message: "Güncelleme için abonelik gereklidir." });
-    if (!detailCustomer) return;
-    const tName = (editName || "").trim();
-    const tPhone = (editPhone || "").trim();
-    if (!tName) return bildir({ type: "error", title: "Eksik bilgi", message: "İsim gerekli." });
+  async function musteriGuncelle() {
+    if (!subActive) return;
     try {
-      await updateCustomer(detailCustomer.id, { name: tName, phone: tPhone || null });
+      await updateCustomer(detailCustomer.id, { name: editName, phone: editPhone });
       await detayAc(detailCustomer.id);
       await yenile();
-      setEditMode(false);
-      bildir({ type: "success", title: "Güncellendi", message: "Müşteri güncellendi." });
+      bildir({ type: "success", title: "Güncellendi", message: "Bilgiler kaydedildi." });
     } catch (err) {
-      bildir({ type: "error", title: "Güncelleme hatası", message: String(err.message || err) });
+      bildir({ type: "error", title: "Hata", message: err.message });
     }
   }
 
-  async function bakiyeGuncelle() {
-    if (!subActive) return bildir({ type: "error", title: "Abonelik gerekli", message: "Bakiye düzenleme için abonelik gereklidir." });
-    if (!detailCustomer) return;
-    const nb = Number(editBalance);
-    if (isNaN(nb)) return bildir({ type: "error", title: "Geçersiz bakiye", message: "Geçerli sayı girin." });
+  async function bakiyeDuzelt() {
+    if (!subActive) return;
     try {
-      const res = await setCustomerBalance(detailCustomer.id, nb, "Manual edit");
+      await setCustomerBalance(detailCustomer.id, Number(editBalance), "Manuel düzeltme");
       await detayAc(detailCustomer.id);
       await yenile();
-      bildir({ type: "success", title: "Bakiye güncellendi", message: `Yeni bakiye: ${res?.newBalance ?? ""}` });
+      bildir({ type: "success", title: "Güncellendi", message: "Bakiye düzeltildi." });
     } catch (err) {
-      bildir({ type: "error", title: "Güncelleme hatası", message: String(err.message || err) });
+      bildir({ type: "error", title: "Hata", message: err.message });
     }
   }
 
-  async function musteriSil() {
-    if (!subActive) return bildir({ type: "error", title: "Abonelik gerekli", message: "Silme için abonelik gereklidir." });
-    if (!detailCustomer) return;
-    if (!window.confirm("Müşteriyi silmek istediğinize emin misiniz? (Alt koleksiyonlar da silinir)")) return;
+  async function sil() {
+    if (!subActive) return;
+    if (!window.confirm("Bu müşteriyi ve tüm geçmişini silmek istediğinize emin misiniz?")) return;
+    
     try {
       await deleteCustomer(detailCustomer.id);
       setDetailCustomer(null);
       await yenile();
       bildir({ type: "success", title: "Silindi", message: "Müşteri silindi." });
     } catch (err) {
-      bildir({ type: "error", title: "Silme hatası", message: String(err.message || err) });
+      bildir({ type: "error", title: "Hata", message: err.message });
     }
   }
 
   return (
-    <div className="musteri-sayfa">
-      <MusteriBildirim note={note} />
+    <div className="cst-sayfa">
+      <Bildirim note={note} />
 
       {!subLoading && !subActive && (
-        <div className="musteri-kart musteri-uyari-kutu">
-          <div className="musteri-uyari-baslik">Abonelik gerekli</div>
-          <div className="musteri-uyari-icerik"><a href="https://www.stokpro.shop/product-key" style={{color:"#1f6feb",fontWeight:"bold"}}>Satın Almak için tıklayın</a></div>
+        <div className="cst-uyari-bar">
+          <span>Abonelik Gerekli.</span> <a href="https://www.stokpro.shop/product-key">Satın Al</a>
         </div>
       )}
 
-      <div className="musteri-kart musteri-ekle">
-        <h3 className="musteri-baslik">Müşteri Ekle</h3>
-        <div className="musteri-form-satir">
-          <input placeholder="Müşteri adı" value={name} onChange={(e) => setName(e.target.value)} className="musteri-input" />
-          <input placeholder="Telefon" value={phone} onChange={(e) => setPhone(e.target.value)} className="musteri-input" />
-          <button className="musteri-btn mavi" onClick={musteriEkle} disabled={!subActive}>
-            Ekle
-          </button>
+      {/* --- MÜŞTERİ EKLE --- */}
+      <div className="cst-kart">
+        <h3 className="cst-baslik">Hızlı Müşteri Ekle</h3>
+        <div className="cst-form-grid">
+          <input placeholder="Ad Soyad" value={name} onChange={e => setName(e.target.value)} className="cst-input" />
+          <input placeholder="Telefon (5XX...)" value={phone} onChange={e => setPhone(e.target.value)} className="cst-input" />
+          <button className="cst-btn primary" onClick={musteriEkle} disabled={!subActive}>Ekle</button>
         </div>
       </div>
 
-      <div className="musteri-kart">
-        <h3 className="musteri-baslik">Müşteri Listesi</h3>
+      {/* --- MÜŞTERİ LİSTESİ --- */}
+      <div className="cst-kart full-h">
+        <h3 className="cst-baslik">Müşteriler ({customers.length})</h3>
+        
         {loading ? (
-          <div className="musteri-yukleme">
-            <div className="musteri-spinner" />
-            <p>Yükleniyor...</p>
-          </div>
+          <div className="cst-loading"><div className="cst-spinner"></div>Yükleniyor...</div>
         ) : customers.length === 0 ? (
-          <div className="musteri-uyari-icerik">Kayıtlı müşteri yok.</div>
+          <div className="cst-empty">Kayıtlı müşteri yok.</div>
         ) : (
-          <div className="musteri-liste">
-            {customers.map((c) => (
-              <div key={c.id} className="musteri-satir">
-                <div>
-                  <div className="musteri-isim">{c.name}</div>
-                  <div className="musteri-alt">Telefon: {c.phone || "—"}</div>
-                  <div className="musteri-alt">
-                    Bakiye: {Number(c.balance || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}
+          <div className="cst-liste">
+            {customers.map(c => (
+              <div key={c.id} className="cst-item">
+                <div className="cst-info">
+                  <div className="cst-name">{c.name}</div>
+                  <div className="cst-meta">
+                    <span>{c.phone || "Telefon yok"}</span>
                   </div>
                 </div>
-                <button className="musteri-btn cizgi" onClick={() => detayAc(c.id)}>
-                  Detay
-                </button>
+                
+                <div className="cst-actions">
+                  <div className="cst-balance">
+                    <small>Bakiye</small>
+                    <span className={c.balance > 0 ? "borclu" : "temiz"}>
+                      {c.balance.toLocaleString("tr-TR", {style:"currency", currency:"TRY"})}
+                    </span>
+                  </div>
+                  <button className="cst-btn ghost small" onClick={() => detayAc(c.id)}>Detay</button>
+                </div>
               </div>
             ))}
           </div>
         )}
       </div>
 
+      {/* --- DETAY MODALI --- */}
       {detailCustomer && (
-        <div className="musteri-modal-kaplama">
-          <div className="musteri-modal">
-            <div className="musteri-modal-baslik">
+        <div className="cst-modal-overlay">
+          <div className="cst-modal large">
+            <div className="cst-modal-header">
               <div>
-                <h3 className="musteri-isim">{detailCustomer.name}</h3>
-                <div className="musteri-alt">Telefon: {detailCustomer.phone || "—"}</div>
-                <div className="musteri-alt">
-                  Bakiye: {Number(detailCustomer.balance || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}
-                </div>
+                <h4>{detailCustomer.name}</h4>
+                <span className="cst-modal-subtitle">{detailCustomer.phone || "Telefon Yok"}</span>
               </div>
-
-              <div className="musteri-modal-aks">
-                <button
-                  className="musteri-btn cizgi"
-                  onClick={() => {
-                    setEditMode((s) => !s);
-                    setEditName(detailCustomer.name);
-                    setEditPhone(detailCustomer.phone || "");
-                  }}
-                  disabled={!subActive}
-                >
-                  Düzenle
-                </button>
-                <button className="musteri-btn kirmizi" onClick={musteriSil} disabled={!subActive}>
-                  Sil
-                </button>
-                <button className="musteri-btn cizgi" onClick={() => setDetailCustomer(null)}>
-                  Kapat
-                </button>
-              </div>
+              <button onClick={() => setDetailCustomer(null)} className="cst-close">×</button>
             </div>
 
-            <div className="musteri-modal-icerik">
-              <aside className="musteri-sol">
-                {editMode ? (
-                  <div className="musteri-altkart">
-                    <h5 className="musteri-baslik">Müşteri Düzenle</h5>
-                    <label className="musteri-etiket">İsim</label>
-                    <input value={editName} onChange={(e) => setEditName(e.target.value)} className="musteri-input" />
-                    <label className="musteri-etiket">Telefon</label>
-                    <input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className="musteri-input" />
-                    <div className="musteri-form-satir">
-                      <button className="musteri-btn mavi" onClick={musteriKaydet} disabled={!subActive}>
-                        Kaydet
-                      </button>
-                      <button className="musteri-btn cizgi" onClick={() => setEditMode(false)}>
-                        İptal
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="musteri-altkart">
-                    <h5 className="musteri-baslik">Tahsilat / Ödeme Ekle</h5>
-                    <label className="musteri-etiket">Tutar</label>
-                    <input value={payAmount} onChange={(e) => setPayAmount(e.target.value)} className="musteri-input" />
-                    <label className="musteri-etiket">Açıklama</label>
-                    <textarea value={payNote} onChange={(e) => setPayNote(e.target.value)} className="musteri-textarea" />
-                    <div className="musteri-form-satir">
-                      <button className="musteri-btn mavi" onClick={odemeEkle} disabled={!subActive}>
-                        Kaydet
-                      </button>
-                      <button className="musteri-btn cizgi" onClick={() => { setPayAmount(""); setPayNote(""); }}>
-                        Temizle
-                      </button>
-                    </div>
+            <div className="cst-modal-body split-view">
+              
+              {/* SOL KOLON: İŞLEMLER */}
+              <aside className="cst-left-panel">
+                <div className="cst-tabs">
+                  <button className={`cst-tab ${tab==='payment'?'active':''}`} onClick={()=>setTab('payment')}>Ödeme Al</button>
+                  <button className={`cst-tab ${tab==='edit'?'active':''}`} onClick={()=>setTab('edit')}>Düzenle</button>
+                  <button className={`cst-tab ${tab==='balance'?'active':''}`} onClick={()=>setTab('balance')}>Bakiye</button>
+                </div>
 
-                    <hr className="musteri-hr" />
-
-                    <h5 className="musteri-baslik">Bakiye Düzenle</h5>
-                    <label className="musteri-etiket">Yeni Bakiye</label>
-                    <input value={editBalance} onChange={(e) => setEditBalance(e.target.value)} className="musteri-input" />
-                    <div className="musteri-form-satir">
-                      <button className="musteri-btn mavi" onClick={bakiyeGuncelle} disabled={!subActive}>
-                        Güncelle
-                      </button>
+                <div className="cst-panel-content">
+                  {tab === 'payment' && (
+                    <div className="cst-form-stack">
+                      <div className="cst-balance-display">
+                        <small>Güncel Borç</small>
+                        <strong>{Number(detailCustomer.balance).toLocaleString("tr-TR",{style:"currency",currency:"TRY"})}</strong>
+                      </div>
+                      <label>Tahsilat Tutarı</label>
+                      <input type="number" value={payAmount} onChange={e => setPayAmount(e.target.value)} className="cst-input" placeholder="0.00" />
+                      
+                      <label>Not / Açıklama</label>
+                      <textarea 
+                        className="cst-input cst-textarea-expand" 
+                        placeholder="Ödeme notu..." 
+                        value={payNote}
+                        onChange={e => setPayNote(e.target.value)}
+                      />
+                      <button className="cst-btn primary full" onClick={odemeEkle} disabled={!subActive}>Ödemeyi Kaydet</button>
                     </div>
-                  </div>
-                )}
+                  )}
+
+                  {tab === 'edit' && (
+                    <div className="cst-form-stack">
+                      <label>Ad Soyad</label>
+                      <input value={editName} onChange={e => setEditName(e.target.value)} className="cst-input" />
+                      <label>Telefon</label>
+                      <input value={editPhone} onChange={e => setEditPhone(e.target.value)} className="cst-input" />
+                      
+                      <div className="cst-btn-group">
+                        <button className="cst-btn primary" onClick={musteriGuncelle} disabled={!subActive}>Kaydet</button>
+                        <button className="cst-btn danger" onClick={sil} disabled={!subActive}>Müşteriyi Sil</button>
+                      </div>
+                    </div>
+                  )}
+
+                  {tab === 'balance' && (
+                    <div className="cst-form-stack">
+                      <div className="cst-info-box">
+                        Dikkat: Bakiyeyi manuel değiştirmek muhasebe kaydı oluşturmaz. Sadece düzeltme için kullanın.
+                      </div>
+                      <label>Yeni Bakiye</label>
+                      <input type="number" value={editBalance} onChange={e => setEditBalance(e.target.value)} className="cst-input" />
+                      <button className="cst-btn primary full" onClick={bakiyeDuzelt} disabled={!subActive}>Bakiyeyi Güncelle</button>
+                    </div>
+                  )}
+                </div>
               </aside>
 
-              <main className="musteri-sag">
-                <h4 className="musteri-baslik">Müşterinin Satışları</h4>
-                {detailLoading ? (
-                  <div className="musteri-alt">Yükleniyor...</div>
-                ) : custSales.length === 0 ? (
-                  <div className="musteri-alt">Satış yok.</div>
-                ) : (
-                  <div className="musteri-grid">
-                    {custSales.map((s) => (
-                      <div key={s.id} className="musteri-satis-kart">
-                        <div>
-                          <div className="musteri-alt">{new Date(s.createdAt).toLocaleString()}</div>
-                          <div className="musteri-alt">{(s.items || []).map((it) => `${it.name} x${it.qty}`).join(", ")}</div>
+              {/* SAĞ KOLON: GEÇMİŞ */}
+              <main className="cst-right-panel">
+                <h5 className="cst-section-title">Hesap Hareketleri</h5>
+                
+                <div className="cst-history-list">
+                  {/* Satışlar */}
+                  {custSales.map(s => (
+                    <div key={s.id} className="cst-history-item sale">
+                      <div className="cst-icon sale">🛒</div>
+                      <div className="cst-hist-info">
+                        <div className="cst-hist-top">
+                          <strong>Satış (Veresiye)</strong>
+                          <span className="cst-amount debt">
+                            +{Number(s.totals?.total||0).toLocaleString("tr-TR",{style:"currency",currency:"TRY"})}
+                          </span>
                         </div>
-                        <div>
-                          <div className="musteri-isim">
-                            {Number(s.totals?.total || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}
-                          </div>
-                          <div className="musteri-alt">{s.saleType === "cash" ? "Nakit" : "Veresiye"}</div>
+                        <div className="cst-hist-date">{new Date(s.createdAt).toLocaleString()}</div>
+                        <div className="cst-hist-detail">
+                          {(s.items||[]).map(i=>`${i.name} (${i.qty})`).join(', ')}
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
-
-                <div className="musteri-odeme-blok">
-                  <h4 className="musteri-baslik">Ödemeler</h4>
-                  {detailLoading ? (
-                    <div className="musteri-alt">Yükleniyor...</div>
-                  ) : custPayments.length === 0 ? (
-                    <div className="musteri-alt">Ödeme kaydı yok.</div>
-                  ) : (
-                    <div className="musteri-grid">
-                      {custPayments.map((p) => (
-                        <div key={p.id} className="musteri-odeme-kart">
-                          <div>
-                            <div className="musteri-alt">{new Date(p.createdAt).toLocaleString()}</div>
-                            <div className="musteri-alt">{p.note || ""}</div>
-                          </div>
-                          <div className="musteri-isim">
-                            {Number(p.amount || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}
-                          </div>
-                        </div>
-                      ))}
                     </div>
+                  ))}
+
+                  {/* Ödemeler */}
+                  {custPayments.map(p => (
+                    <div key={p.id} className="cst-history-item payment">
+                      <div className="cst-icon pay">💳</div>
+                      <div className="cst-hist-info">
+                        <div className="cst-hist-top">
+                          <strong>Tahsilat</strong>
+                          <span className="cst-amount credit">
+                            -{Number(p.amount||0).toLocaleString("tr-TR",{style:"currency",currency:"TRY"})}
+                          </span>
+                        </div>
+                        <div className="cst-hist-date">{new Date(p.createdAt).toLocaleString()}</div>
+                        {p.note && <div className="cst-hist-detail">"{p.note}"</div>}
+                      </div>
+                    </div>
+                  ))}
+
+                  {custSales.length === 0 && custPayments.length === 0 && (
+                    <div className="cst-empty small">Henüz işlem yok.</div>
                   )}
                 </div>
               </main>
@@ -362,3 +350,4 @@ export default function Customers() {
     </div>
   );
 }
+
