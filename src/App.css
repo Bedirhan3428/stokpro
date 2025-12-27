@@ -1,36 +1,46 @@
-/* --- GLOBAL DEĞİŞKENLER (ZORUNLU BEYAZ TEMA) --- */
+/* --- 1. ADIM: VARSAYILAN / AYDINLIK MOD (LIGHT) --- */
+/* data-theme="light" olduğunda veya hiç attribute yokken burası çalışır */
 :root {
-  /* 1. Renk: Tam Beyaz */
+  /* Arka Plan: Bembeyaz ve çok hafif buz mavisi ışıltı */
   --bg-color-1: #ffffff;
-  
-  /* 2. Renk: Çok hafif buz mavisi/beyaz (Hareketin belli olması için) */
-  --bg-color-2: #f1f5f9; 
-  
-  /* 3. Renk: Tekrar Tam Beyaz */
+  --bg-color-2: #f8fafc; /* Hareketin belli olması için çok açık ton */
   --bg-color-3: #ffffff;
   
   --bg-surface: #ffffff;
-  --text-primary: #1e293b; /* Koyu Antrasit (Siyah yerine bunu kullanıyoruz, göz yormaz) */
+  --nav-bg: rgba(255, 255, 255, 0.85); /* Navbar buzlu cam beyazı */
+  
+  --text-primary: #1e293b; /* Koyu Antrasit */
   --text-secondary: #64748b;
   --border-color: #e2e8f0;
   
-  /* Marka Rengi (Mavi) */
   --brand-primary: #1f6feb;
   --brand-primary-light: #eff6ff;
   
-  --status-danger: #ef4444;
-  --status-danger-bg: #fef2f2;
-  
-  /* Gölgeler */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
-  
-  --transition-speed: 0.3s;
 }
 
-/* NOT: @media (prefers-color-scheme: dark) bloğunu sildim. 
-   Böylece bilgisayarın karanlık modda olsa bile site BEYAZ açılacak. */
+/* --- 2. ADIM: KARANLIK MOD (DARK) --- */
+/* theme.js html'e data-theme="dark" ekleyince burası devreye girer */
+:root[data-theme="dark"] {
+  /* Arka Plan: Modern Lacivert Tonları */
+  --bg-color-1: #0f172a; /* Slate 900 */
+  --bg-color-2: #1e293b; /* Slate 800 */
+  --bg-color-3: #020617; /* Slate 950 */
+  
+  --bg-surface: #1e293b;
+  --nav-bg: rgba(15, 23, 42, 0.85); /* Navbar buzlu cam koyu */
+  
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --border-color: #334155;
+  
+  --brand-primary: #3b82f6;
+  --brand-primary-light: #172554;
+  
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+}
 
 /* --- TEMEL AYARLAR --- */
 * {
@@ -41,15 +51,15 @@
 
 html, body {
   width: 100%;
-  min-height: 100vh; /* Ekranı tam kaplaması için */
+  min-height: 100vh;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 body {
-  /* --- HAREKETLİ BEYAZ ARKA PLAN --- */
-  background-color: var(--bg-color-1); /* Yedek renk */
+  /* --- HAREKETLİ ARKA PLAN --- */
+  background-color: var(--bg-color-1);
   
-  /* Çok hafif, su gibi akan geçiş */
+  /* Gradient renkleri yukarıdaki değişkenlerden gelir */
   background: linear-gradient(
     135deg, 
     var(--bg-color-1) 0%, 
@@ -58,10 +68,12 @@ body {
   );
   
   background-size: 400% 400%;
-  animation: softFlow 15s ease infinite; /* Yavaş ve sakin akış */
+  animation: softFlow 15s ease infinite;
   
   color: var(--text-primary);
-  transition: color 0.3s ease;
+  
+  /* Renk geçişlerini yumuşatır (Göz yormaz) */
+  transition: color 0.3s ease, background-color 0.3s ease;
   overflow-x: hidden;
 }
 
@@ -78,9 +90,9 @@ a {
 
 /* --- NAVBAR STİLLERİ --- */
 .nb-header {
-  background-color: rgba(255, 255, 255, 0.9); /* Yarı saydam beyaz */
-  backdrop-filter: blur(10px); /* Buzlu cam efekti */
-  -webkit-backdrop-filter: blur(10px);
+  background-color: var(--nav-bg); /* Değişken kullanıldı */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border-color);
   height: 70px;
   width: 100%;
@@ -90,6 +102,7 @@ a {
   box-shadow: var(--shadow-sm);
   display: flex;
   justify-content: center;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .nb-container {
@@ -139,7 +152,7 @@ a {
   background: transparent; border: none; cursor: pointer;
   padding: 6px 12px; border-radius: 10px; transition: background 0.2s;
 }
-.nb-profil-btn:hover { background-color: #f1f5f9; }
+.nb-profil-btn:hover { background-color: var(--bg-color-2); }
 
 .nb-avatar {
   width: 36px; height: 36px;
@@ -174,7 +187,7 @@ a {
   border-radius: 16px;
   box-shadow: var(--shadow-sm);
   padding: 20px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.3s ease;
 }
 .card:hover, .dash-kart:hover {
   transform: translateY(-2px);
