@@ -394,19 +394,16 @@ export default function Dashboard() {
 
        {/* --- ABONELİK BİLGİSİ --- */}
        {!subLoading && !subActive && (
-        <div className="acc-kart acc-uyari-kutu" style={{
-          backgroundColor: isTrialEligible ? '#ecfdf5' : '#fef2f2', 
-          borderColor: isTrialEligible ? '#34d399' : '#ef4444'
-        }}>
-          <div className="acc-uyari-baslik" style={{ color: isTrialEligible ? '#047857' : '#991b1b' }}>
-            {isTrialEligible ? "Ücretsiz Deneme Fırsatı" : "Abonelik Gerekli"}
-          </div>
-          <div className="acc-yazi-ince" style={{ color: isTrialEligible ? '#065f46' : '#991b1b' }}>
-           <a href="https://www.stokpro.shop/product-key" style={{color: isTrialEligible ? "#059669" : "#dc2626", fontWeight:"bold"}}>
-             {isTrialEligible ? "Şimdi Ücretsiz Dene" : "Satın Almak için tıklayın"}
-           </a>
-          </div>
-        </div>
+      <div className={`acc-kart acc-uyari-kutu ${isTrialEligible ? 'trial-box' : 'subscription-box'}`}>
+  <div className={`acc-uyari-baslik ${isTrialEligible ? 'trial-eligible' :   'subscription-required'}`}>
+    {isTrialEligible ? "Ücretsiz Deneme Fırsatı" : "Abonelik Gerekli"}
+  </div>
+  <div className={`acc-yazi-ince ${isTrialEligible ?   'trial-text' : 'subscription-text'}`}>
+    <a href="https://www.stokpro.shop/product-key" className={`acc-action-link ${isTrialEligible ? 'trial-link' : 'subscription-link'}`}>
+      {isTrialEligible ? "Şimdi Ücretsiz Dene" : "Satın Almak için tıklayın"}
+    </a>
+  </div>
+</div>
       )}
 
       <h3 className="dash-baslik">Dashboard</h3>

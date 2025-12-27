@@ -346,3 +346,83 @@
 
 .dash-deger,
 .dash-kalin { color: var(--text); }
+
+/* Ana Kutu */
+.acc-uyari-kutu {
+  border-radius: 8px;
+  border-left: 5px solid;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.trial-box {
+  background:  linear-gradient(135deg, #e3f2fd, #bbdefb);
+  border-left-color: #1f6feb;
+}
+
+.subscription-box {
+  background: linear-gradient(135deg, #fee2e2, #fecaca);
+  border-left-color: #dc2626;
+}
+
+/* Başlık */
+.acc-uyari-baslik {
+  font-size:  1.1rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  text-align: center;
+}
+
+.trial-eligible {
+  color: #0d47a1;
+}
+
+.subscription-required {
+  color: #991b1b;
+}
+
+/* Metin */
+.acc-yazi-ince {
+  text-align: center;
+  margin: 0;
+  color: #333;
+}
+
+.trial-text {
+  color: #333;
+}
+
+.subscription-text {
+  color: #333;
+}
+
+/* Link/Buton */
+.acc-action-link {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 8px 16px;
+  font-weight: 500;
+  text-decoration: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.trial-link {
+  background-color: #1f6feb;
+  color: white;
+}
+
+.trial-link:hover {
+  background-color: #0d47a1;
+}
+
+. subscription-link {
+  background-color: #dc2626;
+  color: white;
+}
+
+.subscription-link:hover {
+  background-color: #b91c1c;
+}
