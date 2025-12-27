@@ -1,28 +1,22 @@
-const THEME_KEY = "stokpro-theme";
+// src/utils/theme.js
 
-export function getStoredTheme() {
-  if (typeof localStorage === "undefined") return "light";
-  return localStorage.getItem(THEME_KEY) === "dark" ? "dark" : "light";
-}
-
-export function applyTheme(theme = "light") {
-  if (typeof document === "undefined") return theme;
-  const t = theme === "dark" ? "dark" : "light";
-  document.documentElement.dataset.theme = t;
-  try {
-    localStorage.setItem(THEME_KEY, t);
-  } catch (e) {
-    console.warn("Theme persist failed", e);
+export function initTheme() {
+  // Daha önce kaydedilmiş temayı kontrol et
+  const saved = localStorage.getItem("theme");
+  if (saved) {
+    document.documentElement.setAttribute("data-theme", saved);
+    return saved;
   }
+  // Yoksa sistem tercihine bak
+  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const t = prefersDark ? "dark" : "light";
+  document.documentElement.setAttribute("data-theme", t);
   return t;
 }
 
-export function initTheme() {
-  const stored = getStoredTheme();
-  return applyTheme(stored);
-}
-
 export function toggleTheme(current) {
-  const next = current === "dark" ? "light" : "dark";
-  return applyTheme(next);
+  const next = current === "light" ? "dark" : "light";
+  localStorage.setItem("theme", next);
+  document.documentElement.setAttribute("data-theme", next);
+  return next;
 }
