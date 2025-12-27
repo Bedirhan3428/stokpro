@@ -1,35 +1,30 @@
-/* --- GLOBAL DEĞİŞKENLER (SADE & PROFESYONEL) --- */
+/* --- GLOBAL DEĞİŞKENLER (GÜNCELLENDİ) --- */
 :root {
-  /* AYDINLIK MOD (Varsayılan - Göz yormayan yumuşak tonlar) */
-  --bg-color-1: #f8f9fa;
-  --bg-color-2: #eef2ff; /* Çok hafif mavi */
-  --bg-color-3: #ffffff;
+  /* AYDINLIK MOD (Daha net beyaz ve hafif geçişler) */
+  /* Animasyonun görünmesi için renkler arasında çok hafif ton farkı bıraktım */
+  --bg-color-1: #ffffff;  /* Saf Beyaz */
+  --bg-color-2: #f0f4f8;  /* Çok açık gri-mavi (Hareket hissi için) */
+  --bg-color-3: #e2e8f0;  /* Hafif gölge tonu */
   
   --bg-surface: #ffffff;
-  --text-primary: #1e293b; /* Simsiyah değil, koyu antrasit */
+  --text-primary: #1e293b;
   --text-secondary: #64748b;
   --border-color: #e2e8f0;
   
-  --brand-primary: #1f6feb; /* Senin ana rengin */
+  --brand-primary: #1f6feb;
   --brand-primary-light: #eff6ff;
   
   --status-danger: #ef4444;
-  --status-danger-bg: #fef2f2;
-  
-  /* Yumuşak Gölgeler */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
-  
-  --transition-speed: 0.3s;
 }
 
-/* KARANLIK MOD (Göz yormayan koyu tema) */
+/* KARANLIK MOD */
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg-color-1: #0f172a;
-    --bg-color-2: #1e293b;
-    --bg-color-3: #0f172a;
+    --bg-color-1: #0f172a; /* Koyu Lacivert */
+    --bg-color-2: #1e293b; /* Daha açık lacivert */
+    --bg-color-3: #020617; /* Siyaha yakın */
     
     --bg-surface: #1e293b;
     --text-primary: #f8fafc;
@@ -37,14 +32,18 @@
     --border-color: #334155;
     
     --brand-primary: #3b82f6;
-    --brand-primary-light: #1e3a8a;
-    
-    --status-danger: #f87171;
-    --status-danger-bg: #450a0a;
+    --brand-primary-light: #172554;
     
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
   }
+}
+
+/* --- ANİMASYON TANIMLAMASI (En üste veya body yakınına) --- */
+@keyframes softFlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 /* --- TEMEL AYARLAR --- */
@@ -55,26 +54,26 @@
 }
 
 html, body {
-  height: 100%;
+  width: 100%;
+  min-height: 100vh; /* Yükseklik sorunu için düzeltme */
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 body {
-  /* --- YUMUŞAK ARKA PLAN ANİMASYONU --- */
-  /* Sert renkler yerine beyaz ve çok açık mavi geçişleri */
+  /* --- ARKA PLAN VE ANİMASYON --- */
+  background-color: var(--bg-color-1); /* Yüklenmezse yedek renk */
+  
+  /* Gradient açısını ve renk sırasını düzelttim */
   background: linear-gradient(-45deg, var(--bg-color-1), var(--bg-color-2), var(--bg-color-3), var(--bg-color-1));
-  background-size: 400% 400%;
-  animation: softFlow 20s ease infinite; /* Çok yavaş ve sakin akış */
+  
+  background-size: 400% 400%; /* Animasyonun çalışması için bu ZORUNLU */
+  
+  /* Animasyon süresi 15s - daha akıcı görünmesi için */
+  animation: softFlow 15s ease infinite; 
   
   color: var(--text-primary);
-  transition: color 0.3s ease;
+  transition: color 0.3s ease, background-color 0.3s ease;
   overflow-x: hidden;
-}
-
-@keyframes softFlow {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
 }
 
 a {
@@ -82,18 +81,22 @@ a {
   text-decoration: none;
 }
 
-/* --- NAVBAR STİLLERİ (Eski kodlarındaki .nb- sınıfları için) --- */
+/* --- NAVBAR STİLLERİ --- */
 .nb-header {
   background-color: var(--bg-surface);
+  /* Arkaplanın bulanık görünmesi için (Buzlu cam efekti) */
+  backdrop-filter: blur(10px); 
+  -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border-color);
   height: 70px;
-  width: 100%; /* EKRANI TAM KAPLAR - DÜZELTİLDİ */
+  width: 100%;
   position: sticky;
   top: 0;
   z-index: 100;
   box-shadow: var(--shadow-sm);
   display: flex;
   justify-content: center;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .nb-container {
@@ -132,10 +135,12 @@ a {
   transition: all 0.2s;
   white-space: nowrap;
 }
-.nb-link:hover { background-color: var(--brand-primary-light); color: var(--brand-primary); }
-.nb-link.aktif { background-color: var(--brand-primary-light); color: var(--brand-primary); }
+.nb-link:hover, .nb-link.aktif { 
+  background-color: var(--brand-primary-light); 
+  color: var(--brand-primary); 
+}
 
-/* Sağ Taraf (Profil vb.) */
+/* Sağ Taraf */
 .nb-aksiyonlar { display: flex; align-items: center; gap: 12px; }
 
 .nb-profil-btn {
@@ -166,21 +171,19 @@ a {
   display: block; height: 2px; width: 100%;
   background-color: var(--text-primary); border-radius: 2px;
 }
-
-/* Mobil için */
 @media (max-width: 900px) {
   .nb-nav-masaustu, .nb-profil-wrapper { display: none; }
   .nb-hamburger { display: flex; }
 }
 
-/* --- KART YAPISI (StokPro Kartları) --- */
+/* --- KART YAPISI --- */
 .card, .dash-kart, .sl-kart, .prd-kart, .cst-kart, .set-kart {
   background-color: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: 16px;
   box-shadow: var(--shadow-sm);
   padding: 20px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.3s ease;
 }
 .card:hover, .dash-kart:hover {
   transform: translateY(-2px);
@@ -197,6 +200,6 @@ button { font-family: inherit; }
   padding: 10px 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s, background-color 0.3s;
 }
 .btn-primary:hover { opacity: 0.9; }
