@@ -1,7 +1,7 @@
 import "../styles/Dashboard.css";
 import React, { useEffect, useMemo, useState } from "react";
 import { Doughnut } from "react-chartjs-2";
-import { useHistory } from "react-router-dom"; // Yönlendirme için
+import { useNavigate } from "react-router-dom"; // useHistory yerine useNavigate
 import {
   listSales,
   listLedger,
@@ -9,13 +9,13 @@ import {
   listCustomerPayments,
   listLegacyIncomes,
   listLegacyExpenses,
-  getUserProfile // Profil çekmek için ekledik
+  getUserProfile
 } from "../utils/firebaseHelpers";
 import { listProductsForCurrentUser } from "../utils/artifactUserProducts"; 
 import "../utils/chartSetup";
 import AdvancedReport from "./AdvancedReport";
 import useSubscription from "../hooks/useSubscription";
-import { auth } from "../firebase"; // Auth importu gerekli
+import { auth } from "../firebase";
 
 function parseTimestamp(createdAt) {
   if (!createdAt) return null;
@@ -40,7 +40,7 @@ function labelForLedgerEntry(l) {
 }
 
 export default function Dashboard() {
-  const history = useHistory();
+  const navigate = useNavigate(); // Hook değişti
   const [sales, setSales] = useState([]);
   const [products, setProducts] = useState([]); 
   const [ledger, setLedger] = useState([]);
@@ -66,7 +66,6 @@ export default function Dashboard() {
       try {
         const uid = auth.currentUser?.uid;
         
-        // Paralel veri çekme
         const [salesData, ledgerData, customersData, legacyInc, legacyExp, productsData, userProfile] = await Promise.all([
           listSales(),
           listLedger(),
@@ -86,18 +85,14 @@ export default function Dashboard() {
         setLegacyExpenses(Array.isArray(legacyExp) ? legacyExp : []);
         setProducts(Array.isArray(productsData) ? productsData : []);
 
-        // Kullanıcı Adı ve Deneme Hakkı Kontrolü
         if (userProfile) {
           setUserName(userProfile.name || "Kullanıcı");
-          
-          // Basit deneme kontrolü: Hesap 14 günden yeniyse deneme hakkı var sayalım
           const createdAt = parseTimestamp(userProfile.createdAt) || new Date();
           const now = new Date();
           const diffDays = (now - createdAt) / (1000 * 60 * 60 * 24);
           setIsTrialEligible(diffDays < 14);
         }
 
-        // Hoş geldin popup kontrolü: Ürün yoksa göster
         if ((!productsData || productsData.length === 0)) {
           setShowWelcome(true);
         }
@@ -380,7 +375,7 @@ export default function Dashboard() {
             Hadi ilk ürününü ekleyerek işe koyulalım! Ürünlerinizi ekledikten sonra buradan satışları takip edebilirsiniz.
           </p>
           <button 
-            onClick={() => history.push('/products')} // Ürünler sayfasına yönlendirme (route'un '/products' olduğunu varsayıyorum)
+            onClick={() => navigate('/products')} 
             style={{ 
               marginTop: '10px', 
               padding: '8px 16px', 
@@ -397,7 +392,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* --- ABONELİK UYARISI / DENEME TEKLİFİ --- */}
        {!subLoading && !subActive && (
         <div className="acc-kart acc-uyari-kutu" style={{
           backgroundColor: isTrialEligible ? '#ecfdf5' : '#fef2f2', 
@@ -542,4 +536,5 @@ export default function Dashboard() {
     </div>
   );
 }
+
 
