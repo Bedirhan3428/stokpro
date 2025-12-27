@@ -1,200 +1,53 @@
 :root {
-  --adv-blue: #2563eb;
-  --adv-green: #10b981;
-  --adv-red: #ef4444;
-  --adv-orange: #f59e0b;
-  --adv-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  /* --- AYDINLIK MOD (Varsayılan) --- */
+  --adv-bg-page: #f8f9fa;
+  --adv-bg-card: #ffffff;
+  --adv-text-main: #202124;
+  --adv-text-sub: #5f6368;
+  --adv-border: #e0e0e0;
+  --adv-border-light: #f1f3f4;
+  
+  /* Durum Renkleri */
+  --adv-red: #d93025;
+  --adv-red-bg: #fce8e6;
+  --adv-green: #137333;
+  --adv-green-bg: #e6f4ea;
+  --adv-blue: #1a73e8;
+  --adv-blue-bg: #e8f0fe;
+  --adv-orange: #e37400;
+  
+  --adv-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
-.adv-container {
-  font-family: 'Inter', sans-serif;
-  color: var(--text); /* Global text */
-  display: flex; flex-direction: column; gap: 24px; padding: 10px 0;
-  animation: fadeIn 0.5s ease-out;
+/* --- KARANLIK MOD --- */
+[data-theme="dark"] {
+  --adv-bg-page: #111827;      /* Koyu arka plan */
+  --adv-bg-card: #1f2937;      /* Koyu kart */
+  --adv-text-main: #f3f4f6;    /* Açık metin */
+  --adv-text-sub: #9ca3af;     /* Gri metin */
+  --adv-border: #374151;       /* Koyu kenarlık */
+  --adv-border-light: #4b5563; 
+  
+  /* Durum Renkleri (Koyu mod için optimize) */
+  --adv-red: #f87171;
+  --adv-red-bg: #450a0a;
+  --adv-green: #34d399;
+  --adv-green-bg: #064e3b;
+  --adv-blue: #60a5fa;
+  --adv-blue-bg: #1e3a8a;
+  --adv-orange: #fbbf24;
+  
+  --adv-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* HEADER */
-.adv-header { display: flex; justify-content: space-between; align-items: flex-start; }
-
-.adv-title {
-  font-size: 1.5rem; font-weight: 800; margin: 0;
-  /* Düz renk kullanıyoruz, dark modda gradient sorun olabilir */
-  color: var(--text);
-}
-
-.adv-subtitle { color: var(--subtext); font-size: 0.9rem; margin-top: 4px; }
-
-.adv-badge {
-  background: rgba(37, 99, 235, 0.15); color: var(--adv-blue);
-  padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
-  text-transform: uppercase;
-}
-
-/* GRIDS */
-.adv-grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
-.adv-grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 16px; }
-
-/* KARTLAR - Global değişkenler */
-.adv-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  color: var(--text);
-  border-radius: 16px;
-  padding: 20px;
-  box-shadow: var(--adv-shadow);
-  display: flex; flex-direction: column;
-  transition: transform 0.2s;
-}
-.adv-card:hover { transform: translateY(-2px); }
-
-/* Mavi Vurgulu Kart - Özel */
-.highlight-blue {
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
-  color: white !important; /* Her zaman beyaz */
-  border: none;
-}
-/* İçindeki yazıların rengini zorla beyaz yap */
-.highlight-blue .adv-card-label { color: rgba(255,255,255,0.8); }
-.highlight-blue .adv-big-number { color: #fff; }
-.highlight-blue .adv-trend { color: #fff; background: rgba(255,255,255,0.2); border: none; }
-
-.adv-card-header {
-  display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: 16px; padding-bottom: 12px;
-  border-bottom: 1px solid var(--border);
-}
-.adv-card-header h4 { margin: 0; font-size: 1rem; font-weight: 700; color: var(--text); }
-
-.adv-card-label {
-  font-size: 0.85rem; color: var(--subtext); font-weight: 500; margin-bottom: 8px;
-}
-
-.adv-big-number {
-  font-size: 1.8rem; font-weight: 800; letter-spacing: -1px; color: var(--text);
-}
-
-.adv-desc { font-size: 0.8rem; color: var(--subtext); margin-top: 6px; }
-
-.adv-trend {
-  display: inline-block; margin-top: 8px; padding: 4px 8px;
-  border-radius: 6px; background: var(--border); /* Hafif ton */
-  font-size: 0.8rem; font-weight: 600; color: var(--text);
-}
-
-/* GRAFİK */
-.graph-container { height: 320px; }
-.chart-wrapper { flex: 1; position: relative; min-height: 0; }
-
-/* ABC ANALİZİ */
-.abc-container { display: flex; flex-direction: column; gap: 16px; }
-
-.abc-group {
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  background: rgba(16, 185, 129, 0.05);
-  border-radius: 12px; padding: 12px;
-}
-
-.abc-header {
-  display: flex; justify-content: space-between; font-weight: 700;
-  color: var(--adv-green); margin-bottom: 8px; font-size: 0.9rem;
-}
-
-.abc-list { display: flex; flex-direction: column; gap: 6px; }
-
-.abc-item {
-  display: flex; justify-content: space-between; font-size: 0.85rem;
-  padding: 6px 0; border-bottom: 1px solid var(--border);
-  color: var(--text);
-}
-.abc-item:last-child { border-bottom: none; }
-
-.abc-stats { display: flex; gap: 10px; }
-.abc-stat-box {
-  flex: 1; background: var(--card);
-  border: 1px solid var(--border); border-radius: 10px;
-  padding: 10px; text-align: center;
-  display: flex; flex-direction: column; align-items: center; gap: 4px;
-}
-.abc-stat-box small { color: var(--subtext); }
-
-.grade {
-  width: 28px; height: 28px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-weight: 800; font-size: 0.9rem;
-}
-.b-grade { background: rgba(245, 158, 11, 0.15); color: var(--adv-orange); border: 1px solid var(--adv-orange); }
-.c-grade { background: rgba(239, 68, 68, 0.15); color: var(--adv-red); border: 1px solid var(--adv-red); }
-
-/* ÖNERİLER */
-.suggestion-list {
-  list-style: none; padding: 0; margin: 0;
-  display: flex; flex-direction: column; gap: 10px;
-}
-
-.suggestion-list li {
-  padding: 12px; border-radius: 8px; font-size: 0.9rem;
-  line-height: 1.4; border-left: 4px solid var(--border);
-  background: var(--card); /* Global kart rengi */
-  color: var(--text);
-  border: 1px solid var(--border); /* Hafif çerçeve */
-  border-left-width: 4px; /* Sol çizgiyi kalınlaştır */
-}
-
-/* Renkli Uyarılar */
-.suggestion-list li.warning { border-left-color: var(--adv-orange); background: rgba(245, 158, 11, 0.05); }
-.suggestion-list li.danger { border-left-color: var(--adv-red); background: rgba(239, 68, 68, 0.05); }
-.suggestion-list li.success { border-left-color: var(--adv-green); background: rgba(16, 185, 129, 0.05); }
-.suggestion-list li.info { border-left-color: var(--adv-blue); background: rgba(37, 99, 235, 0.05); }
-
-/* LOADING */
-.adv-loading {
-  text-align: center; padding: 40px; color: var(--subtext);
-  display: flex; flex-direction: column; align-items: center; gap: 12px;
-}
-.adv-spinner {
-  width: 32px; height: 32px; border: 4px solid var(--border);
-  border-top-color: var(--adv-blue); border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* BUTTONS */
-.rapor-baslik-satir { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-.rapor-aksiyonlar { display: flex; gap: 10px; }
-
-.rapor-btn {
-  padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer;
-  font-size: 0.9rem; transition: all 0.2s; border: none;
-}
-.rapor-btn.primary {
-  background: linear-gradient(135deg, var(--adv-blue), #1d4ed8); color: white;
-  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
-}
-.rapor-btn.primary:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(37, 99, 235, 0.4); }
-
-.rapor-btn.ghost {
-  background: transparent; color: var(--subtext); border: 1px solid var(--border);
-}
-.rapor-btn.ghost:hover {
-  border-color: var(--adv-blue); color: var(--adv-blue); background: rgba(37, 99, 235, 0.05);
-}
-
-@media (max-width: 768px) {
-  .adv-grid-2 { grid-template-columns: 1fr; }
-  .adv-header { flex-direction: column; gap: 10px; }
-}
 /* --- GENEL DÜZEN --- */
 .adv-container {
   padding: 24px;
-  background-color: #f8f9fa;
+  background-color: var(--adv-bg-page);
   min-height: 100vh;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  color: #333;
+  color: var(--adv-text-main);
+  transition: background-color 0.3s, color 0.3s;
 }
 
 .adv-header {
@@ -208,12 +61,12 @@
   margin: 0;
   font-size: 1.5rem;
   font-weight: 700;
-  color: #202124;
+  color: var(--adv-text-main);
 }
 
 .adv-subtitle {
   margin: 4px 0 0;
-  color: #5f6368;
+  color: var(--adv-text-sub);
   font-size: 0.95rem;
 }
 
@@ -234,19 +87,24 @@
 
 /* --- KARTLAR --- */
 .adv-card {
-  background: #ffffff;
+  background: var(--adv-bg-card);
   border-radius: 12px;
   padding: 20px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-  border: 1px solid #e0e0e0;
+  box-shadow: var(--adv-shadow);
+  border: 1px solid var(--adv-border);
   display: flex;
   flex-direction: column;
+  transition: background-color 0.3s, border-color 0.3s;
 }
 
+/* Mavi Vurgulu Kart (Ciro Kartı) */
 .adv-card.highlight-blue {
   background: linear-gradient(135deg, #1a73e8 0%, #1557b0 100%);
   color: white;
   border: none;
+}
+[data-theme="dark"] .adv-card.highlight-blue {
+  background: linear-gradient(135deg, #1e3a8a 0%, #172554 100%);
 }
 
 .adv-card.highlight-blue .adv-card-label {
@@ -263,25 +121,26 @@
   align-items: center;
   margin-bottom: 16px;
   padding-bottom: 8px;
-  border-bottom: 1px solid #f1f3f4;
+  border-bottom: 1px solid var(--adv-border-light);
 }
 
 .adv-card-header h4 {
   margin: 0;
   font-size: 1rem;
   font-weight: 600;
+  color: var(--adv-text-main);
 }
 
 .adv-card-header small {
   font-size: 0.75rem;
-  color: #80868b;
+  color: var(--adv-text-sub);
 }
 
 /* --- METRİKLER --- */
 .adv-card-label {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #5f6368;
+  color: var(--adv-text-sub);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 8px;
@@ -290,7 +149,7 @@
 .adv-big-number {
   font-size: 1.75rem;
   font-weight: 700;
-  color: #202124;
+  color: var(--adv-text-main);
 }
 
 /* --- GRAFİK ALANI --- */
@@ -305,7 +164,7 @@
   min-height: 250px;
 }
 
-/* --- LİSTE TASARIMLARI (YENİ EKLENENLER) --- */
+/* --- LİSTE TASARIMLARI --- */
 .list-group {
   display: flex;
   flex-direction: column;
@@ -317,7 +176,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px 0;
-  border-bottom: 1px solid #f1f3f4;
+  border-bottom: 1px solid var(--adv-border-light);
   font-size: 0.95rem;
 }
 
@@ -327,7 +186,7 @@
 
 .row-name {
   font-weight: 500;
-  color: #3c4043;
+  color: var(--adv-text-main);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -335,27 +194,28 @@
 
 .row-val {
   font-weight: 600;
+  color: var(--adv-text-main);
 }
 
 /* Özel Durum Renkleri */
 .bad-val {
-  color: #d93025; /* Kırmızı */
-  background: #fce8e6;
+  color: var(--adv-red);
+  background: var(--adv-red-bg);
   padding: 4px 8px;
   border-radius: 6px;
   font-size: 0.85rem;
 }
 
 .good-val {
-  color: #137333; /* Yeşil */
-  background: #e6f4ea;
+  color: var(--adv-green);
+  background: var(--adv-green-bg);
   padding: 4px 8px;
   border-radius: 6px;
   font-size: 0.85rem;
 }
 
 .strong-val {
-  color: #1a73e8; /* Mavi */
+  color: var(--adv-blue);
 }
 
 /* Liste Satır Vurguları */
@@ -369,7 +229,7 @@
   top: 12px;
   bottom: 12px;
   width: 4px;
-  background-color: #d93025;
+  background-color: var(--adv-red);
   border-radius: 0 4px 4px 0;
 }
 
@@ -380,6 +240,7 @@
 
 .dead-row {
   opacity: 0.8;
+  color: var(--adv-text-sub);
 }
 
 /* Sıralama Rozeti */
@@ -389,8 +250,8 @@
   justify-content: center;
   width: 20px;
   height: 20px;
-  background-color: #e8f0fe;
-  color: #1967d2;
+  background-color: var(--adv-blue-bg);
+  color: var(--adv-blue);
   border-radius: 50%;
   font-size: 0.75rem;
   font-weight: 700;
@@ -400,11 +261,12 @@
 .empty-state {
   text-align: center;
   padding: 24px;
-  color: #80868b;
+  color: var(--adv-text-sub);
   font-style: italic;
   font-size: 0.9rem;
-  background: #f8f9fa;
+  background: var(--adv-bg-page);
   border-radius: 8px;
+  border: 1px dashed var(--adv-border);
 }
 
 .adv-loading {
@@ -413,14 +275,15 @@
   align-items: center;
   height: 100vh;
   font-size: 1.2rem;
-  color: #5f6368;
+  color: var(--adv-text-sub);
+  background-color: var(--adv-bg-page);
 }
 
 /* --- MOBİL UYUMLULUK --- */
 @media (max-width: 768px) {
   .adv-grid-3, 
   .adv-grid-2 {
-    grid-template-columns: 1fr; /* Mobilde tek sütun */
+    grid-template-columns: 1fr;
   }
 
   .adv-container {
