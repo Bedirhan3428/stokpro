@@ -1,16 +1,16 @@
 /* --- GLOBAL DEĞİŞKENLER --- */
 :root {
   /* Aydınlık Mod (Yumuşak) */
-  --bg-body: #f3f4f6;       /* Çok hafif gri, göz yormaz */
-  --bg-surface: #ffffff;    /* Kartlar için tam beyaz */
+  --bg-color-1: #f3f4f6;
+  --bg-color-2: #e0e7ff; /* Hafif mavi tonu */
+  --bg-color-3: #f3f4f6;
   
+  --bg-surface: #ffffff;
   --text-primary: #111827;
   --text-secondary: #6b7280;
   --border-color: #e5e7eb;
-  
   --brand-primary: #2563eb;
   
-  /* Gölgeler (Yumuşak) */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   
@@ -19,17 +19,20 @@
 
 /* Karanlık Mod */
 [data-theme="dark"] {
-  --bg-body: #0f172a;
+  --bg-color-1: #0f172a;
+  --bg-color-2: #1e293b;
+  --bg-color-3: #0f172a;
+  
   --bg-surface: #1e293b;
   --text-primary: #f9fafb;
   --text-secondary: #9ca3af;
   --border-color: #334155;
   --brand-primary: #3b82f6;
+  
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
   --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
 }
 
-/* --- SIFIRLAMA ve TEMEL --- */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -43,11 +46,22 @@ html {
 body {
   min-height: 100vh;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background-color: var(--bg-body);
   color: var(--text-primary);
-  /* Arka plan geçiş animasyonu */
-  transition: background-color var(--transition-speed) ease, color var(--transition-speed) ease;
+  
+  /* --- ARKA PLAN ANİMASYONU --- */
+  background: linear-gradient(-45deg, var(--bg-color-1), var(--bg-color-2), var(--bg-color-3));
+  background-size: 400% 400%;
+  animation: gradientBG 15s ease infinite;
+  
+  transition: color var(--transition-speed) ease;
   overflow-x: hidden;
+}
+
+/* Animasyon Keyframes */
+@keyframes gradientBG {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 #root {
@@ -62,12 +76,12 @@ a {
   text-decoration: none;
 }
 
-/* Kart yapısını her yerde standartlaştır */
 .card {
   background-color: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   box-shadow: var(--shadow-sm);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 /* Yükleniyor Spinner'ı */
