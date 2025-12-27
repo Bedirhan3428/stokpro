@@ -1,13 +1,9 @@
-// src/utils/theme.js
-
 export function initTheme() {
-  // Daha önce kaydedilmiş temayı kontrol et
   const saved = localStorage.getItem("theme");
   if (saved) {
     document.documentElement.setAttribute("data-theme", saved);
     return saved;
   }
-  // Yoksa sistem tercihine bak
   const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
   const t = prefersDark ? "dark" : "light";
   document.documentElement.setAttribute("data-theme", t);
