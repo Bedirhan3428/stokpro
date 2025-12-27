@@ -5,8 +5,8 @@ import { useAuth } from "../contexts/AuthContext";
 import { initTheme, toggleTheme } from "../utils/theme";
 
 export default function Navbar() {
-  const [open, setOpen] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [open, setOpen] = useState(false); // Profil menüsü
+  const [mobileOpen, setMobileOpen] = useState(false); // Mobil menü
   const [theme, setTheme] = useState("light");
 
   const { user, logout } = useAuth();
@@ -16,164 +16,138 @@ export default function Navbar() {
   const menuRef = useRef(null);
   const mobileRef = useRef(null);
 
-  useEffect(() => {
-    setTheme(initTheme());
-  }, []);
+  // Tema Başlangıcı
+  useEffect(() => { setTheme(initTheme()); }, []);
 
+  // Dışarı Tıklama Kontrolü
   useEffect(() => {
-    function onDocClick(e) {
-      if (menuRef.current && !menuRef.current.contains(e.target)) setOpen(false);
-      if (mobileRef.current && !mobileRef.current.contains(e.target) && !e.target.closest(".nb-hamburger"))
-        setMobileOpen(false);
-    }
-    function onEsc(e) {
-      if (e.key === "Escape") {
-        setOpen(false);
+    function handleClickOutside(event) {
+      if (menuRef.current && !menuRef.current.contains(event.target)) setOpen(false);
+      if (mobileRef.current && !mobileRef.current.contains(event.target) && !event.target.closest(".nb-hamburger")) {
         setMobileOpen(false);
       }
     }
-    document.addEventListener("click", onDocClick);
-    document.addEventListener("keydown", onEsc);
-    return () => {
-      document.removeEventListener("click", onDocClick);
-      document.removeEventListener("keydown", onEsc);
-    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Sayfa Değişince Menüleri Kapat
   useEffect(() => {
     setOpen(false);
     setMobileOpen(false);
   }, [loc.pathname]);
 
-  async function handleLogout() {
-    try {
-      await logout();
-      nav("/");
-    } catch (e) {
-      console.error("Çıkış yapılamadı", e);
-    }
-  }
+  const handleLogout = async () => {
+    try { await logout(); nav("/"); } catch (e) { console.error(e); }
+  };
 
-  function handleToggleTheme() {
-    setTheme((prev) => toggleTheme(prev));
-  }
+  const handleTheme = () => setTheme(prev => toggleTheme(prev));
 
-  const NavLinks = ({ className = "" }) => (
-    <div className={`nb-linkler ${className}`}>
-      <Link to="/dashboard" className={`nb-link ${loc.pathname === "/dashboard" ? "secili" : ""}`}>Dashboard</Link>
-      <Link to="/products" className={`nb-link ${loc.pathname === "/products" ? "secili" : ""}`}>Ürünler</Link>
-      <Link to="/sales" className={`nb-link ${loc.pathname === "/sales" ? "secili" : ""}`}>Satış</Link>
-      <Link to="/customers" className={`nb-link ${loc.pathname === "/customers" ? "secili" : ""}`}>Müşteriler</Link>
-      <Link to="/accounting" className={`nb-link ${loc.pathname === "/accounting" ? "secili" : ""}`}>Muhasebe</Link>
+  // Linkler Bileşeni (Tekrar kullanımı için)
+  const NavLinks = ({ mobile = false }) => (
+    <div className={mobile ? "nb-mobil-list" : "nb-masaustu-list"}>
+      <Link to="/dashboard" className={`nb-link ${loc.pathname === "/dashboard" ? "aktif" : ""}`}>Dashboard</Link>
+      <Link to="/products" className={`nb-link ${loc.pathname === "/products" ? "aktif" : ""}`}>Ürünler</Link>
+      <Link to="/sales" className={`nb-link ${loc.pathname === "/sales" ? "aktif" : ""}`}>Satış</Link>
+      <Link to="/customers" className={`nb-link ${loc.pathname === "/customers" ? "aktif" : ""}`}>Müşteriler</Link>
+      <Link to="/accounting" className={`nb-link ${loc.pathname === "/accounting" ? "aktif" : ""}`}>Muhasebe</Link>
     </div>
   );
 
   return (
-    <header className="nb-ust" role="banner" aria-label="Ana gezinme">
-      <div className="nb-sol">
-        <div className="nb-marka" aria-hidden={false}>
-          <div className="nb-logo" aria-hidden> S </div>
-          <div className="nb-metin">
-            <div className="nb-ad">StokPro</div>
-            <small className="nb-alt">Hızlı · Güvenilir · Modern</small>
+    <header className="nb-header">
+      <div className="nb-container">
+        
+        {/* SOL: LOGO */}
+        <div className="nb-logo-bolumu">
+          <div className="nb-logo-ikon">S</div>
+          <div className="nb-logo-yazi">
+            <span className="nb-marka">StokPro</span>
+            <span className="nb-slogan">Hızlı & Güvenilir</span>
           </div>
         </div>
-      </div>
 
-      <nav className="nb-sag" aria-label="Site navigation">
-        <div className="nb-satir">
-          {user && <NavLinks className="nb-masaustu" />}
+        {/* ORTA: MASAÜSTÜ LİNKLER */}
+        {user && <nav className="nb-nav-masaustu"><NavLinks /></nav>}
 
-          {/* Tema anahtarı */}
-          <button
-            className="nb-profil-btn"
-            onClick={handleToggleTheme}
-            aria-label={theme === "dark" ? "Aydınlık tema" : "Karanlık tema"}
-            title={theme === "dark" ? "Aydınlık tema" : "Karanlık tema"}
-            style={{ marginRight: "6px" }}
-          >
+        {/* SAG: AKSİYONLAR */}
+        <div className="nb-aksiyonlar">
+          {/* Tema Butonu */}
+          <button onClick={handleTheme} className="nb-icon-btn theme-toggle" title="Temayı Değiştir">
             {theme === "dark" ? "☀️" : "🌙"}
           </button>
 
           {user && (
-            <button
-              className={`nb-hamburger ${mobileOpen ? "acik" : ""}`}
-              aria-label={mobileOpen ? "Menüyü kapat" : "Menüyü aç"}
-              aria-expanded={mobileOpen}
-              onClick={() => {
-                setMobileOpen((s) => !s);
-                setOpen(false);
-              }}
-            >
-              <span className="nb-hamburger-ic" />
-            </button>
-          )}
-
-          {user ? (
-            <div ref={menuRef} className="nb-profil">
-              <button
-                className="nb-profil-btn"
-                onClick={() => {
-                  setOpen((s) => !s);
-                  setMobileOpen(false);
-                }}
-                aria-expanded={open}
-                aria-controls="profil-menu"
-                title="Profil"
-              >
-                Profil
-              </button>
+            <>
+              {/* Profil Menüsü (Masaüstü) */}
+              <div className="nb-profil-wrapper" ref={menuRef}>
+                <button 
+                  className={`nb-profil-btn ${open ? "acik" : ""}`} 
+                  onClick={() => setOpen(!open)}
+                >
+                  <div className="nb-avatar">{user.email[0].toUpperCase()}</div>
+                  <span className="nb-kullanici-adi">Hesabım</span>
+                </button>
 
                 {open && (
-                  <div id="profil-menu" className="nb-profil-menu" role="menu" aria-label="Profil menüsü">
-                    <div className="nb-profil-kart">
-                      <div className="nb-mail" title={user.email}>{user.email}</div>
-                      <div className="nb-alt">Hesap</div>
-                      <div className="nb-profil-aks">
-                        <button className="nb-profil-link" onClick={() => { setOpen(false); nav("/settings"); }}>Ayarlar</button>
-                        <button className="nb-cikis" onClick={handleLogout}>Çıkış</button>
-                      </div>
+                  <div className="nb-dropdown">
+                    <div className="nb-dropdown-header">
+                      <strong>{user.email}</strong>
+                      <small>Kullanıcı</small>
+                    </div>
+                    <div className="nb-dropdown-items">
+                      <button onClick={() => nav("/settings")}>Ayarlar</button>
+                      <button onClick={handleLogout} className="nb-danger">Çıkış Yap</button>
                     </div>
                   </div>
                 )}
-            </div>
-          ) : (
-            <div aria-hidden className="nb-bos" />
+              </div>
+
+              {/* Hamburger Butonu (Mobil) */}
+              <button 
+                className={`nb-hamburger ${mobileOpen ? "aktif" : ""}`} 
+                onClick={() => setMobileOpen(!mobileOpen)}
+              >
+                <span></span>
+                <span></span>
+                <span></span>
+              </button>
+            </>
           )}
         </div>
-      </nav>
+      </div>
 
+      {/* MOBİL MENÜ (Slide-in) */}
       {user && (
-        <div className={`nb-mobil-arka ${mobileOpen ? "gorunur" : ""}`} aria-hidden={!mobileOpen}>
-          <div ref={mobileRef} className={`nb-mobil ${mobileOpen ? "acik" : ""}`} role="dialog" aria-label="Mobil menü" tabIndex={-1}>
-            <div className="nb-mobil-ust">
-              <div className="nb-marka">
-                <div className="nb-logo">S</div>
-                <div className="nb-metin">
-                  <div className="nb-ad">StokPro</div>
-                  <small className="nb-alt">Hızlı · Güvenilir</small>
+        <>
+          <div className={`nb-overlay ${mobileOpen ? "acik" : ""}`} onClick={() => setMobileOpen(false)} />
+          <div className={`nb-mobil-menu ${mobileOpen ? "acik" : ""}`} ref={mobileRef}>
+            <div className="nb-mobil-header">
+              <span className="nb-marka">StokPro</span>
+              <button onClick={() => setMobileOpen(false)} className="nb-kapat-btn">×</button>
+            </div>
+            
+            <div className="nb-mobil-body">
+              <NavLinks mobile />
+            </div>
+
+            <div className="nb-mobil-footer">
+              <div className="nb-mobil-user">
+                <div className="nb-avatar small">{user.email[0].toUpperCase()}</div>
+                <div className="nb-user-info">
+                  <span>{user.email}</span>
+                  <small>Aktif Oturum</small>
                 </div>
               </div>
-              <button className="nb-profil-link" onClick={() => setMobileOpen(false)} aria-label="Kapat">
-                Kapat
-              </button>
-            </div>
-
-            <div className="nb-mobil-linkler">
-              <NavLinks className="nb-mobil-list" />
-            </div>
-
-            <div className="nb-mobil-profil">
-              <div className="nb-mail" title={user.email}>{user.email}</div>
-              <div className="nb-alt">Hesap</div>
-              <div className="nb-profil-aks">
-                <button className="nb-profil-link" onClick={() => { setMobileOpen(false); nav("/settings"); }}>Ayarlar</button>
-                <button className="nb-cikis" onClick={handleLogout}>Çıkış</button>
+              <div className="nb-mobil-aksiyonlar">
+                <button onClick={() => nav("/settings")} className="nb-btn-outline">Ayarlar</button>
+                <button onClick={handleLogout} className="nb-btn-danger">Çıkış</button>
               </div>
             </div>
           </div>
-        </div>
+        </>
       )}
     </header>
   );
 }
+
