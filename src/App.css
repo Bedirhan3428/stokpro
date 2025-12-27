@@ -1,64 +1,30 @@
-/* --- GLOBAL DEĞİŞKENLER --- */
 :root {
-  /* Aydınlık Mod (Yumuşak) */
-  --bg-color-1: #f3f4f6;
-  --bg-color-2: #e0e7ff; /* Hafif mavi tonu */
-  --bg-color-3: #f3f4f6;
-  
   --bg-surface: #ffffff;
   --text-primary: #111827;
   --text-secondary: #6b7280;
   --border-color: #e5e7eb;
-  --brand-primary: #2563eb;
+  --brand-primary: #1f6feb;
   
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  
-  --transition-speed: 0.3s;
 }
 
-/* Karanlık Mod */
-[data-theme="dark"] {
-  --bg-color-1: #0f172a;
-  --bg-color-2: #1e293b;
-  --bg-color-3: #0f172a;
-  
-  --bg-surface: #1e293b;
-  --text-primary: #f9fafb;
-  --text-secondary: #9ca3af;
-  --border-color: #334155;
-  --brand-primary: #3b82f6;
-  
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
-  --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
-}
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-html {
-  height: 100%;
-}
+html, body { height: 100%; }
 
 body {
   min-height: 100vh;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   color: var(--text-primary);
   
-  /* --- ARKA PLAN ANİMASYONU --- */
-  background: linear-gradient(-45deg, var(--bg-color-1), var(--bg-color-2), var(--bg-color-3));
+  /* --- YUMUŞATILMIŞ ANİMASYON --- */
+  background: linear-gradient(-45deg, #f8f9fa, #eef2ff, #f3f4f6, #ffffff);
   background-size: 400% 400%;
-  animation: gradientBG 15s ease infinite;
-  
-  transition: color var(--transition-speed) ease;
-  overflow-x: hidden;
+  animation: softFlow 15s ease infinite;
 }
 
-/* Animasyon Keyframes */
-@keyframes gradientBG {
+@keyframes softFlow {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
@@ -70,34 +36,21 @@ body {
   flex-direction: column;
 }
 
-/* --- ORTAK BİLEŞENLER --- */
-a {
-  color: var(--brand-primary);
-  text-decoration: none;
-}
-
+/* Kartlar */
 .card {
   background-color: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   box-shadow: var(--shadow-sm);
-  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
-/* Yükleniyor Spinner'ı */
+/* Spinner */
 .loading-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  width: 100%;
+  display: flex; justify-content: center; align-items: center; height: 100vh; width: 100%;
 }
 .spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid var(--border-color);
-  border-top-color: var(--brand-primary);
-  border-radius: 50%;
+  width: 40px; height: 40px; border: 3px solid var(--border-color);
+  border-top-color: var(--brand-primary); border-radius: 50%;
   animation: spin 1s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
