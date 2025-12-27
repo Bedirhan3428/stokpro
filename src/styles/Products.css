@@ -1,5 +1,5 @@
 :root {
-  /* --- Renk Paleti (Dashboard ile uyumlu) --- */
+  /* --- Renk Paleti --- */
   --bg-page: #f8f9fa;
   --bg-card: #ffffff;
   --text-main: #111827;
@@ -8,8 +8,12 @@
   
   --primary: #1f6feb;
   --primary-hover: #1652b5;
+  --primary-light: #e0e7ff; /* Yeni: Buton hover arka planı için */
+  
   --danger: #ef4444;
   --danger-hover: #dc2626;
+  --danger-light: #fee2e2; /* Yeni: Silme butonu hover arka planı için */
+
   --success: #10b981;
   --success-bg: #d1fae5;
   
@@ -27,8 +31,12 @@
   
   --primary: #60a5fa;
   --primary-hover: #3b82f6;
+  --primary-light: #1e3a8a; /* Koyu mod için koyu mavi zemin */
+  
   --danger: #f87171;
   --danger-hover: #ef4444;
+  --danger-light: #7f1d1d; /* Koyu mod için koyu kırmızı zemin */
+
   --success-bg: #064e3b;
   
   --shadow-sm: none;
@@ -98,7 +106,7 @@ body {
   box-shadow: 0 0 0 2px rgba(31, 111, 235, 0.2);
 }
 
-/* Input Grup (Fiyat vb.) */
+/* Input Grup */
 .prd-input-grup {
   position: relative;
   display: flex;
@@ -132,12 +140,11 @@ body {
 }
 .prd-select-trigger:focus { border-color: var(--primary); }
 
-/* --- GENİŞLEYEN METİN ALANI (Açıklama isteği için) --- */
-/* Bu class'ı textarea'ya verdiğinde yazdıkça genişler (modern browserlar) */
+/* --- TEXTAREA EXPAND (Açıklama alanı için hazır class) --- */
 .prd-textarea-expand {
-  field-sizing: content; /* Yeni CSS özelliği */
+  field-sizing: content;
   min-height: 80px;
-  resize: vertical; /* Eski browser fallback */
+  resize: vertical;
 }
 
 /* --- LİSTE ALANI --- */
@@ -163,7 +170,6 @@ body {
   gap: 8px;
 }
 
-/* Scrollbar Tasarımı */
 .prd-liste-container::-webkit-scrollbar { width: 6px; }
 .prd-liste-container::-webkit-scrollbar-thumb {
   background-color: var(--border-color);
@@ -196,9 +202,10 @@ body {
 .prd-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px; /* Gruplar arası boşluk */
 }
 
+/* Stok Kontrol Alanı */
 .prd-stock-control {
   display: flex;
   flex-direction: column;
@@ -216,6 +223,12 @@ body {
   font-weight: 700;
 }
 .prd-stock-control input:focus { border-color: var(--primary); outline: none; }
+
+/* Buton Grubu (Yan Yana) */
+.prd-action-btns {
+  display: flex;
+  gap: 8px; /* Butonlar arası boşluk */
+}
 
 /* --- BUTONLAR --- */
 .prd-btn {
@@ -236,13 +249,38 @@ body {
 .prd-btn.ghost { background: transparent; color: var(--text-sub); border: 1px solid var(--border-color); }
 .prd-btn.ghost:hover { background: var(--bg-page); color: var(--text-main); }
 
-.prd-btn.icon {
-  padding: 8px;
+/* İkon Butonlar (Düzenle & Sil) - Çerçeveli */
+.prd-btn.icon-btn {
+  padding: 8px 12px;
   background: transparent;
   font-size: 1.1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
 }
-.prd-btn.icon:hover { transform: scale(1.1); }
-.prd-btn.icon.delete:hover { filter: hue-rotate(180deg); }
+
+/* Düzenle Butonu Stili */
+.prd-btn.icon-btn.edit {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+.prd-btn.icon-btn.edit:hover {
+  background-color: var(--primary); /* Mavi zemin */
+  color: white;
+}
+
+/* Sil Butonu Stili */
+.prd-btn.icon-btn.delete {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+.prd-btn.icon-btn.delete:hover {
+  background-color: var(--danger); /* Kırmızı zemin */
+  color: white;
+}
 
 /* --- MODAL --- */
 .prd-modal-overlay {
