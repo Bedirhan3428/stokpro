@@ -1,80 +1,53 @@
-/* --- GLOBAL DEĞİŞKENLER & TEMA --- */
+/* --- GLOBAL DEĞİŞKENLER --- */
 :root {
-  /* --- AYDINLIK MOD (Varsayılan) - YUMUŞATILDI --- */
+  /* Aydınlık Mod (Yumuşak) */
+  --bg-body: #f3f4f6;       /* Çok hafif gri, göz yormaz */
+  --bg-surface: #ffffff;    /* Kartlar için tam beyaz */
   
-  /* Arka Plan: Artık sert gradyanlar yok. Çok hafif, temiz bir gri-beyaz tonu. */
-  --bg-body: #f8f9fa; 
-  --bg-surface: #ffffff;
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --border-color: #e5e7eb;
   
-  /* Metin Renkleri */
-  --text-primary: #1e293b; /* Simsiyah yerine koyu lacivert-gri (daha yumuşak) */
-  --text-secondary: #64748b;
-  
-  /* Kenarlıklar */
-  --border-color: #e2e8f0;
-  
-  /* Marka Renkleri */
   --brand-primary: #2563eb;
-  --brand-primary-hover: #1d4ed8;
-  --brand-accent: #eff6ff; /* Çok açık mavi (vurgular için) */
   
-  /* Durum Renkleri */
-  --status-success: #10b981;
-  --status-danger: #ef4444;
-  --status-warning: #f59e0b;
+  /* Gölgeler (Yumuşak) */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   
-  /* Gölgeler: Siyah yerine, rengin tonundan üretilen çok hafif gölgeler */
-  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.02);
-  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.06), 0 2px 4px -1px rgba(15, 23, 42, 0.03);
-  --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.06), 0 4px 6px -2px rgba(15, 23, 42, 0.03);
-  
-  /* Geçişler */
   --transition-speed: 0.3s;
 }
 
-/* --- KARANLIK MOD (Beğendiğin hali korundu) --- */
+/* Karanlık Mod */
 [data-theme="dark"] {
-  --bg-body: #0f172a;      /* Derin lacivert-siyah */
-  --bg-surface: #1e293b;   /* Kartlar için biraz daha açık */
-  
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  
+  --bg-body: #0f172a;
+  --bg-surface: #1e293b;
+  --text-primary: #f9fafb;
+  --text-secondary: #9ca3af;
   --border-color: #334155;
-  
   --brand-primary: #3b82f6;
-  --brand-primary-hover: #60a5fa;
-  --brand-accent: #1e3a8a;
-  
-  --status-success: #34d399;
-  --status-danger: #f87171;
-  --status-warning: #fbbf24;
-  
-  /* Koyu modda gölgeler daha belirgin olabilir ama yine de yumuşak */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
 }
 
-/* --- TEMEL AYARLAR --- */
+/* --- SIFIRLAMA ve TEMEL --- */
 * {
   box-sizing: border-box;
-}
-
-html, body {
   margin: 0;
   padding: 0;
+}
+
+html {
   height: 100%;
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  
-  /* Arka plan geçişi */
+}
+
+body {
+  min-height: 100vh;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background-color: var(--bg-body);
   color: var(--text-primary);
+  /* Arka plan geçiş animasyonu */
   transition: background-color var(--transition-speed) ease, color var(--transition-speed) ease;
-  
-  /* Metin okuma kolaylığı */
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
 #root {
@@ -83,123 +56,34 @@ html, body {
   flex-direction: column;
 }
 
-/* --- ORTAK BİLEŞEN STİLLERİ --- */
-
-/* Butonlar */
-button {
-  font-family: inherit;
-}
-
-/* Kart Yapısı (Tüm sayfalarda standart) */
-.card {
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  border-radius: 16px; /* Daha modern yuvarlak köşeler */
-  box-shadow: var(--shadow-sm);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color var(--transition-speed) ease, border-color var(--transition-speed) ease;
-}
-
-.card:hover {
-  /* Hover efektini çok hafiflettim, zıplama hissini azalttım */
-  box-shadow: var(--shadow-md); 
-}
-
-/* Input ve Form Elemanları */
-input, select, textarea {
-  background-color: var(--bg-surface);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  padding: 10px 12px;
-  font-size: 0.95rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-input:focus, select:focus, textarea:focus {
-  outline: none;
-  border-color: var(--brand-primary);
-  /* Odaklanınca oluşan mavi halkayı (ring) çok daha şeffaf yaptım */
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); 
-}
-
-/* Linkler */
+/* --- ORTAK BİLEŞENLER --- */
 a {
   color: var(--brand-primary);
   text-decoration: none;
-  font-weight: 500;
-  transition: color 0.2s;
 }
 
-a:hover {
-  color: var(--brand-primary-hover);
+/* Kart yapısını her yerde standartlaştır */
+.card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
 }
 
-/* --- SCROLLBAR (Modern Tarayıcılar İçin) --- */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent; 
-}
-
-::-webkit-scrollbar-thumb {
-  background-color: #cbd5e1;
-  border-radius: 4px;
-  border: 2px solid transparent;
-  background-clip: content-box;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background-color: #94a3b8;
-}
-
-[data-theme="dark"] ::-webkit-scrollbar-thumb {
-  background-color: #475569;
-}
-[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
-  background-color: #64748b;
-}
-
-/* --- YARDIMCI SINIFLAR --- */
-.text-muted { color: var(--text-secondary); }
-.text-danger { color: var(--status-danger); }
-.text-success { color: var(--status-success); }
-
-/* Yükleniyor Spinner (Merkezi) */
+/* Yükleniyor Spinner'ı */
 .loading-container {
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
   height: 100vh;
   width: 100%;
-  color: var(--text-secondary);
-  background-color: var(--bg-body);
 }
-
 .spinner {
   width: 40px;
   height: 40px;
   border: 3px solid var(--border-color);
   border-top-color: var(--brand-primary);
   border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin-bottom: 16px;
+  animation: spin 1s linear infinite;
 }
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* --- ANİMASYONLAR (Sayfa Geçişleri İçin) --- */
-.page-enter {
-  opacity: 0;
-  transform: translateY(10px);
-}
-.page-enter-active {
-  opacity: 1;
-  transform: translateY(0);
-  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
-}
+@keyframes spin { to { transform: rotate(360deg); } }
