@@ -28,11 +28,12 @@
 
 * { box-sizing: border-box; }
 
-/* --- HEADER --- */
+/* --- HEADER (Düzeltildi) --- */
 .nb-header {
   background-color: var(--nb-bg);
   border-bottom: 1px solid var(--nb-border);
-  height: 64px;
+  height: 70px; /* Yükseklik biraz artırıldı */
+  width: 100%;  /* Genişlik %100 yapıldı */
   position: sticky;
   top: 0;
   z-index: 100;
@@ -41,7 +42,8 @@
 }
 
 .nb-container {
-  max-width: 1200px;
+  width: 100%;
+  max-width: 1200px; /* İçerik yine ortada ve sınırlı kalsın */
   margin: 0 auto;
   padding: 0 20px;
   height: 100%;
@@ -54,20 +56,20 @@
 .nb-logo-bolumu {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .nb-logo-ikon {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   background: linear-gradient(135deg, var(--nb-primary), #3b82f6);
   color: white;
-  border-radius: 8px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 800;
-  font-size: 1.2rem;
+  font-size: 1.4rem;
 }
 
 .nb-logo-yazi {
@@ -78,13 +80,13 @@
 
 .nb-marka {
   font-weight: 800;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   color: var(--nb-text);
   letter-spacing: -0.5px;
 }
 
 .nb-slogan {
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   color: var(--nb-text-sub);
 }
 
@@ -92,6 +94,7 @@
 .nb-nav-masaustu {
   display: flex;
   height: 100%;
+  margin: 0 20px; /* Logo ve sağ taraf ile mesafe */
 }
 
 .nb-masaustu-list {
@@ -102,13 +105,14 @@
 }
 
 .nb-link {
-  padding: 8px 12px;
+  padding: 10px 16px;
   border-radius: 8px;
   text-decoration: none;
   color: var(--nb-text-sub);
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   transition: all 0.2s;
+  white-space: nowrap; /* Linkler alt satıra geçmesin */
 }
 
 .nb-link:hover {
@@ -131,14 +135,14 @@
 .nb-icon-btn {
   background: transparent;
   border: 1px solid var(--nb-border);
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   color: var(--nb-text);
   transition: all 0.2s;
 }
@@ -150,19 +154,19 @@
 .nb-profil-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   background: transparent;
   border: none;
   cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 8px;
+  padding: 6px 10px;
+  border-radius: 10px;
   transition: background 0.2s;
 }
 .nb-profil-btn:hover, .nb-profil-btn.acik { background-color: var(--nb-bg-alt); }
 
 .nb-avatar {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   background-color: var(--nb-primary);
   color: white;
   border-radius: 50%;
@@ -170,23 +174,23 @@
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: 1rem;
 }
-.nb-avatar.small { width: 36px; height: 36px; font-size: 1rem; }
+.nb-avatar.small { width: 40px; height: 40px; font-size: 1.1rem; }
 
 .nb-kullanici-adi {
   font-weight: 600;
   color: var(--nb-text);
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   display: none;
 }
-@media (min-width: 768px) { .nb-kullanici-adi { display: block; } }
+@media (min-width: 900px) { .nb-kullanici-adi { display: block; } }
 
 .nb-dropdown {
   position: absolute;
-  top: 120%;
+  top: 130%; /* Butonun biraz daha altı */
   right: 0;
-  width: 220px;
+  width: 240px;
   background-color: var(--nb-bg);
   border: 1px solid var(--nb-border);
   border-radius: 12px;
@@ -198,24 +202,25 @@
 @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
 .nb-dropdown-header {
-  padding: 12px;
+  padding: 16px;
   border-bottom: 1px solid var(--nb-border);
   background-color: var(--nb-bg-alt);
 }
-.nb-dropdown-header strong { display: block; color: var(--nb-text); font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; }
+.nb-dropdown-header strong { display: block; color: var(--nb-text); font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; }
 .nb-dropdown-header small { color: var(--nb-text-sub); }
 
-.nb-dropdown-items { padding: 4px; display: flex; flex-direction: column; }
+.nb-dropdown-items { padding: 6px; display: flex; flex-direction: column; gap: 4px; }
 .nb-dropdown-items button {
   text-align: left;
   background: transparent;
   border: none;
-  padding: 10px 12px;
-  border-radius: 6px;
+  padding: 12px 14px;
+  border-radius: 8px;
   cursor: pointer;
   color: var(--nb-text);
   font-weight: 500;
   transition: background 0.2s;
+  font-size: 0.95rem;
 }
 .nb-dropdown-items button:hover { background-color: var(--nb-bg-alt); }
 .nb-dropdown-items button.nb-danger { color: var(--nb-danger); }
@@ -226,12 +231,12 @@
   display: none;
   flex-direction: column;
   justify-content: space-between;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   background: transparent;
   border: 1px solid var(--nb-border);
-  border-radius: 8px;
-  padding: 9px 7px;
+  border-radius: 10px;
+  padding: 10px 8px;
   cursor: pointer;
 }
 .nb-hamburger span {
@@ -243,46 +248,38 @@
   transition: all 0.3s;
 }
 
-/* --- MOBİL MENÜ (DÜZELTİLDİ) --- */
+/* --- MOBİL MENÜ --- */
 .nb-overlay {
   position: fixed;
   inset: 0;
   background-color: var(--nb-overlay);
   z-index: 199;
   backdrop-filter: blur(2px);
-  
-  /* Varsayılan olarak görünmez ve tıklanmaz */
   opacity: 0;
   pointer-events: none;
-  
   transition: opacity 0.3s ease;
 }
-
-.nb-overlay.acik {
-  opacity: 1;
-  pointer-events: auto; /* Sadece açıkken tıkla */
-}
+.nb-overlay.acik { opacity: 1; pointer-events: auto; }
 
 .nb-mobil-menu {
   position: fixed;
   top: 0;
   right: 0;
-  width: 80%;
+  width: 85%;
   max-width: 320px;
-  height: 100dvh; /* Dynamic Height */
+  height: 100dvh;
   background-color: var(--nb-bg);
   z-index: 200;
   box-shadow: -5px 0 20px rgba(0,0,0,0.2);
   display: flex;
   flex-direction: column;
-  
   transform: translateX(100%);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .nb-mobil-menu.acik { transform: translateX(0); }
 
 .nb-mobil-header {
-  padding: 16px 20px;
+  padding: 20px;
   border-bottom: 1px solid var(--nb-border);
   display: flex;
   justify-content: space-between;
@@ -292,7 +289,7 @@
 .nb-kapat-btn {
   background: transparent;
   border: none;
-  font-size: 2rem;
+  font-size: 2.2rem;
   color: var(--nb-text-sub);
   cursor: pointer;
   line-height: 1;
@@ -307,11 +304,11 @@
 .nb-mobil-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
 .nb-mobil-list .nb-link {
-  font-size: 1rem;
-  padding: 12px;
+  font-size: 1.1rem;
+  padding: 14px;
   border: 1px solid var(--nb-border);
 }
 
@@ -326,40 +323,42 @@
 .nb-mobil-user {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 16px;
+  gap: 12px;
+  margin-bottom: 20px;
 }
 .nb-user-info { display: flex; flex-direction: column; }
-.nb-user-info span { font-weight: 700; color: var(--nb-text); font-size: 0.9rem; }
+.nb-user-info span { font-weight: 700; color: var(--nb-text); font-size: 1rem; }
 .nb-user-info small { color: var(--nb-text-sub); }
 
 .nb-mobil-aksiyonlar {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 12px;
 }
 
 .nb-btn-outline {
-  padding: 10px;
+  padding: 12px;
   border: 1px solid var(--nb-border);
   background: var(--nb-bg);
   color: var(--nb-text);
-  border-radius: 8px;
+  border-radius: 10px;
   font-weight: 600;
   cursor: pointer;
+  font-size: 1rem;
 }
 .nb-btn-danger {
-  padding: 10px;
+  padding: 12px;
   border: none;
   background: var(--nb-danger);
   color: white;
-  border-radius: 8px;
+  border-radius: 10px;
   font-weight: 600;
   cursor: pointer;
+  font-size: 1rem;
 }
 
 /* Responsive */
-@media (max-width: 900px) {
+@media (max-width: 960px) {
   .nb-nav-masaustu, 
   .nb-profil-wrapper { display: none; }
   .nb-hamburger { display: flex; }
