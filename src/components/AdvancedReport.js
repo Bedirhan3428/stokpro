@@ -8,6 +8,10 @@ import {
 } from "../utils/firebaseHelpers";
 import { listProductsForCurrentUser } from "../utils/artifactUserProducts";
 import "../utils/chartSetup";
+import { FiAlertCircle } from "react-icons/fi";
+import { PiChartLineUp } from "react-icons/pi";
+import { CgSandClock } from "react-icons/cg";
+import { GoTrophy } from "react-icons/go";
 
 /* --- YARDIMCI MATEMATİK FONKSİYONLARI --- */
 function parseTimestamp(v) {
@@ -17,6 +21,8 @@ function parseTimestamp(v) {
   const d = new Date(v);
   return isNaN(d.getTime()) ? null : d;
 }
+
+
 
 function parseDateKey(date) {
   if (!date) return null;
@@ -281,7 +287,7 @@ export default function AdvancedReport() {
         {/* KRİTİK STOKLAR (Sol Üst) */}
         <div className="adv-card">
           <div className="adv-card-header">
-            <h4 style={{color: '#d93025'}}>🚨 Kritik Stok (Acil)</h4>
+            <h4 style={{color: '#d93025'}}><FiAlertCircle /> Kritik Stok</h4>
             <small>10 adetin altı veya hızlı bitenler</small>
           </div>
           {analysis.criticalStockList.length === 0 ? (
@@ -301,7 +307,7 @@ export default function AdvancedReport() {
         {/* TREND OLANLAR (Sağ Üst) */}
         <div className="adv-card">
           <div className="adv-card-header">
-            <h4 style={{color: '#188038'}}>📈 Yükselen Yıldızlar</h4>
+            <h4 style={{color: '#188038'}}><PiChartLineUp /> Yükselen Yıldızlar</h4>
             <small>Son 3 günde talep patlaması</small>
           </div>
           {analysis.trendingList.length === 0 ? (
@@ -321,7 +327,7 @@ export default function AdvancedReport() {
         {/* ÖLÜ STOKLAR (Sol Alt) */}
         <div className="adv-card">
           <div className="adv-card-header">
-            <h4 style={{color: '#e37400'}}>📦 Ölü Stoklar</h4>
+            <h4 style={{color: '#e37400'}}><CgSandClock /> Ölü Stoklar</h4>
             <small>30+ gündür ekli ve hiç satmamış</small>
           </div>
           {analysis.deadStockList.length === 0 ? (
@@ -341,7 +347,7 @@ export default function AdvancedReport() {
         {/* EN ÇOK GELİR GETİRENLER (Sağ Alt) */}
         <div className="adv-card">
           <div className="adv-card-header">
-            <h4 style={{color: '#1a73e8'}}>🏆 Gelir Şampiyonları</h4>
+            <h4 style={{color: '#1a73e8'}}><GoTrophy /> Gelir Şampiyonları</h4>
             <small>Ciroya en çok katkı sağlayanlar</small>
           </div>
           <div className="list-group">

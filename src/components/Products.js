@@ -7,6 +7,8 @@ import {
   deleteProduct
 } from "../utils/artifactUserProducts";
 import useSubscription from "../hooks/useSubscription";
+import { IoMdTrash } from "react-icons/io";
+import { MdEdit } from "react-icons/md";
 
 // Basit Bildirim Bileşeni
 function Bildirim({ note }) {
@@ -259,10 +261,10 @@ export default function Products() {
                   {/* Buton Grubu: Düzenle ve Sil */}
                   <div className="prd-action-btns">
                     <button onClick={() => duzenlemeAc(p)} className="prd-btn icon-btn edit" title="Düzenle">
-                      ✏️
+                      <MdEdit />
                     </button>
                     <button onClick={() => setConfirmDelete({id:p.id, label:p.name})} className="prd-btn icon-btn delete" title="Sil">
-                      🗑️
+                      <IoMdTrash />
                     </button>
                   </div>
                 </div>

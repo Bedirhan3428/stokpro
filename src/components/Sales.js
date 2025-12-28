@@ -12,6 +12,8 @@ import {
   addLegacyExpense
 } from "../utils/firebaseHelpers";
 import useSubscription from "../hooks/useSubscription";
+import { MdEdit } from "react-icons/md";
+import { IoMdTrash } from "react-icons/io";
 
 // Basit Bildirim
 function Bildirim({ note }) {
@@ -370,7 +372,7 @@ export default function Sales() {
                       onChange={(e) => miktarDegis(it.productId, parseInt(e.target.value))}
                       className="sl-input mini"
                     />
-                    <button onClick={() => sepettenSil(it.productId)} className="sl-btn icon delete">🗑️</button>
+                    <button onClick={() => sepettenSil(it.productId)} className="sl-btn icon delete"><IoMdTrash /></button>
                   </div>
                 </div>
               ))
@@ -417,8 +419,8 @@ export default function Sales() {
                   <small>{saleTypeLabel(s.saleType)} • {new Date(s.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</small>
                 </div>
                 <div className="sl-gecmis-aks">
-                  <button onClick={() => { setEditingSale({id:s.id, saleType:s.saleType, total:s.totals.total})}} className="sl-btn icon edit">✏️</button>
-                  <button onClick={() => setConfirmDelete({id:s.id})} className="sl-btn icon delete">🗑️</button>
+                  <button onClick={() => { setEditingSale({id:s.id, saleType:s.saleType, total:s.totals.total})}} className="sl-btn icon edit"><MdEdit /></button>
+                  <button onClick={() => setConfirmDelete({id:s.id})} className="sl-btn icon delete"><IoMdTrash /></button>
                 </div>
               </div>
             ))}

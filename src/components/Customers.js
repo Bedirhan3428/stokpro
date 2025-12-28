@@ -12,6 +12,9 @@ import {
   deleteCustomer
 } from "../utils/firebaseHelpers";
 import useSubscription from "../hooks/useSubscription";
+import { GiNotebook } from "react-icons/gi";
+import { GiPayMoney } from "react-icons/gi";
+
 
 // Bildirim Bileşeni
 function Bildirim({ note }) {
@@ -305,7 +308,7 @@ export default function Customers() {
                   {/* Satışlar */}
                   {custSales.map(s => (
                     <div key={s.id} className="cst-history-item sale">
-                      <div className="cst-icon sale">🛒</div>
+                      <div className="cst-icon sale"><GiNotebook /></div>
                       <div className="cst-hist-info">
                         <div className="cst-hist-top">
                           <strong>Satış (Veresiye)</strong>
@@ -324,7 +327,7 @@ export default function Customers() {
                   {/* Ödemeler */}
                   {custPayments.map(p => (
                     <div key={p.id} className="cst-history-item payment">
-                      <div className="cst-icon pay">💳</div>
+                      <div className="cst-icon pay"><GiPayMoney /></div>
                       <div className="cst-hist-info">
                         <div className="cst-hist-top">
                           <strong>Tahsilat</strong>

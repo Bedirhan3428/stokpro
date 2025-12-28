@@ -3,6 +3,9 @@ import React, { useState, useRef, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { initTheme, toggleTheme } from "../utils/theme";
+import { FaMoon } from "react-icons/fa6";
+import { IoSunny } from "react-icons/io5";
+import { TbCircleLetterSFilled } from "react-icons/tb";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
@@ -59,7 +62,7 @@ export default function Navbar() {
         
         {/* SOL: LOGO */}
         <div className="nb-logo-bolumu">
-          <div className="nb-logo-ikon">S</div>
+          <div className="nb-logo-ikon"><TbCircleLetterSFilled /></div>
           <div className="nb-logo-yazi">
             <span className="nb-marka">StokPro</span>
             <span className="nb-slogan">Hızlı & Güvenilir</span>
@@ -73,7 +76,7 @@ export default function Navbar() {
         <div className="nb-aksiyonlar">
           {/* Tema Butonu */}
           <button onClick={handleTheme} className="nb-icon-btn theme-toggle" title="Temayı Değiştir">
-            {theme === "dark" ? "☀️" : "🌙"}
+            {theme === "dark" ? <IoSunny /> : <FaMoon />}
           </button>
 
           {user && (

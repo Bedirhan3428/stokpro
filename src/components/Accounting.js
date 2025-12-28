@@ -15,6 +15,13 @@ import {
 } from "../utils/firebaseHelpers";
 import "../utils/chartSetup";
 import useSubscription from "../hooks/useSubscription";
+import { MdEdit } from "react-icons/md";
+import { IoMdTrash } from "react-icons/io";
+import { IoMdTrendingDown } from "react-icons/io";
+import { IoMdTrendingUp } from "react-icons/io";
+import { IoReceipt } from "react-icons/io5";
+import { FaMoneyBillWave } from "react-icons/fa";
+
 
 function AccBildirim({ note }) {
   if (!note) return null;
@@ -271,26 +278,26 @@ export default function Accounting() {
               // Renk ve İkon Belirleme
               let iconClass = "acc-ikon-gri";
               let amountClass = "";
-              let iconChar = "📦";
+              let iconChar = "❔"; // Varsayılan ikon
 
               if (item.type === "sale") {
                 if (item.isCredit) {
                   iconClass = "acc-ikon-turuncu";
                   amountClass = "acc-renk-turuncu";
-                  iconChar = "⏳"; // Veresiye
+                  iconChar = <IoReceipt />; // Veresiye
                 } else {
                   iconClass = "acc-ikon-mavi";
                   amountClass = "acc-renk-mavi";
-                  iconChar = "💰"; // Nakit
+                  iconChar = <FaMoneyBillWave />; // Nakit
                 }
               } else if (item.type === "income") {
                 iconClass = "acc-ikon-yesil";
                 amountClass = "acc-renk-yesil";
-                iconChar = "tj"; // Tahsilat/Gelir
+                iconChar = <IoMdTrendingUp />; // Tahsilat/Gelir
               } else if (item.type === "expense") {
                 iconClass = "acc-ikon-kirmizi";
                 amountClass = "acc-renk-kirmizi";
-                iconChar = "📉"; // Gider
+                iconChar = <IoMdTrendingDown />; // Gider
               }
 
               return (
@@ -312,8 +319,8 @@ export default function Accounting() {
                       {para(item.amount)}
                     </div>
                     <div className="acc-aksiyonlar">
-                      <button className="acc-btn-kucuk" onClick={() => duzenlemeAc(item)}>✎</button>
-                      <button className="acc-btn-kucuk kirmizi" onClick={() => silOnayHazirla(item)}>🗑</button>
+                      <button className="acc-btn-kucuk" onClick={() => duzenlemeAc(item)}><MdEdit /></button>
+                      <button className="acc-btn-kucuk kirmizi" onClick={() => silOnayHazirla(item)}><IoMdTrash /></button>
                     </div>
                   </div>
                 </div>
