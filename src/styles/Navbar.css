@@ -31,13 +31,13 @@
   background-color: var(--nb-bg);
   border-bottom: 1px solid var(--nb-border);
   height: 70px;
-  width: 100%; /* Kritik düzeltme */
+  width: 100%;
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 1000;
   box-shadow: var(--nb-shadow);
-  display: flex; /* İçeriği hizalamak için */
-  justify-content: center; /* İçeriği ortala */
+  display: flex;
+  justify-content: center;
 }
 
 .nb-container {
@@ -47,7 +47,7 @@
   height: 100%;
   display: flex;
   align-items: center;
-  justify-content: space-between; /* İki uca yasla */
+  justify-content: space-between;
 }
 
 /* LOGO */
@@ -57,12 +57,14 @@
   color: white; border-radius: 10px; display: flex; align-items: center; justify-content: center;
   font-weight: 800; font-size: 1.4rem;
 }
+.nb-logo-ikon.small { width: 32px; height: 32px; font-size: 1.2rem; }
+
 .nb-logo-yazi { display: flex; flex-direction: column; line-height: 1.1; }
 .nb-marka { font-weight: 800; font-size: 1.2rem; color: var(--nb-text); letter-spacing: -0.5px; }
 .nb-slogan { font-size: 0.8rem; color: var(--nb-text-sub); }
 
 /* MASAÜSTÜ MENÜ */
-.nb-nav-masaustu { display: flex; height: 100%; margin: 0 20px; flex: 1; justify-content: center; } /* Ortala */
+.nb-nav-masaustu { display: flex; height: 100%; margin: 0 20px; flex: 1; justify-content: center; } 
 .nb-masaustu-list { display: flex; gap: 8px; height: 100%; align-items: center; }
 
 .nb-link {
@@ -97,6 +99,8 @@
   border-radius: 50%; display: flex; align-items: center; justify-content: center;
   font-weight: 700; font-size: 1rem;
 }
+.nb-avatar.small { width: 32px; height: 32px; font-size: 0.9rem; }
+
 .nb-kullanici-adi { font-weight: 600; color: var(--nb-text); font-size: 0.95rem; display: none; }
 @media (min-width: 900px) { .nb-kullanici-adi { display: block; } }
 
@@ -121,32 +125,67 @@
 .nb-dropdown-items button.nb-danger { color: var(--nb-danger); }
 .nb-dropdown-items button.nb-danger:hover { background-color: var(--nb-danger-bg); }
 
-/* HAMBURGER */
+/* --- HAMBURGER ICON (FLEXBOX DÜZENİ - KAYMA YAPMAZ) --- */
 .nb-hamburger {
-  display: none; flex-direction: column; justify-content: space-between;
-  width: 40px; height: 40px; background: transparent; border: 1px solid var(--nb-border);
-  border-radius: 10px; padding: 10px 8px; cursor: pointer;
-}
-.nb-hamburger span {
-  display: block; height: 2px; width: 100%; background-color: var(--nb-text);
-  border-radius: 2px; transition: all 0.3s;
+  display: none; /* Mobilde görünür */
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 6px; /* Çizgiler arası boşluk */
+  width: 44px; height: 44px;
+  background: transparent;
+  border: 1px solid var(--nb-border);
+  border-radius: 10px;
+  cursor: pointer;
+  padding: 0;
 }
 
-/* MOBİL MENÜ */
-.nb-overlay {
-  position: fixed; inset: 0; background-color: var(--nb-overlay);
-  z-index: 199; backdrop-filter: blur(2px); opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+.nb-bar {
+  width: 24px;
+  height: 2px;
+  background-color: var(--nb-text);
+  border-radius: 2px;
+  transition: all 0.3s ease;
 }
-.nb-overlay.acik { opacity: 1; pointer-events: auto; }
+
+/* Hamburger Açık Animasyonu */
+.nb-hamburger.aktif .bar1 { transform: translateY(8px) rotate(45deg); }
+.nb-hamburger.aktif .bar2 { opacity: 0; }
+.nb-hamburger.aktif .bar3 { transform: translateY(-8px) rotate(-45deg); }
+
+
+/* --- MOBİL MENÜ PORTAL --- */
+.nb-mobil-portal {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  justify-content: flex-end; /* Menüyü sağa yasla */
+}
+
+.nb-overlay {
+  position: absolute;
+  inset: 0;
+  background-color: var(--nb-overlay);
+  backdrop-filter: blur(2px);
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 .nb-mobil-menu {
-  position: fixed; top: 0; right: 0; width: 85%; max-width: 320px;
-  height: 100dvh;
-  background-color: var(--nb-bg); z-index: 200;
-  box-shadow: -5px 0 20px rgba(0,0,0,0.2); display: flex; flex-direction: column;
-  transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  width: 85%;
+  max-width: 320px;
+  height: 100%;
+  background-color: var(--nb-bg);
+  box-shadow: -5px 0 20px rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
+  animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1); /* Kayma efekti */
 }
-.nb-mobil-menu.acik { transform: translateX(0); }
+
+@keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
 
 .nb-mobil-header {
   padding: 20px; border-bottom: 1px solid var(--nb-border);
