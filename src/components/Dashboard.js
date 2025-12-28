@@ -1,21 +1,20 @@
 import "../styles/Dashboard.css";
 import React, { useEffect, useMemo, useState } from "react";
 import { Doughnut } from "react-chartjs-2";
-import { useNavigate } from "react-router-dom";
 import {
   listSales,
   listLedger,
   listCustomers,
   listCustomerPayments,
   listLegacyIncomes,
-  listLegacyExpenses,
-  getUserProfile
+  listLegacyExpenses
 } from "../utils/firebaseHelpers";
 import { listProductsForCurrentUser } from "../utils/artifactUserProducts"; 
 import "../utils/chartSetup";
 import AdvancedReport from "./AdvancedReport";
 import useSubscription from "../hooks/useSubscription";
-import { auth } from "../firebase";
+// Bildirim yardımcısını ekledik
+import { bildirimIzniIste, bildirimGonder } from "../utils/notificationHelper";
 
 function parseTimestamp(createdAt) {
   if (!createdAt) return null;
@@ -36,11 +35,10 @@ function labelForLedgerEntry(l) {
   if (desc.toLowerCase().startsWith("satış") || desc.toLowerCase().startsWith("sale")) {
     return isCredit ? "Satış (Veresiye)" : "Satış (Nakit)";
   }
-  return desc || `İşlem ${l.type || ""}`;
+  return desc || `Ledger ${l.type || ""}`;
 }
 
 export default function Dashboard() {
-  const navigate = useNavigate();
   const [sales, setSales] = useState([]);
   const [products, setProducts] = useState([]); 
   const [ledger, setLedger] = useState([]);
@@ -50,14 +48,6 @@ export default function Dashboard() {
   const [legacyExpenses, setLegacyExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  const [userName, setUserName] = useState("");
-  const [isTrialEligible, setIsTrialEligible] = useState(false);
-  const [showWelcome, setShowWelcome] = useState(false);
-  
-  // Abonelik kalan gün sayısı için state
-  const [daysLeft, setDaysLeft] = useState(null);
-
   const { loading: subLoading, active: subActive } = useSubscription();
 
   useEffect(() => {
@@ -66,20 +56,16 @@ export default function Dashboard() {
       setLoading(true);
       setError(null);
       try {
-        const uid = auth.currentUser?.uid;
-
-        const [salesData, ledgerData, customersData, legacyInc, legacyExp, productsData, userProfile] = await Promise.all([
+        const [salesData, ledgerData, customersData, legacyInc, legacyExp, productsData] = await Promise.all([
           listSales(),
           listLedger(),
           listCustomers(),
           listLegacyIncomes(),
           listLegacyExpenses(),
-          listProductsForCurrentUser(),
-          uid ? getUserProfile(uid) : Promise.resolve(null)
+          listProductsForCurrentUser()
         ]);
 
         if (!mounted) return;
-
         setSales(Array.isArray(salesData) ? salesData : []);
         setLedger(Array.isArray(ledgerData) ? ledgerData : []);
         setCustomers(Array.isArray(customersData) ? customersData : []);
@@ -87,27 +73,28 @@ export default function Dashboard() {
         setLegacyExpenses(Array.isArray(legacyExp) ? legacyExp : []);
         setProducts(Array.isArray(productsData) ? productsData : []);
 
-        if (userProfile) {
-          setUserName(userProfile.name || "Kullanıcı");
-          const createdAt = parseTimestamp(userProfile.createdAt) || new Date();
-          const now = new Date();
-          const diffDays = (now - createdAt) / (1000 * 60 * 60 * 24);
-          setIsTrialEligible(diffDays < 14);
-
-          // Abonelik Kalan Süre Hesaplama
-          if (userProfile.subscriptionEndDate) {
-            const endDate = parseTimestamp(userProfile.subscriptionEndDate);
-            if (endDate) {
-              const diffTime = endDate - now;
-              const remainingDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-              setDaysLeft(remainingDays);
-            }
+        // --- STOK KONTROL VE BİLDİRİM MEKANİZMASI ---
+        await bildirimIzniIste(); // Kullanıcıdan izin iste
+        
+        // Stoğu 10'un altında olanları bul
+        const kritikUrunler = (productsData || []).filter(p => Number(p.stock) < 10);
+        
+        if (kritikUrunler.length > 0) {
+          // En kritik olanı veya sayısını bildir
+          const ornekUrun = kritikUrunler[0].name;
+          const kalanSayi = kritikUrunler.length - 1;
+          
+          let mesaj = "";
+          if (kalanSayi > 0) {
+            mesaj = `⚠️ ${ornekUrun} ve ${kalanSayi} diğer ürünün stoğu kritik seviyede (10'un altında)!`;
+          } else {
+            mesaj = `⚠️ ${ornekUrun} stoğu bitmek üzere! Mevcut: ${kritikUrunler[0].stock}`;
           }
+          
+          // Bildirimi gönder
+          bildirimGonder("Kritik Stok Uyarısı", mesaj);
         }
-
-        if ((!productsData || productsData.length === 0)) {
-          setShowWelcome(true);
-        }
+        // ---------------------------------------------
 
         const paymentsMap = {};
         await Promise.all(
@@ -124,13 +111,22 @@ export default function Dashboard() {
         setCustomerPaymentsMap(paymentsMap);
       } catch (err) {
         if (mounted) setError(String(err?.message || err));
+        setSales([]);
+        setLedger([]);
+        setCustomers([]);
+        setCustomerPaymentsMap({});
+        setLegacyIncomes([]);
+        setLegacyExpenses([]);
+        setProducts([]);
       } finally {
         if (mounted) setLoading(false);
       }
     }
     load();
-    return () => { mounted = false; };
-  }, []);
+    return () => {
+      mounted = false;
+    };
+  }, []); // Sadece sayfa ilk açıldığında çalışır
 
   const last7 = useMemo(() => new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), []);
   const last30 = useMemo(() => new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), []);
@@ -143,7 +139,8 @@ export default function Dashboard() {
       if (!d || d < since) continue;
       const saleType = (s.saleType ?? s.type ?? "").toString().toLowerCase();
       if (!includeCredit && (saleType === "credit" || saleType === "veresiye")) continue;
-      total += parseNumber(s.totals?.total ?? s.total ?? s.totalPrice ?? 0);
+      const t = parseNumber(s.totals?.total ?? s.total ?? s.totalPrice ?? 0);
+      total += t;
       count += 1;
     }
     return { total, count };
@@ -193,15 +190,20 @@ export default function Dashboard() {
     const legacyExpense = sumLegacyExpensesInRange(last7);
     const customerPayments = sumCustomerPaymentsInRange(last7);
     const incomeWithoutPayments = cash.total + legacyIncome;
+    const incomeWithPayments = incomeWithoutPayments + customerPayments;
     const expensesTotal = legacyExpense;
+    const net = incomeWithoutPayments - expensesTotal;
     return {
       cashSales: cash.total,
+      cashSalesCount: cash.count,
       creditSales: creditAmount,
       legacyIncome,
       legacyExpense,
       customerPayments,
       incomeWithoutPayments,
+      incomeWithPayments,
       expensesTotal,
+      net
     };
   }, [sales, legacyIncomes, legacyExpenses, customerPaymentsMap, last7]);
 
@@ -215,15 +217,19 @@ export default function Dashboard() {
     const incomeWithoutPayments = cash.total + legacyIncome;
     const incomeWithPayments = incomeWithoutPayments + customerPayments;
     const expensesTotal = legacyExpense;
+    const net = incomeWithoutPayments - expensesTotal;
     const profitLoss = incomeWithPayments - expensesTotal;
     return {
       cashSales: cash.total,
+      cashSalesCount: cash.count,
       creditSales: creditAmount,
       legacyIncome,
       legacyExpense,
       customerPayments,
       incomeWithoutPayments,
+      incomeWithPayments,
       expensesTotal,
+      net,
       profitLoss
     };
   }, [sales, legacyIncomes, legacyExpenses, customerPaymentsMap, last30]);
@@ -231,6 +237,7 @@ export default function Dashboard() {
   const categoryStats = useMemo(() => {
     const stats = {};
     if (!sales.length || !products.length) return [];
+
     sales.forEach(sale => {
       const items = Array.isArray(sale.items) ? sale.items : [];
       items.forEach(item => {
@@ -240,14 +247,18 @@ export default function Dashboard() {
         stats[cat] = (stats[cat] || 0) + total;
       });
     });
+
     const sorted = Object.entries(stats)
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value);
+    
     const grandTotal = sorted.reduce((acc, curr) => acc + curr.value, 0);
+
     return sorted.map(s => ({
       ...s,
       percent: grandTotal > 0 ? ((s.value / grandTotal) * 100).toFixed(1) : 0
     }));
+
   }, [sales, products]);
 
   const recentTransactions = useMemo(() => {
@@ -263,6 +274,20 @@ export default function Dashboard() {
         raw: s
       });
     }
+    for (const l of ledger || []) {
+      const d = parseTimestamp(l.createdAt ?? l.date ?? l.created_at);
+      let amt = 0;
+      if (typeof l.amount !== "undefined") amt = parseNumber(l.amount);
+      else if (Array.isArray(l.lines)) amt = l.lines.reduce((s, ln) => s + (parseNumber(ln.debit) - parseNumber(ln.credit)), 0);
+      txs.push({
+        id: `ledger_${l.id}`,
+        kind: `ledger:${l.type || "entry"}`,
+        date: d,
+        amount: amt,
+        label: labelForLedgerEntry(l),
+        raw: l
+      });
+    }
     for (const inc of legacyIncomes || []) {
       const d = parseTimestamp(inc.createdAt ?? inc.date ?? inc.created_at ?? inc.createdOn);
       txs.push({
@@ -270,7 +295,7 @@ export default function Dashboard() {
         kind: "manual_income",
         date: d,
         amount: parseNumber(inc.amount ?? inc.value ?? inc.totalPrice ?? inc.total ?? 0),
-        label: inc.description || "Ek Gelir",
+        label: inc.description || "Manuel Gelir",
         raw: inc
       });
     }
@@ -281,8 +306,7 @@ export default function Dashboard() {
         kind: "manual_expense",
         date: d,
         amount: parseNumber(exp.amount ?? exp.value ?? exp.totalPrice ?? exp.total ?? 0),
-        label: exp.description || "Gider",
-        isExpense: true,
+        label: exp.description || "Manuel Gider",
         raw: exp
       });
     }
@@ -296,166 +320,144 @@ export default function Dashboard() {
           kind: "customer_payment",
           date: d,
           amount: parseNumber(p.amount ?? p.value ?? p.total ?? 0),
-          label: `Tahsilat (${customerLabel})`,
+          label: `Müşteri Ödemesi (${customerLabel})`,
           customerId: custId,
           raw: p
         });
       }
     }
     return txs.filter((t) => t.date).sort((a, b) => b.date - a.date).slice(0, 20);
-  }, [sales, legacyIncomes, legacyExpenses, customerPaymentsMap, customers]);
+  }, [sales, ledger, legacyIncomes, legacyExpenses, customerPaymentsMap, customers]);
 
   if (loading) {
     return (
       <div className="dash-kart">
-        <div className="dash-yukleme"><div className="dash-spinner" /><p>Yükleniyor...</p></div>
+        <div className="dash-yukleme">
+          <div className="dash-spinner" />
+          <p>Yükleniyor...</p>
+        </div>
       </div>
     );
   }
 
   const donutData = {
-    labels: ["Satışlar (Nakit)", "Ek Gelirler", "Tahsilatlar", "Giderler"],
+    labels: ["Satışlar (Nakit)", "Manuel Gelirler", "Tahsilatlar", "Manuel Giderler"],
     datasets: [
       {
         data: [monthly.cashSales || 0, monthly.legacyIncome || 0, monthly.customerPayments || 0, monthly.legacyExpense || 0],
-        backgroundColor: ["#1f6feb", "#34d399", "#60a5fa", "#ef4444"],
-        borderColor: "transparent"
+        backgroundColor: ["#1f6feb", "#34d399", "#60a5fa", "#ef4444"]
       }
     ]
   };
 
   return (
     <div className="dash-sayfa">
-       
-       {/* --- YENİ: ABONELİK BİTİŞ UYARISI --- */}
-       {subActive && daysLeft !== null && daysLeft <= 7 && daysLeft >= 0 && (
-         <div className="dash-expire-warning">
-           <div className="dash-expire-icon">⚠️</div>
-           <div className="dash-expire-content">
-             <div className="dash-expire-title">Abonelik Sona Eriyor!</div>
-             <div className="dash-expire-text">
-               Aboneliğinizin bitmesine <strong>{daysLeft} gün</strong> kaldı. Hizmet kesintisi yaşamamak için lütfen sürenizi uzatın.
-             </div>
-           </div>
-           <button onClick={() => navigate('/settings')} className="dash-expire-btn">Uzat</button>
-         </div>
-       )}
-
-       {/* --- ABONELİK ZORUNLU UYARISI (Mevcut) --- */}
        {!subLoading && !subActive && (
-          <div className={`acc-uyari-kutu ${isTrialEligible ? 'trial-box' : 'subscription-box'}`}>
-            <div className={`acc-uyari-baslik ${isTrialEligible ? 'trial-eligible' : 'subscription-required'}`}>
-              {isTrialEligible ? "Ücretsiz Deneme Fırsatı" : "Abonelik Gerekli"}
-            </div>
-            <div className="acc-yazi-ince">
-              <a href="https://www.stokpro.shop/product-key" className={`acc-action-link ${isTrialEligible ? 'trial-link' : 'subscription-link'}`}>
-                {isTrialEligible ? "Şimdi Ücretsiz Dene" : "Satın Al"}
-              </a>
-            </div>
+        <div className="acc-kart acc-uyari-kutu">
+          <div className="acc-uyari-baslik">Abonelik gerekli</div>
+          <div className="acc-yazi-ince">
+           <a href="https://www.stokpro.shop/product-key" style={{color:"#1f6feb",fontWeight:"bold"}}>Satın Almak için tıklayın</a>
           </div>
-      )}
-
-       {/* --- HOŞ GELDİN POPUP --- */}
-       {showWelcome && !loading && (
-        <div className="dash-kart welcome-box">
-          <button onClick={() => setShowWelcome(false)} className="close-btn">×</button>
-          <h4>Hoş geldin {userName}! 👋</h4>
-          <p>Hadi ilk ürününü ekleyerek işe koyulalım!</p>
-          <button onClick={() => navigate('/products')} className="action-btn">Ürün Ekle</button>
         </div>
       )}
-
-      <h3 className="dash-baslik">Genel Bakış</h3>
+      <h3 className="dash-baslik">Dashboard</h3>
       {error && <div className="dash-hata">Hata: {error}</div>}
 
       <div className="dash-metrik-grid">
         <div className="dash-kart">
-          <div className="dash-etiket">Haftalık Gelir</div>
-          <div className="dash-deger highlight">
+          <div className="dash-etiket">Haftalık - Gelir (satış + manuel)</div>
+          <div className="dash-deger">
             {((weekly.cashSales || 0) + (weekly.legacyIncome || 0)).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}
           </div>
           <div className="dash-alt">
-            Nakit Satış: {(weekly.cashSales || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}
-            <br/>
-            Ek Gelir: {(weekly.legacyIncome || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}
+            Nakit: {(weekly.cashSales || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })} • Manuel Gelirler:{" "}
+            {(weekly.legacyIncome || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}
+          </div>
+          <div className="dash-alt">
+            Tahsilatlar: {(weekly.customerPayments || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })} • Veresiye:{" "}
+            {(weekly.creditSales || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}
           </div>
         </div>
 
         <div className="dash-kart">
-          <div className="dash-etiket expense-label">Haftalık Giderler</div>
-          <div className="dash-deger expense-value">
-            {(weekly.expensesTotal || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}
-          </div>
+          <div className="dash-etiket">Haftalık - Gider (manuel)</div>
+          <div className="dash-deger">{(weekly.expensesTotal || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</div>
+          <div className="dash-alt">Manuel Gider: {(weekly.legacyExpense || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</div>
         </div>
 
         <div className="dash-kart">
-          <div className="dash-etiket">Haftalık Tahsilat</div>
+          <div className="dash-etiket">Haftalık - Tahsilatlar</div>
           <div className="dash-deger">{(weekly.customerPayments || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</div>
         </div>
 
         <div className="dash-kart">
-          <div className="dash-etiket">Toplam Alacak</div>
+          <div className="dash-etiket">Toplam Müşteri Borcu</div>
           <div className="dash-deger">{totalCustomerDebt.toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</div>
-          <div className="dash-alt">{(customers || []).length} kayıtlı müşteri</div>
+          <div className="dash-alt">{(customers || []).length} müşteri</div>
         </div>
       </div>
 
       <div className="dash-kart">
-        <h4 className="dash-etiket-buyuk">Bu Ayın Özeti</h4>
+        <h4 className="dash-etiket-buyuk">Aylık Özet</h4>
         <div className="dash-aylik-grid">
           <div className="dash-aylik-sol">
             <div className="dash-iki">
               <div className="dash-mini-kart">
-                <div className="dash-etiket">Nakit Satış</div>
+                <div className="dash-etiket">Aylık Nakit Satış</div>
                 <div className="dash-kalin">{(monthly.cashSales || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</div>
               </div>
               <div className="dash-mini-kart">
-                <div className="dash-etiket">Ek Gelirler</div>
+                <div className="dash-etiket">Aylık Manuel Gelirler</div>
                 <div className="dash-kalin">{(monthly.legacyIncome || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</div>
               </div>
               <div className="dash-mini-kart">
-                <div className="dash-etiket">Tahsilatlar</div>
+                <div className="dash-etiket">Aylık Tahsilatlar</div>
                 <div className="dash-kalin">{(monthly.customerPayments || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</div>
               </div>
-              <div className="dash-mini-kart expense-card-border">
-                <div className="dash-etiket expense-label-mini">Giderler</div>
-                <div className="dash-kalin expense-value-mini">{(monthly.legacyExpense || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</div>
+              <div className="dash-mini-kart">
+                <div className="dash-etiket">Aylık Manuel Giderler</div>
+                <div className="dash-kalin">{(monthly.legacyExpense || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</div>
               </div>
 
               <div className="dash-buyuk-kart">
-                <div className="dash-etiket">Toplam Gelir</div>
+                <div className="dash-etiket">Aylık Gelir (satış + manuel)</div>
                 <div className="dash-deger">
                   {(monthly.incomeWithoutPayments || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}
                 </div>
-                <div className="dash-alt">Giderler: <span className="expense-text">{(monthly.expensesTotal || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</span></div>
-                <div className="dash-kalin" style={{marginTop: '8px', color: monthly.profitLoss >= 0 ? 'var(--success-color)' : 'var(--danger-color)'}}>
-                  Kar/Zarar: {(monthly.profitLoss || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}
-                </div>
+                <div className="dash-alt">Tahsilatlar: {(monthly.customerPayments || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</div>
+                <div className="dash-alt">Giderler (manuel): {(monthly.expensesTotal || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</div>
+                <div className="dash-kalin">Aylık Kar/Zarar: {(monthly.profitLoss || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</div>
               </div>
             </div>
           </div>
 
           <div className="dash-aylik-sag">
             <div className="dash-donut">
-              <Doughnut data={donutData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom", labels: { color: '#9ca3af' } } } }} />
+              <Doughnut
+                data={donutData}
+                options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom" } } }}
+              />
             </div>
+            <div className="dash-mini">Aylık: Satışlar / Manuel Gelirler / Tahsilatlar / Manuel Giderler</div>
           </div>
         </div>
       </div>
 
       {categoryStats.length > 0 && (
         <div className="dash-kart">
-          <h4 className="dash-etiket-buyuk">Kategori Satışları</h4>
-          <div className="cat-list">
+          <h4 className="dash-etiket-buyuk">Kategori Bazlı Satış Dağılımı</h4>
+          <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
             {categoryStats.map((cat, idx) => (
-              <div key={idx} className="cat-item">
-                <div className="cat-name">{cat.name}</div>
-                <div className="cat-bar-bg">
-                  <div className="cat-bar-fill" style={{ width: `${cat.percent}%` }}></div>
+              <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ width: '120px', fontSize: '0.9rem', fontWeight: 500 }}>
+                  {cat.name}
                 </div>
-                <div className="cat-val">
+                <div style={{ flex: 1, backgroundColor: 'var(--border)', borderRadius: '4px', height: '10px', overflow: 'hidden' }}>
+                  <div style={{ width: `${cat.percent}%`, backgroundColor: '#1f6feb', height: '100%' }}></div>
+                </div>
+                <div style={{ minWidth: '100px', textAlign: 'right', fontSize: '0.9rem', color: 'var(--subtext)' }}>
                   {cat.value.toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}
-                  <small>({cat.percent}%)</small>
+                  <span style={{ fontSize: '0.8rem', opacity: 0.8, marginLeft: '5px' }}>({cat.percent}%)</span>
                 </div>
               </div>
             ))}
@@ -464,26 +466,26 @@ export default function Dashboard() {
       )}
 
       <div className="dash-kart">
-        <h4 className="dash-etiket-buyuk">Son İşlemler</h4>
+        <h4 className="dash-etiket-buyuk">Son İşlemler (son 20)</h4>
         <div className="dash-recent-kapsul">
-          {recentTransactions.length === 0 && <div className="dash-alt">Henüz işlem yok.</div>}
+          {recentTransactions.length === 0 && <div className="dash-alt">İşlem yok.</div>}
           {recentTransactions.map((t) => (
-            <div key={t.id} className={`dash-recent ${t.isExpense ? 'expense-border' : ''}`}>
+            <div key={t.id} className="dash-recent">
               <div>
-                <div className={`dash-kalin ${t.isExpense ? 'expense-text' : ''}`}>{t.label}</div>
-                <div className="dash-alt">{t.date ? new Date(t.date).toLocaleDateString('tr-TR', {day: 'numeric', month:'short', hour:'2-digit', minute:'2-digit'}) : "—"}</div>
+                <div className="dash-kalin">{t.label}</div>
+                <div className="dash-alt">{t.date ? new Date(t.date).toLocaleString() : "—"} • {t.kind}</div>
               </div>
-              <div className={`dash-kalin ${t.isExpense ? 'expense-text' : ''}`}>
+              <div className="dash-kalin">
                 {(t.amount || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}
               </div>
             </div>
           ))}
         </div>
+        <div className="dash-mini">Gösterilen: en son 20 işlem.</div>
       </div>
 
       <AdvancedReport />
     </div>
   );
 }
-
 
