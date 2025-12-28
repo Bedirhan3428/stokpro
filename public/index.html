@@ -1,46 +1,34 @@
 <!DOCTYPE html>
 <html lang="tr">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#000000" />
-  <meta name="application-name" content="StokPro" />
-  <meta name="apple-mobile-web-app-title" content="StokPro" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="format-detection" content="telephone=no" />
-  <meta name="robots" content="index,follow" />
-  <link rel="canonical" href="https://www.stokpro.shop/" />
+  <head>
+    <meta charset="utf-8" />
+    <!-- Viewport ayarı: Mobil uyumluluk ve zoom engelleme için user-scalable=no ekledik -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    
+    <!-- Tema Rengi: Manifest ile aynı olmalı (#1f6feb - StokPro Mavisi) -->
+    <meta name="theme-color" content="#1f6feb" />
+    
+    <meta name="description" content="StokPro: İşletmeniz için basit, hızlı ve güvenilir stok yönetimi. Satış, barkod ve muhasebe işlemleri." />
+    
+    <!-- iOS Web App Ayarları (PWA için Kritik) -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="StokPro" />
 
-  <!-- Ikonlar -->
-  <link rel="icon" type="image/png" sizes="32x32" href="%PUBLIC_URL%/favicon.png" />
-  <link rel="icon" type="image/png" sizes="16x16" href="%PUBLIC_URL%/favicon.png" />
-  <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
-  <link rel="apple-touch-icon" sizes="180x180" href="%PUBLIC_URL%/favicon.png" />
-  <link rel="mask-icon" href="%PUBLIC_URL%/browserlogo.svg" color="#5b21b6" />
-  <meta name="msapplication-TileColor" content="#5b21b6" />
-  <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <!-- Faviconlar -->
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    
+    <!-- Apple Touch Icon: Kesinlikle logo192.png olmalı, favicon.png PWA için yetersiz kalabilir -->
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
 
-  <title>StokPro | Dijital Muhasebe Asistanı ve Stok Takip Sistemi</title>
-  <meta name="description" content="Hemen Üye Olun! ve profesyonel stok yönetimi ile muhasebe entegrasyonunun avantajlarından faydalanmaya başlayın." />
+    <!-- Manifest Dosyası -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
 
-  <!-- Open Graph -->
-  <meta property="og:type" content="website" />
-  <meta property="og:locale" content="tr_TR" />
-  <meta property="og:title" content="StokPro - Profesyonel Dijital Muhasebe ve Stok Yönetimi" />
-  <meta property="og:description" content="Sektörlere özel çözümler sunan StokPro ile stoklarınızı, hammaddelerinizi ve kırtasiyenizi kolayca takip edin. Hemen Kullanmaya Başlayın!" />
-  <meta property="og:url" content="https://www.stokpro.shop/" />
-  <meta property="og:image" content="https://www.stokpro.shop/og-image.png" />
-  <meta property="og:image:alt" content="StokPro logo ve uygulama önizlemesi" />
-
-  <!-- Twitter -->
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="StokPro - Profesyonel Dijital Muhasebe ve Stok Yönetimi" />
-  <meta name="twitter:description" content="Sektörlere özel çözümler sunan StokPro ile stoklarınızı, hammaddelerinizi ve kırtasiye takibini kolayca yapın. Hemen Kullanmaya Başlayın!" />
-  <meta name="twitter:image" content="https://www.stokpro.shop/favicon.png" />
-  <meta name="twitter:image:alt" content="StokPro logo ve uygulama önizlemesi" />
-</head>
-<body>
-  <noscript>Bu uygulamayı çalıştırmak için JavaScript'i etkinleştirmeniz gerekmektedir.</noscript>
-  <div id="root"></div>
-</body>
+    <title>StokPro | Dijital Stok ve Muhasebe</title>
+  </head>
+  <body>
+    <noscript>Bu uygulamayı çalıştırmak için JavaScript'i etkinleştirmeniz gerekmektedir.</noscript>
+    <div id="root"></div>
+  </body>
 </html>
+
