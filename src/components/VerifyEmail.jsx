@@ -1,7 +1,6 @@
-import "../styles/ForgotPassword.css";
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { getAuth, sendEmailVerification, applyActionCode } from "firebase/auth";
+import { getAuth, sendEmailVerification, applyActionCode, signOut } from "firebase/auth";
 
 export default function VerifyEmail() {
   const auth = getAuth();
@@ -9,10 +8,9 @@ export default function VerifyEmail() {
   const location = useLocation();
   const user = auth.currentUser;
 
-  const [status, setStatus] = useState(null); // { type: "success"|"error"|"info", msg }
+  const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Linkten gelen oobCode'u yakala ve doğrulamayı tamamla
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const mode = params.get("mode");
@@ -23,7 +21,7 @@ export default function VerifyEmail() {
       setLoading(true);
       setStatus({ type: "info", msg: "Doğrulama işleniyor..." });
       try {
-        await applyActionCode(auth, oobCode); // doğrulamayı tamamla
+        await applyActionCode(auth, oobCode);
         if (auth.currentUser) {
           await auth.currentUser.reload();
           if (auth.currentUser.emailVerified) {
@@ -33,7 +31,6 @@ export default function VerifyEmail() {
             return;
           }
         }
-        // Oturum yoksa da kod işlenmiştir; kullanıcı giriş yaptığında verified olur
         setStatus({ type: "success", msg: "E-posta doğrulandı. Giriş yaptıktan sonra devam edebilirsiniz." });
       } catch (err) {
         setStatus({ type: "error", msg: err.message || "Doğrulama kodu işlenemedi." });
@@ -51,13 +48,12 @@ export default function VerifyEmail() {
     setStatus(null);
     setLoading(true);
     try {
-      // PROD domain sabit: stokpro.shop
       const actionCodeSettings = {
         url: "https://www.stokpro.shop/verify-email",
         handleCodeInApp: true
       };
       await sendEmailVerification(user, actionCodeSettings);
-      setStatus({ type: "success", msg: "Doğrulama e-postası tekrar gönderildi. Gelen kutunuzu kontrol edin." });
+      setStatus({ type: "success", msg: "Doğrulama e-postası tekrar gönderildi." });
     } catch (err) {
       setStatus({ type: "error", msg: err.message || "E-posta gönderilemedi." });
     } finally {
@@ -83,46 +79,156 @@ export default function VerifyEmail() {
     }
   }
 
+  // --- ÇIKIŞ YAP VE KAYIT EKRANINA GİT ---
+  async function cikisVeYonlendir() {
+    setLoading(true);
+    try {
+      await signOut(auth);
+      nav("/register", { replace: true });
+    } catch (err) {
+      console.error("Çıkış hatası:", err);
+      nav("/register", { replace: true });
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
-    <div className="fp-kapsul">
-      <h3 className="fp-baslik">E-posta Doğrulama</h3>
-      <p className="fp-alt">
-        {user?.email ? `Hesap: ${user.email}` : "Oturum bulunamadı. Lütfen tekrar giriş yapın."}
-      </p>
+    <div className="fp-sayfa">
+      <style>{`
+        .fp-sayfa {
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background-color: var(--bg-page, #f3f4f6);
+          font-family: 'Inter', sans-serif;
+          padding: 20px;
+        }
+        .fp-kapsul {
+          background: var(--card, #ffffff);
+          padding: 40px;
+          border-radius: 16px;
+          box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+          max-width: 480px;
+          width: 100%;
+          text-align: center;
+          border: 1px solid var(--border, #e5e7eb);
+        }
+        .fp-baslik {
+          font-size: 1.5rem;
+          font-weight: 800;
+          color: var(--text, #111827);
+          margin-bottom: 8px;
+        }
+        .fp-alt {
+          color: var(--subtext, #6b7280);
+          font-size: 0.95rem;
+          margin-bottom: 24px;
+        }
+        .fp-form {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .fp-btn {
+          width: 100%;
+          padding: 12px;
+          border-radius: 10px;
+          font-weight: 600;
+          cursor: pointer;
+          border: 1px solid var(--border, #e5e7eb);
+          background: var(--bg, #f9fafb);
+          color: var(--text, #374151);
+          transition: all 0.2s;
+        }
+        .fp-btn:hover:not(:disabled) {
+          transform: translateY(-1px);
+          filter: brightness(0.98);
+        }
+        .fp-btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+        .fp-btn-mavi {
+          background: #2563eb;
+          color: white;
+          border: none;
+        }
+        .fp-btn-mavi:hover:not(:disabled) {
+          background: #1d4ed8;
+        }
+        .fp-btn-kirmizi {
+          background: #fff1f2;
+          color: #e11d48;
+          border-color: #fecdd3;
+        }
+        .fp-btn-kirmizi:hover:not(:disabled) {
+          background: #ffe4e6;
+        }
+        .fp-durum {
+          padding: 12px;
+          border-radius: 8px;
+          font-size: 0.9rem;
+          margin-top: 10px;
+          background: #eff6ff;
+          color: #1e40af;
+          border: 1px solid #dbeafe;
+        }
+        .fp-hata {
+          background: #fef2f2;
+          color: #991b1b;
+          border-color: #fecaca;
+        }
+        .fp-basarili {
+          background: #f0fdf4;
+          color: #166534;
+          border-color: #bbf7d0;
+        }
+        .fp-mini {
+          font-size: 0.8rem;
+          color: var(--subtext, #9ca3af);
+          margin-top: 20px;
+        }
+      `}</style>
 
-      <div className="fp-form">
-        <button className="fp-btn fp-btn-mavi" onClick={resend} disabled={loading || !user}>
-          {loading ? "Gönderiliyor..." : "Doğrulama E-postasını Gönder"}
-        </button>
+      <div className="fp-kapsul">
+        <h3 className="fp-baslik">E-posta Doğrulama</h3>
+        <p className="fp-alt">
+          {user?.email ? `Hesap: ${user.email}` : "Oturum bulunamadı. Lütfen tekrar giriş yapın."}
+        </p>
 
-        <button className="fp-btn" style={{ marginTop: "10px" }} onClick={refreshStatus} disabled={loading || !user}>
-          {loading ? "Yenileniyor..." : "Doğrulama Durumunu Yenile"}
-        </button>
+        <div className="fp-form">
+          <button className="fp-btn fp-btn-mavi" onClick={resend} disabled={loading || !user}>
+            {loading ? "Gönderiliyor..." : "Doğrulama E-postasını Gönder"}
+          </button>
 
-        <button
-          className="fp-btn"
-          style={{ marginTop: "10px" }}
-          onClick={() => nav("/login", { replace: true })}
-        >
-          Geri Dön / Yeniden Giriş
-        </button>
+          <button className="fp-btn" onClick={refreshStatus} disabled={loading || !user}>
+            {loading ? "Yenileniyor..." : "Doğrulama Durumunu Yenile"}
+          </button>
 
-        {status && (
-          <div
-            className={`fp-durum ${
-              status.type === "error" ? "fp-hata" : status.type === "success" ? "fp-basarili" : ""
-            }`}
-            role={status.type === "error" ? "alert" : "status"}
-            style={{ marginTop: "12px" }}
+          {/* ÇIKIŞ YAP BUTONU */}
+          <button 
+            className="fp-btn fp-btn-kirmizi" 
+            onClick={cikisVeYonlendir}
+            disabled={loading}
           >
-            {status.msg}
-          </div>
-        )}
-      </div>
+            Çıkış Yap / Kayıt Ekranına Dön
+          </button>
 
-      <div className="fp-mini" style={{ marginTop: "12px", color: "var(--subtext)" }}>
-        Doğrulama maili gelmediyse spam / gereksiz klasörünü kontrol edin.
+          {status && (
+            <div className={`fp-durum ${status.type === "error" ? "fp-hata" : status.type === "success" ? "fp-basarili" : ""}`}>
+              {status.msg}
+            </div>
+          )}
+        </div>
+
+        <div className="fp-mini">
+          Doğrulama maili gelmediyse spam / gereksiz klasörünü kontrol edin.
+        </div>
       </div>
     </div>
   );
 }
+
+
