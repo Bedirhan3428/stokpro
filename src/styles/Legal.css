@@ -1,0 +1,119 @@
+:root {
+  --l-bg: #ffffff;
+  --l-text: #1e293b;
+  --l-text-sub: #475569;
+  --l-border: #e2e8f0;
+  --l-primary: #3b82f6;
+  --l-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+/* DARK MODE */
+body.dark-mode, .dark-mode {
+  --l-bg: #1e293b;
+  --l-text: #f1f5f9;
+  --l-text-sub: #94a3b8;
+  --l-border: #334155;
+  --l-primary: #60a5fa;
+  --l-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+}
+
+.legal-kapsul {
+  min-height: 100vh;
+  padding: 40px 20px;
+  background-color: var(--l-bg); /* Arka planı garantiye alıyoruz */
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--l-text);
+  line-height: 1.6;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.legal-icerik {
+  max-width: 800px;
+  margin: 0 auto;
+  background: var(--l-bg);
+  /* Hafif bir kart görünümü verelim */
+  border: 1px solid var(--l-border);
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: var(--l-shadow);
+}
+
+.legal-baslik {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 10px;
+  color: var(--l-primary);
+  text-align: center;
+}
+
+.legal-tarih {
+  text-align: center;
+  color: var(--l-text-sub);
+  font-size: 0.9rem;
+  margin-bottom: 40px;
+  display: block;
+}
+
+.legal-bolum {
+  margin-bottom: 32px;
+}
+
+.legal-altbaslik {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--l-text);
+  border-bottom: 1px solid var(--l-border);
+  padding-bottom: 8px;
+}
+
+.legal-metin {
+  color: var(--l-text-sub);
+  font-size: 1rem;
+  margin-bottom: 16px;
+}
+
+.legal-liste {
+  list-style-type: disc;
+  padding-left: 20px;
+  color: var(--l-text-sub);
+  margin-bottom: 16px;
+}
+
+.legal-liste li {
+  margin-bottom: 8px;
+}
+
+.legal-link {
+  color: var(--l-primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+.legal-link:hover {
+  text-decoration: underline;
+}
+
+/* Geri Dön Butonu */
+.legal-geri-btn {
+  display: inline-block;
+  margin-bottom: 20px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background-color: transparent;
+  border: 1px solid var(--l-border);
+  color: var(--l-text-sub);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+.legal-geri-btn:hover {
+  border-color: var(--l-primary);
+  color: var(--l-primary);
+  background-color: rgba(59, 130, 246, 0.05);
+}
+
+@media (max-width: 600px) {
+  .legal-icerik { padding: 24px; }
+  .legal-baslik { font-size: 1.75rem; }
+}
