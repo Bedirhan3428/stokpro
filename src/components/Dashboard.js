@@ -13,7 +13,6 @@ import { listProductsForCurrentUser } from "../utils/artifactUserProducts";
 import "../utils/chartSetup";
 import AdvancedReport from "./AdvancedReport";
 import useSubscription from "../hooks/useSubscription";
-// Bildirim yardımcısını ekledik
 import { bildirimIzniIste, bildirimGonder } from "../utils/notificationHelper";
 
 function parseTimestamp(createdAt) {
@@ -73,26 +72,36 @@ export default function Dashboard() {
         setLegacyExpenses(Array.isArray(legacyExp) ? legacyExp : []);
         setProducts(Array.isArray(productsData) ? productsData : []);
 
-        // --- STOK KONTROL VE BİLDİRİM MEKANİZMASI ---
-        await bildirimIzniIste(); // Kullanıcıdan izin iste
+        // --- AKILLI STOK BİLDİRİMİ (GÜNCELLENDİ) ---
+        await bildirimIzniIste();
         
-        // Stoğu 10'un altında olanları bul
+        // 1. Kritik ürünleri bul
         const kritikUrunler = (productsData || []).filter(p => Number(p.stock) < 10);
         
         if (kritikUrunler.length > 0) {
-          // En kritik olanı veya sayısını bildir
-          const ornekUrun = kritikUrunler[0].name;
-          const kalanSayi = kritikUrunler.length - 1;
-          
-          let mesaj = "";
-          if (kalanSayi > 0) {
-            mesaj = `⚠️ ${ornekUrun} ve ${kalanSayi} diğer ürünün stoğu kritik seviyede (10'un altında)!`;
-          } else {
-            mesaj = `⚠️ ${ornekUrun} stoğu bitmek üzere! Mevcut: ${kritikUrunler[0].stock}`;
+          // 2. Son bildirim zamanını kontrol et
+          const sonBildirimZamani = localStorage.getItem("sonStokBildirimi");
+          const suAn = Date.now();
+          const beklemeSuresi = 12 * 60 * 60 * 1000; // 12 Saat (Milisaniye cinsinden)
+
+          // Eğer hiç bildirim atılmadıysa VEYA son bildirimden 12 saat geçtiyse
+          if (!sonBildirimZamani || (suAn - sonBildirimZamani > beklemeSuresi)) {
+            
+            const ornekUrun = kritikUrunler[0].name;
+            const kalanSayi = kritikUrunler.length - 1;
+            let mesaj = "";
+            
+            if (kalanSayi > 0) {
+              mesaj = `⚠️ ${ornekUrun} ve ${kalanSayi} diğer ürünün stoğu kritik seviyede!`;
+            } else {
+              mesaj = `⚠️ ${ornekUrun} stoğu bitmek üzere! Mevcut: ${kritikUrunler[0].stock}`;
+            }
+            
+            bildirimGonder("Kritik Stok Uyarısı", mesaj);
+            
+            // 3. Şu anki zamanı kaydet
+            localStorage.setItem("sonStokBildirimi", suAn);
           }
-          
-          // Bildirimi gönder
-          bildirimGonder("Kritik Stok Uyarısı", mesaj);
         }
         // ---------------------------------------------
 
@@ -126,7 +135,7 @@ export default function Dashboard() {
     return () => {
       mounted = false;
     };
-  }, []); // Sadece sayfa ilk açıldığında çalışır
+  }, []);
 
   const last7 = useMemo(() => new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), []);
   const last30 = useMemo(() => new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), []);
@@ -488,4 +497,5 @@ export default function Dashboard() {
     </div>
   );
 }
+
 
