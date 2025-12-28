@@ -1,16 +1,25 @@
-// src/index.js
-import './index.css';
-import './utils/chartSetup';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import './index.css';
 import App from './App';
-import reportWebVitals from './reportWebVitals';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
- 
+  
     <App />
- 
+  
 );
 
-reportWebVitals();
+// --- PWA KAYDI (GARANTİ YÖNTEM) ---
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    // public/service-worker.js dosyasını kaydediyoruz
+    navigator.serviceWorker.register('/service-worker.js')
+      .then((registration) => {
+        console.log('StokPro PWA: Service Worker başarıyla kaydedildi: ', registration.scope);
+      })
+      .catch((err) => {
+        console.log('StokPro PWA: Service Worker kaydı başarısız: ', err);
+      });
+  });
+}
