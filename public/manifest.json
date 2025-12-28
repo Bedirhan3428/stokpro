@@ -1,6 +1,6 @@
 {
   "short_name": "StokPro",
-  "name": "StokPro: Stok Takip",
+  "name": "StokPro: Stok Takip ve Muhasebe",
   "icons": [
     {
       "src": "favicon.ico",
@@ -20,7 +20,8 @@
       "purpose": "any maskable"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "theme_color": "#1f6feb",
   "background_color": "#ffffff",
