@@ -1,67 +1,80 @@
+/* -------------------------------------------------------------------------- */
+/* DEĞİŞKENLER (Tema Entegrasyonu)                                            */
+/* -------------------------------------------------------------------------- */
 :root {
-  --h-primary: #3b82f6;
-  --h-primary-hover: #2563eb;
-  --h-text-main: #1e293b;
-  --h-text-sub: #64748b;
-  --h-bg-card: rgba(255, 255, 255, 0.9);
-  --h-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  --home-primary: #3b82f6;
+  --home-primary-hover: #2563eb;
+  
+  /* Varsayılan (Light) */
+  --home-text: #1e293b;
+  --home-subtext: #64748b;
+  --home-bg-card: rgba(255, 255, 255, 0.9);
+  --home-border: rgba(255, 255, 255, 0.6);
+  --home-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  --home-title-gradient: linear-gradient(135deg, #1e293b 0%, #3b82f6 100%);
 }
 
-* {
-  box-sizing: border-box;
+/* DARK MODE (Otomatik Algılama) */
+body.dark-mode, .dark-mode, [data-theme="dark"] {
+  --home-text: #f8fafc;
+  --home-subtext: #94a3b8;
+  --home-bg-card: #1e293b; /* Koyu kart rengi */
+  --home-border: #334155;
+  --home-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+  /* Dark modda gradient yerine düz beyaz daha okunaklıdır */
+  --home-title-gradient: linear-gradient(135deg, #ffffff 0%, #60a5fa 100%);
 }
 
-/* Sayfa Giriş Animasyonu */
+* { box-sizing: border-box; }
+
 @keyframes slideUpFade {
-  from {
-    opacity: 0;
-    transform: translateY(30px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  from { opacity: 0; transform: translateY(30px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .home-kapsul {
-  min-height: 100vh;
+  min-height: 90vh;
   display: flex;
   justify-content: center;
   align-items: center;
   padding: 20px;
   font-family: "Inter", system-ui, sans-serif;
-  /* Arka plan şeffaf bırakıldı, ana layout'un rengini alacak */
-  background: transparent; 
+  background: transparent;
 }
 
 .home-kart {
   max-width: 700px;
   width: 100%;
-  background: var(--h-bg-card);
+  background: var(--home-bg-card);
   border-radius: 24px;
   padding: 40px;
   text-align: center;
-  box-shadow: var(--h-shadow);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(12px); /* Glassmorphism */
-
-  /* Animasyon */
+  box-shadow: var(--home-shadow);
+  border: 1px solid var(--home-border);
+  
+  /* Glass efekti (Light modda belirgin) */
+  backdrop-filter: blur(12px);
+  
+  /* Giriş animasyonu */
   animation: slideUpFade 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .home-baslik {
   margin: 0 0 16px;
-  color: var(--h-text-main);
   font-weight: 900;
-  font-size: 3rem; /* Daha büyük ve etkileyici başlık */
+  font-size: 3rem;
   letter-spacing: -1px;
-  background: linear-gradient(135deg, #1e293b 0%, #3b82f6 100%);
+  background: var(--home-title-gradient);
   -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent; /* Gradient metin */
+  -webkit-text-fill-color: transparent;
+  /* Yedek renk (gradient yüklenmezse) */
+  color: var(--home-text); 
 }
 
 .home-alt {
-  color: var(--h-text-sub);
+  color: var(--home-subtext);
   font-size: 1.1rem;
   line-height: 1.6;
   margin-bottom: 32px;
@@ -71,17 +84,17 @@
 }
 
 .home-cta {
-  margin-bottom: 32px;
+  margin-bottom: 20px; /* Altına yasal metin geleceği için boşluğu azalttım */
 }
 
 .home-btn {
-  padding: 16px 32px;
+  padding: 16px 48px;
   border: none;
   border-radius: 14px;
   font-weight: 700;
   font-size: 1.1rem;
   color: #fff;
-  background: linear-gradient(135deg, var(--h-primary), var(--h-primary-hover));
+  background: linear-gradient(135deg, var(--home-primary), var(--home-primary-hover));
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
@@ -94,72 +107,45 @@
   box-shadow: 0 12px 24px rgba(59, 130, 246, 0.4);
 }
 
-.home-btn:active {
-  transform: scale(0.98);
-}
+.home-btn:active { transform: scale(0.98); }
 
 /* Buton Parlama Efekti */
 .home-btn::after {
   content: "";
   position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
+  top: 0; left: -100%;
+  width: 100%; height: 100%;
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
   transition: 0.5s;
 }
-.home-btn:hover::after {
-  left: 100%;
+.home-btn:hover::after { left: 100%; }
+
+/* YASAL METİN STİLİ */
+.home-yasal {
+  font-size: 0.8rem;
+  color: var(--home-subtext);
+  margin-bottom: 24px;
+  opacity: 0.8;
+}
+.home-yasal a {
+  color: var(--home-primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+.home-yasal a:hover {
+  text-decoration: underline;
 }
 
 .home-info {
   margin-top: 24px;
   padding-top: 24px;
-  border-top: 1px dashed #e2e8f0;
+  border-top: 1px dashed var(--home-border);
+  border-color: rgba(100, 116, 139, 0.2);
 }
 
-/* Mobilde başlık boyutu ayarı */
+/* Mobilde başlık ayarı */
 @media (max-width: 600px) {
-  .home-kart {
-    padding: 30px 20px;
-  }
-  .home-baslik {
-    font-size: 2.2rem;
-  }
-}
-
-/* Koyu tema override */
-:root[data-theme="dark"] .h-kapsul {
-  background: var(--card);
-  border: 1px solid var(--border);
-  color: var(--text);
-  box-shadow: 0 20px 35px rgba(0, 0, 0, 0.55);
-}
-
-:root[data-theme="dark"] .h-baslik { color: var(--text); }
-:root[data-theme="dark"] .h-alt { color: var(--subtext); }
-
-/* CTA butonu */
-:root[data-theme="dark"] .h-btn {
-  background: linear-gradient(135deg, var(--h-primary), var(--h-primary-hover));
-  color: #fff;
-  box-shadow: 0 10px 25px rgba(96, 165, 250, 0.35);
-}
-:root[data-theme="dark"] .h-btn:hover {
-  background: var(--h-primary-hover);
-}
-
-/* Footer metinleri ve linkleri */
-:root[data-theme="dark"] .h-footer,
-:root[data-theme="dark"] .h-footer a {
-  color: var(--subtext);
-}
-:root[data-theme="dark"] .h-footer a:hover {
-  color: var(--h-primary);
-}
-
-/* Ayraç çizgisi */
-:root[data-theme="dark"] .h-hr {
-  border-top: 1px dashed var(--border);
+  .home-kart { padding: 30px 20px; }
+  .home-baslik { font-size: 2.2rem; }
+  .home-btn { width: 100%; }
 }
