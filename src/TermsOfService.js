@@ -61,7 +61,7 @@ export default function TermsOfService() {
           <p className="legal-metin">
             Hizmet şartları hakkında sorularınız için:
             <br />
-            <a href="mailto:iletisim@stokpro.shop" className="legal-link">iletisim@stokpro.shop</a>
+            <a href="mailto:stokproresmi@gmail.com" className="legal-link">iletisim@stokpro.shop</a>
           </p>
         </div>
       </div>
