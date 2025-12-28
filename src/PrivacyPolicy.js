@@ -56,7 +56,7 @@ export default function PrivacyPolicy() {
           <p className="legal-metin">
             Bu Gizlilik Politikası hakkında sorularınız varsa, lütfen bizimle iletişime geçin:
             <br />
-            <a href="mailto:destek@stokpro.shop" className="legal-link">stokproresmi@gmail.com</a>
+            <a href="mailto:stokproresmi@gmail.com" className="legal-link">destek@stokpro.shop</a>
           </p>
         </div>
       </div>
