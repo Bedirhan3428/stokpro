@@ -1,19 +1,20 @@
 import "../styles/Home.css";
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom"; // v6 için useNavigate şart
-import { auth } from "../firebase";
+import { useNavigate, Link } from "react-router-dom"; 
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 import Info from "./info"; 
 
 export default function Home() {
-  const navigate = useNavigate(); // useHistory yerine bunu kullanıyoruz
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  const auth = getAuth();
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((u) => {
+    const unsubscribe = onAuthStateChanged(auth, (u) => {
       setUser(u);
     });
     return () => unsubscribe();
-  }, []);
+  }, [auth]);
 
   return (
     <div className="home-kapsul">
@@ -34,6 +35,11 @@ export default function Home() {
           </button>
         </div>
 
+        {/* YASAL UYARI METNİ */}
+        <div className="home-yasal">
+          Uygulamayı kullanarak veya kayıt olarak <Link to="/terms-of-service">Hizmet Şartları</Link>'nı ve <Link to="/privacy-policy">Gizlilik Politikası</Link>'nı kabul etmiş sayılırsınız.
+        </div>
+
         <div className="home-info">
           <Info />
         </div>
@@ -41,5 +47,4 @@ export default function Home() {
     </div>
   );
 }
-
 
