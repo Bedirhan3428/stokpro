@@ -17,28 +17,36 @@ export default function Navbar() {
   const nav = useNavigate();
 
   const menuRef = useRef(null);
-  const mobileRef = useRef(null);
 
   // Tema Başlangıcı
   useEffect(() => { setTheme(initTheme()); }, []);
 
-  // Dışarı tıklama kontrolü
+  // Profil menüsü dışına tıklanınca kapat
   useEffect(() => {
     function handleClickOutside(event) {
-      if (menuRef.current && !menuRef.current.contains(event.target)) setOpen(false);
-      if (mobileRef.current && !mobileRef.current.contains(event.target) && !event.target.closest(".nb-hamburger")) {
-        setMobileOpen(false);
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Sayfa değişince kapat
+  // Sayfa değişince her şeyi kapat
   useEffect(() => {
     setOpen(false);
     setMobileOpen(false);
   }, [loc.pathname]);
+
+  // Mobil menü açıldığında sayfa kaydırmayı engelle
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => { document.body.style.overflow = 'unset'; }
+  }, [mobileOpen]);
 
   const handleLogout = async () => {
     try { await logout(); nav("/"); } catch (e) { console.error(e); }
@@ -59,9 +67,9 @@ export default function Navbar() {
   return (
     <header className="nb-header">
       <div className="nb-container">
-        
+
         {/* SOL: LOGO */}
-        <div className="nb-logo-bolumu">
+        <div className="nb-logo-bolumu" onClick={() => nav("/")} style={{cursor: 'pointer'}}>
           <div className="nb-logo-ikon"><TbCircleLetterSFilled /></div>
           <div className="nb-logo-yazi">
             <span className="nb-marka">StokPro</span>
@@ -74,7 +82,6 @@ export default function Navbar() {
 
         {/* SAG: AKSİYONLAR */}
         <div className="nb-aksiyonlar">
-          {/* Tema Butonu */}
           <button onClick={handleTheme} className="nb-icon-btn theme-toggle" title="Temayı Değiştir">
             {theme === "dark" ? <IoSunny /> : <FaMoon />}
           </button>
@@ -109,26 +116,30 @@ export default function Navbar() {
               <button 
                 className={`nb-hamburger ${mobileOpen ? "aktif" : ""}`} 
                 onClick={() => setMobileOpen(!mobileOpen)}
+                aria-label="Menüyü Aç/Kapat"
               >
-                <span></span>
-                <span></span>
-                <span></span>
+                <div className="nb-bar bar1"></div>
+                <div className="nb-bar bar2"></div>
+                <div className="nb-bar bar3"></div>
               </button>
             </>
           )}
         </div>
       </div>
 
-      {/* MOBİL MENÜ */}
-      {user && (
-        <>
-          <div className={`nb-overlay ${mobileOpen ? "acik" : ""}`} onClick={() => setMobileOpen(false)} />
-          <div className={`nb-mobil-menu ${mobileOpen ? "acik" : ""}`} ref={mobileRef}>
+      {/* MOBİL MENÜ - Sadece mobileOpen true ise render edilir (DOM'a eklenir) */}
+      {user && mobileOpen && (
+        <div className="nb-mobil-portal">
+          <div className="nb-overlay" onClick={() => setMobileOpen(false)} />
+          <div className="nb-mobil-menu">
             <div className="nb-mobil-header">
-              <span className="nb-marka">StokPro</span>
+              <div className="nb-logo-bolumu">
+                <div className="nb-logo-ikon small"><TbCircleLetterSFilled /></div>
+                <span className="nb-marka">StokPro</span>
+              </div>
               <button onClick={() => setMobileOpen(false)} className="nb-kapat-btn">×</button>
             </div>
-            
+
             <div className="nb-mobil-body">
               <NavLinks mobile />
             </div>
@@ -147,10 +158,9 @@ export default function Navbar() {
               </div>
             </div>
           </div>
-        </>
+        </div>
       )}
     </header>
   );
 }
-
 
