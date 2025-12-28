@@ -5,6 +5,8 @@ import "./App.css";
 import { AuthProvider } from "./contexts/AuthContext";
 
 import RequireAuth from "./components/RequireAuth";
+
+// Mevcut Bileşenler (components klasöründen)
 const Home = React.lazy(() => import("./components/Home"));
 const ProductKey = React.lazy(() => import("./components/ProductKey"));
 const Dashboard = React.lazy(() => import("./components/Dashboard"));
@@ -21,6 +23,10 @@ const Info = React.lazy(() => import("./components/info"));
 const ForgotPassword = React.lazy(() => import("./components/ForgotPassword"));
 const VerifyEmail = React.lazy(() => import("./components/VerifyEmail"));
 const ResetPassword = React.lazy(() => import("./components/ResetPassword"));
+
+// --- YENİ EKLENEN YASAL SAYFALAR (Doğrudan src içinden) ---
+const PrivacyPolicy = React.lazy(() => import("./PrivacyPolicy"));
+const TermsOfService = React.lazy(() => import("./TermsOfService"));
 
 // E-posta aksiyon linklerini yakala
 function ActionRedirector() {
@@ -47,6 +53,7 @@ function App() {
           <Navbar />
           <main className="app-container">
             <Routes>
+              {/* Genel Sayfalar */}
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
@@ -55,6 +62,11 @@ function App() {
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/product-key" element={<ProductKey />} />
 
+              {/* Yasal Sayfalar */}
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/terms-of-service" element={<TermsOfService />} />
+
+              {/* Korumalı Sayfalar (Giriş Gerekli) */}
               <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
               <Route path="/products" element={<RequireAuth><Products /></RequireAuth>} />
               <Route path="/sales" element={<RequireAuth><Sales /></RequireAuth>} />
@@ -62,6 +74,7 @@ function App() {
               <Route path="/accounting" element={<RequireAuth><Accounting /></RequireAuth>} />
               <Route path="/settings" element={<RequireAuth><Settings /></RequireAuth>} />
 
+              {/* 404 */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
@@ -72,3 +85,4 @@ function App() {
 }
 
 export default App;
+
