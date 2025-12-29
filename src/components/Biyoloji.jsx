@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-// Saf SVG İkonları (React Icons veya Lucide gerektirmez)
+// Saf SVG İkonları
 const Icons = {
   Eye: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>,
   Dna: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m8 8 8 8m-8 0 8-8m-2-3a5 5 0 1 1-5 5"/><path d="M12 12h.01"/><path d="m19 19-2-2m-8-8-2-2"/></svg>,
@@ -14,7 +14,7 @@ const Icons = {
 
 const App = () => {
   const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = 9;
+  const totalPages = 10;
 
   useEffect(() => {
     const style = document.createElement('style');
@@ -149,7 +149,7 @@ const App = () => {
               <h4 className="text-red-500 font-black text-sm uppercase">Miyopi (Uzağı Göremez)</h4>
               <div className="adv-big-number my-2 tracking-[0.2em]">K U M</div>
               <p className="text-xs text-zinc-500"><b>Kalın Mercek • Uzak • Miyop</b></p>
-              <p className="text-xs text-zinc-400 mt-2">Göz küresi uzundur, görüntü retinanın <b>önüne</b> düşer.</p>
+              <p className="text-xs text-zinc-400 mt-2">Göz küresi uzun, görüntü retinanın <b>önüne</b> düşer.</p>
             </div>
             <div className="adv-card" style={{borderLeft: '6px solid var(--adv-green)'}}>
               <h4 className="text-green-500 font-black text-sm uppercase">Hipermetropi (Yakını Göremez)</h4>
@@ -265,6 +265,72 @@ const App = () => {
           </div>
         )}
 
+        {currentPage === 10 && (
+          <div className="adv-card">
+            <h4 className="font-bold text-white flex items-center gap-2 mb-4">
+              <Icons.Bone /> Kemik Yapısı Şeması
+            </h4>
+            <div className="relative bg-zinc-900 p-4 rounded-2xl border border-zinc-800 overflow-hidden">
+              <svg viewBox="0 0 500 400" className="w-full h-auto">
+                {/* Kemik Yapısı Çizimi */}
+                <defs>
+                  <pattern id="bonePattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+                     <circle cx="2" cy="2" r="1" fill="#a67c52" opacity="0.3"/>
+                  </pattern>
+                </defs>
+                <rect x="50" y="50" width="400" height="300" rx="20" fill="#2a1a10" stroke="#5c4033" strokeWidth="2" />
+                <rect x="50" y="50" width="400" height="300" rx="20" fill="url(#bonePattern)" opacity="0.5" />
+                
+                {/* Osteon Halka Yapısı */}
+                <circle cx="250" cy="200" r="90" fill="none" stroke="#8b5a2b" strokeWidth="3" opacity="0.6"/>
+                <circle cx="250" cy="200" r="70" fill="none" stroke="#8b5a2b" strokeWidth="3" opacity="0.8"/>
+                <circle cx="250" cy="200" r="50" fill="none" stroke="#8b5a2b" strokeWidth="3"/>
+                
+                {/* Havers Kanalı (Merkez) */}
+                <circle cx="250" cy="200" r="25" fill="#3e0000" stroke="#ff4d4d" strokeWidth="2"/>
+                <text x="250" y="205" fill="#ff9999" textAnchor="middle" fontSize="10" fontWeight="bold">HAVERS</text>
+
+                {/* Osteositler (Hücreler) */}
+                <g fill="#e3bc9a">
+                  <circle cx="250" cy="140" r="4" />
+                  <circle cx="310" cy="200" r="4" />
+                  <circle cx="190" cy="200" r="4" />
+                  <circle cx="250" cy="260" r="4" />
+                </g>
+
+                {/* Volkman Kanalı (Yatay) */}
+                <rect x="50" y="340" width="400" height="20" fill="#5c1a1a" />
+                <text x="250" y="355" fill="#ff9999" textAnchor="middle" fontSize="10" fontWeight="bold">VOLKMAN KANALI (Yatay)</text>
+
+                {/* Etiketler ve Oklar */}
+                {/* Osteon */}
+                <line x1="250" y1="120" x2="150" y2="80" stroke="#fff" strokeWidth="1" />
+                <rect x="100" y="60" width="100" height="25" rx="5" fill="#1a73e8" />
+                <text x="150" y="77" fill="white" textAnchor="middle" fontSize="11" fontWeight="bold">OSTEON (Birim)</text>
+
+                {/* Periost */}
+                <line x1="450" y1="200" x2="480" y2="200" stroke="#fff" strokeWidth="1" />
+                <line x1="480" y1="200" x2="480" y2="300" stroke="#fff" strokeWidth="1" />
+                <rect x="420" y="300" width="80" height="25" rx="5" fill="#e37400" />
+                <text x="460" y="317" fill="white" textAnchor="middle" fontSize="11" fontWeight="bold">PERİOST</text>
+
+                {/* Osteosit */}
+                <line x1="190" y1="200" x2="120" y2="220" stroke="#fff" strokeWidth="1" />
+                <rect x="70" y="210" width="100" height="25" rx="5" fill="#137333" />
+                <text x="120" y="227" fill="white" textAnchor="middle" fontSize="11" fontWeight="bold">OSTEOSİT</text>
+              </svg>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
+               <div className="p-3 bg-zinc-900 rounded-xl border border-zinc-800">
+                 <strong className="text-blue-400 block mb-1">OSTEON:</strong> Sert kemik dokunun yapı birimidir. İç içe geçmiş halkalardan oluşur.
+               </div>
+               <div className="p-3 bg-zinc-900 rounded-xl border border-zinc-800">
+                 <strong className="text-orange-400 block mb-1">PERİOST:</strong> Kemiğin en dışındaki zardır. Beslenme ve onarımdan sorumludur.
+               </div>
+            </div>
+          </div>
+        )}
+
       </main>
 
       <footer className="nav-bar">
@@ -280,4 +346,5 @@ const App = () => {
 };
 
 export default App;
+
 
