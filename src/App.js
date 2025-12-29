@@ -19,16 +19,15 @@ const Navbar = React.lazy(() => import("./components/Navbar"));
 const Login = React.lazy(() => import("./components/Login"));
 const Register = React.lazy(() => import("./components/Register"));
 const Settings = React.lazy(() => import("./components/Settings"));
-const Info = React.lazy(() => import("./components/info")); // Dosya adı küçük harfle ise aynen kalsın
+const Info = React.lazy(() => import("./components/info"));
 const ForgotPassword = React.lazy(() => import("./components/ForgotPassword"));
 const VerifyEmail = React.lazy(() => import("./components/VerifyEmail"));
 const ResetPassword = React.lazy(() => import("./components/ResetPassword"));
 
-
 // --- YENİ EKLENEN BİYOLOJİ BİLEŞENİ ---
 const Biyoloji = React.lazy(() => import("./components/Biyoloji"));
 
-// Yasal Sayfalar
+// Yasal Sayfalar (Eğer oluşturduysan kalsın, yoksa bunları da silebilirsin)
 const PrivacyPolicy = React.lazy(() => import("./PrivacyPolicy"));
 const TermsOfService = React.lazy(() => import("./TermsOfService"));
 
@@ -64,14 +63,12 @@ function App() {
               <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/product-key" element={<ProductKey />} />
-              
 
               {/* Yasal Sayfalar */}
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/terms-of-service" element={<TermsOfService />} />
 
               {/* --- YENİ ROTA: BİYOLOJİ --- */}
-              {/* Eğer giriş zorunlu olsun istersen RequireAuth içine al */}
               <Route path="/biyoloji" element={<Biyoloji />} />
 
               {/* Korumalı Sayfalar (Giriş Gerekli) */}
@@ -93,5 +90,3 @@ function App() {
 }
 
 export default App;
-
-
