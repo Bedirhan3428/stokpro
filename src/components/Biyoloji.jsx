@@ -1,82 +1,115 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Dna, Eye, Activity, Bone, FlaskConical, Ear, Droplets, ArrowRight } from 'lucide-react';
+
+// İkonlar (Zero-Dependency Inline SVGs)
+const Icons = {
+  Eye: () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+  ),
+  Bone: () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 10c.7-.7 1.69-1 2.5-1a2.5 2.5 0 1 1 0 5c-.81 0-1.8-.3-2.5-1L7 14c-.7.7-1.69 1-2.5 1a2.5 2.5 0 1 1 0-5c.81 0 1.8.3 2.5 1L17 10Z"/></svg>
+  ),
+  Activity: () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+  ),
+  Flask: () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 3h12"/><path d="M8 3v12"/><path d="M16 3v12"/><path d="M5 21h14"/><path d="M5 15h14"/><path d="M8 3h8"/><path d="m16 15-2 6H10l-2-6"/></svg>
+  ),
+  Droplet: () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></svg>
+  ),
+  Ear: () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8.5a6.5 6.5 0 1 1 13 0c0 6-6 6-6 10a3 3 0 1 1-6 0"/><path d="M11 13a2.5 2.5 0 1 0 4 0"/></svg>
+  ),
+  ChevronLeft: () => (
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+  ),
+  ChevronRight: () => (
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+  )
+};
 
 const App = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const totalPages = 8;
 
-  const nextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
-  const prevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
+  const navigate = (dir) => {
+    const next = currentPage + dir;
+    if (next >= 1 && next <= totalPages) {
+      setCurrentPage(next);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
-  // Klavye ok tuşları desteği
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'ArrowRight') nextPage();
-      if (e.key === 'ArrowLeft') prevPage();
+    const handleKey = (e) => {
+      if (e.key === 'ArrowRight') navigate(1);
+      if (e.key === 'ArrowLeft') navigate(-1);
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [currentPage]);
 
-  const PageIndicator = () => (
-    <div className="flex gap-1 mb-4">
-      {[...Array(totalPages)].map((_, i) => (
-        <div 
-          key={i} 
-          className={`h-1 flex-1 rounded-full transition-all duration-300 ${i + 1 === currentPage ? 'bg-blue-500 w-4' : 'bg-zinc-800'}`}
-        />
-      ))}
+  const Card = ({ title, icon: Icon, children, colorClass = "blue" }) => (
+    <div className="bg-zinc-900/80 border border-zinc-800 rounded-3xl p-6 mb-6 shadow-2xl">
+      <div className="flex items-center gap-3 mb-4">
+        {Icon && <div className={`text-${colorClass}-500`}><Icon /></div>}
+        <h3 className={`text-xl font-bold text-${colorClass}-400`}>{title}</h3>
+      </div>
+      <div className="text-zinc-300 space-y-3 leading-relaxed">
+        {children}
+      </div>
     </div>
   );
 
-  const renderPage = () => {
+  const renderContent = () => {
     switch (currentPage) {
       case 1:
         return (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex items-center gap-3 mb-6">
-              <Eye className="text-blue-500" size={32} />
-              <h2 className="text-3xl font-bold">Gözün Yapısı</h2>
-            </div>
-            <div className="space-y-6">
-              <section className="bg-zinc-900/50 p-6 rounded-2xl border border-zinc-800">
-                <h3 className="text-xl font-bold text-blue-400 mb-3 underline">1. Sert Tabaka (Sklera)</h3>
-                <p className="text-zinc-300 leading-relaxed">Bağ dokudan oluşur. Gözü dıştan sarar ve korur. Ön tarafta kubbeleşerek <span className="text-white font-bold">Kornea (Saydam Tabaka)</span>'yı oluşturur. Işık ilk burada kırılır.</p>
-              </section>
-              <section className="bg-zinc-900/50 p-6 rounded-2xl border border-zinc-800">
-                <h3 className="text-xl font-bold text-blue-400 mb-3 underline">2. Damar Tabaka (Koroit)</h3>
-                <p className="text-zinc-300 mb-4">Besleyen damarlar buradadır. İris, Göz Bebeği ve Mercek bu tabakada yer alır.</p>
-                <div className="bg-blue-500/10 p-4 rounded-xl border border-blue-500/20">
-                  <p className="font-bold text-white mb-2 underline">Göz Uyumu:</p>
-                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <li><span className="text-blue-400 font-bold">YAKIN:</span> Kirpiksi kaslar KASILIR, asıcı bağlar GEVŞER, mercek kalınlaşır.</li>
-                    <li><span className="text-zinc-400 font-bold">UZAK:</span> Kirpiksi kaslar GEVŞER, asıcı bağlar KASILIR, mercek incelir.</li>
-                  </ul>
+          <div className="animate-in fade-in slide-in-from-right-4 duration-500">
+            <h2 className="text-3xl font-black mb-6">1. Gözün Yapısı</h2>
+            <Card title="Sert Tabaka (Sklera)" icon={Icons.Eye} colorClass="blue">
+              <p>Gözü dıştan sarar, iç kısımları korur. Bağ doku yapılıdır.</p>
+              <p className="bg-blue-500/10 p-3 rounded-xl border border-blue-500/20">
+                <strong className="text-blue-300">Kornea:</strong> Ön tarafta saydamlaşan kısımdır. Işığın ilk kırıldığı yerdir. Kan damarı bulunmaz.
+              </p>
+            </Card>
+            <Card title="Damar Tabaka (Koroit)" icon={Icons.Eye} colorClass="blue">
+              <p>Besleyen damarlar buradadır. <span className="text-white font-bold">İris</span> (renkli kısım), <span className="text-white font-bold">Göz Bebeği</span> ve <span className="text-white font-bold">Mercek</span> buradadır.</p>
+              <div className="p-3 bg-zinc-800 rounded-xl mt-2">
+                <h4 className="font-bold text-white mb-2 text-sm underline">Göz Uyumu (Netleme)</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                  <p><strong>YAKIN:</strong> Kaslar kasılır, bağlar gevşer, mercek kalınlaşır.</p>
+                  <p><strong>UZAK:</strong> Kaslar gevşer, bağlar kasılır, mercek incelir.</p>
                 </div>
-              </section>
-            </div>
+              </div>
+            </Card>
+            <Card title="Ağ Tabaka (Retina)" icon={Icons.Eye} colorClass="blue">
+              <p>Reseptörlerin (Çubuk/Koni) bulunduğu yerdir.</p>
+              <ul className="list-disc list-inside text-sm">
+                <li><strong>Sarı Benek:</strong> En net görüntü.</li>
+                <li><strong>Kör Nokta:</strong> Sinir çıkışı, görüntü yok.</li>
+              </ul>
+            </Card>
           </div>
         );
       case 2:
         return (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex items-center gap-3 mb-6">
-              <Activity className="text-green-500" size={32} />
-              <h2 className="text-3xl font-bold">Kas Kasılması</h2>
-            </div>
-            <div className="bg-zinc-900/50 p-6 rounded-2xl border border-zinc-800 space-y-4">
-              <p className="text-zinc-400 italic mb-4">Kimyasal kasılma sırası (Eksiksiz):</p>
+          <div className="animate-in fade-in slide-in-from-right-4 duration-500">
+            <h2 className="text-3xl font-black mb-6 text-green-500">2. Kas Kasılma Sırası</h2>
+            <div className="space-y-4">
               {[
-                "Motor uç plaktan Asetilkolin salgılanır.",
-                "Kas hücresi zarında (Sarkolemma) depolarizasyon başlar.",
-                "Uyarı T-tüplerle Sarkoplazmik Retikulum'a (SR) iletilir.",
-                "SR'den sitoplazmaya Ca2+ (Kalsiyum) iyonları dökülür.",
-                "Ca2+, aktin üzerindeki proteini çekerek miyozinin bağlanma yerini açar.",
-                "ATP harcanarak aktin iplikleri miyozin üzerinde kayar (Kasılma)."
-              ].map((step, idx) => (
-                <div key={idx} className="flex gap-4 items-start">
-                  <span className="bg-green-600 text-white w-6 h-6 rounded-full flex items-center justify-center shrink-0 font-bold text-xs">{idx + 1}</span>
-                  <p className="text-zinc-200">{step}</p>
+                { t: "Uyarı", d: "Motor uç plaktan Asetilkolin salgılanır." },
+                { t: "Depolarizasyon", d: "Kas zarı uyarılır, Na+ kanalları açılır." },
+                { t: "İletim", d: "T-tüpleri uyarısı Sarkoplazmik Retikulum'a (SR) iletir." },
+                { t: "Kalsiyum", d: "SR'den sitoplazmaya Ca2+ dökülür." },
+                { t: "Kayma", d: "Aktin üzerindeki bölgeler açılır, miyozin bağlanır ve aktinler miyozin üzerinde kayar." }
+              ].map((step, i) => (
+                <div key={i} className="flex gap-4 p-4 bg-zinc-900 border border-zinc-800 rounded-2xl">
+                  <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center font-bold shrink-0">{i+1}</div>
+                  <div>
+                    <h4 className="font-bold text-green-400">{step.t}</h4>
+                    <p className="text-sm text-zinc-400">{step.d}</p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -84,176 +117,168 @@ const App = () => {
         );
       case 3:
         return (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex items-center gap-3 mb-6">
-              <Eye className="text-red-500" size={32} />
-              <h2 className="text-3xl font-bold">Göz Kusurları</h2>
-            </div>
+          <div className="animate-in fade-in slide-in-from-right-4 duration-500">
+            <h2 className="text-3xl font-black mb-6 text-red-500">3. Göz Kusurları</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-red-900/10 border border-red-500/20 p-5 rounded-2xl">
+              <div className="bg-red-900/10 border border-red-500/20 p-6 rounded-3xl">
                 <h3 className="text-xl font-bold text-red-400 mb-2">Miyopi</h3>
-                <p className="text-sm text-zinc-400 mb-4">Göz küresi uzun, görüntü retinanın önüne düşer.</p>
-                <div className="bg-black p-3 rounded-lg text-center font-black text-red-500 tracking-widest border border-red-500/30">K - U - M</div>
-                <p className="text-[10px] text-zinc-500 mt-1 text-center font-bold">Kalın Mercek - Uzak - Miyop</p>
+                <p className="text-sm text-zinc-400 mb-4">Uzağı göremez. Görüntü retinanın önüne düşer. Göz küresi uzundur.</p>
+                <div className="bg-black p-4 rounded-xl text-center font-black text-2xl tracking-[0.3em] text-red-500 border border-red-500/30">K U M</div>
+                <p className="text-[10px] text-center mt-2 text-zinc-500 font-bold uppercase">Kalın Mercek - Uzak - Miyop</p>
               </div>
-              <div className="bg-green-900/10 border border-green-500/20 p-5 rounded-2xl">
+              <div className="bg-green-900/10 border border-green-500/20 p-6 rounded-3xl">
                 <h3 className="text-xl font-bold text-green-400 mb-2">Hipermetropi</h3>
-                <p className="text-sm text-zinc-400 mb-4">Göz küresi kısa, görüntü retinanın arkasına düşer.</p>
-                <div className="bg-black p-3 rounded-lg text-center font-black text-green-500 border border-green-500/30 italic">İNCE KENARLI MERCEK</div>
+                <p className="text-sm text-zinc-400 mb-4">Yakını göremez. Görüntü retinanın arkasına düşer. Göz küresi kısadır.</p>
+                <div className="bg-black p-4 rounded-xl text-center font-black text-lg text-green-500 border border-green-500/30">İNCE MERCEK</div>
               </div>
-              <div className="bg-zinc-900 p-4 rounded-xl col-span-1 md:col-span-2 space-y-2">
-                <p><strong>Astigmatizm:</strong> Silindirik Mercek kullanılır.</p>
-                <p><strong>Presbitlik:</strong> İnce Kenarlı Mercek kullanılır.</p>
-                <p><strong>Şaşılık:</strong> Ameliyatla düzeltilir.</p>
+              <div className="col-span-1 md:col-span-2 bg-zinc-900 p-5 rounded-3xl border border-zinc-800 grid grid-cols-2 gap-4 text-xs">
+                <p><strong>Astigmat:</strong> Silindirik Mercek.</p>
+                <p><strong>Presbitlik:</strong> Yaşlılıkta mercek esnekliği kaybı.</p>
+                <p><strong>Şaşılık:</strong> Kas uyumsuzluğu.</p>
+                <p><strong>Katarakt:</strong> Mercek saydamlık kaybı.</p>
               </div>
             </div>
           </div>
         );
       case 4:
         return (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex items-center gap-3 mb-6">
-              <Bone className="text-amber-500" size={32} />
-              <h2 className="text-3xl font-bold">Kemik Dokusu</h2>
-            </div>
-            <div className="bg-zinc-900/50 p-6 rounded-2xl border border-zinc-800">
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="p-4 bg-zinc-800 rounded-xl">
-                  <h4 className="font-bold text-amber-400">Osteosit</h4>
-                  <p className="text-xs text-zinc-400">Canlı Kemik Hücresi</p>
+          <div className="animate-in fade-in slide-in-from-right-4 duration-500">
+            <h2 className="text-3xl font-black mb-6 text-amber-500">4. Kemik Dokusu</h2>
+            <Card title="Hücresel Yapı" icon={Icons.Bone} colorClass="amber">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-black/40 p-3 rounded-xl border border-white/5">
+                  <span className="font-bold text-amber-400">Osteosit:</span><br/><span className="text-xs">Hücre</span>
                 </div>
-                <div className="p-4 bg-zinc-800 rounded-xl">
-                  <h4 className="font-bold text-amber-400">Osein</h4>
-                  <p className="text-xs text-zinc-400">Ara Madde</p>
+                <div className="bg-black/40 p-3 rounded-xl border border-white/5">
+                  <span className="font-bold text-amber-400">Osein:</span><br/><span className="text-xs">Ara Madde</span>
                 </div>
-                <div className="p-4 bg-zinc-800 rounded-xl">
-                  <h4 className="font-bold text-green-400">Osteoblast</h4>
-                  <p className="text-xs text-zinc-400">Kemik Yapıcı Hücre</p>
+                <div className="bg-black/40 p-3 rounded-xl border border-white/5">
+                  <span className="font-bold text-green-500">Osteoblast:</span><br/><span className="text-xs">Yapıcı</span>
                 </div>
-                <div className="p-4 bg-zinc-800 rounded-xl">
-                  <h4 className="font-bold text-red-400">Osteoklast</h4>
-                  <p className="text-xs text-zinc-400">Kemik Yıkıcı Hücre</p>
+                <div className="bg-black/40 p-3 rounded-xl border border-white/5">
+                  <span className="font-bold text-red-500">Osteoklast:</span><br/><span className="text-xs">Yıkıcı</span>
                 </div>
               </div>
-              <div className="space-y-3 text-sm border-t border-zinc-800 pt-4">
-                <p><strong>Havers:</strong> Boyuna dikey kanallar.</p>
-                <p><strong>Volkman:</strong> Enine yatay kanallar.</p>
-                <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-                   <p className="text-amber-500 font-bold">Periost (Kemik Zarı):</p>
-                   <p className="text-xs">Besler, onarır ve ENİNE büyüme sağlar.</p>
-                </div>
-              </div>
+            </Card>
+            <div className="bg-zinc-900 p-6 rounded-3xl border border-zinc-800">
+               <h4 className="font-bold mb-4 text-amber-300">Kanallar ve Zar</h4>
+               <p className="text-sm mb-3"><strong>Havers:</strong> Boyuna uzanan kanallar.</p>
+               <p className="text-sm mb-3"><strong>Volkman:</strong> Haversleri birbirine bağlayan enine kanallar.</p>
+               <div className="p-4 bg-amber-500/10 rounded-xl border border-amber-500/20">
+                 <p className="text-xs font-bold text-white italic">"Periost: Kemik zarıdır. Besler, onarır ve enine büyüme sağlar."</p>
+               </div>
             </div>
           </div>
         );
       case 5:
         return (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <h2 className="text-3xl font-bold mb-6">Kas Tipleri Tablosu</h2>
-            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl">
-              <table className="w-full text-left">
+          <div className="animate-in fade-in slide-in-from-right-4 duration-500">
+            <h2 className="text-3xl font-black mb-6">5. Kas Tipleri Karşılaştırması</h2>
+            <div className="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden">
+              <table className="w-full text-left text-sm">
                 <thead className="bg-zinc-800 text-blue-400">
                   <tr>
-                    <th className="p-4 border-b border-zinc-700">Özellik</th>
-                    <th className="p-4 border-b border-zinc-700">Düz Kas</th>
-                    <th className="p-4 border-b border-zinc-700">Çizgili Kas</th>
+                    <th className="p-4">Özellik</th>
+                    <th className="p-4">Düz Kas</th>
+                    <th className="p-4">Çizgili Kas</th>
                   </tr>
                 </thead>
-                <tbody className="text-sm divide-y divide-zinc-800">
-                  <tr><td className="p-4 font-bold text-zinc-500">Çekirdek</td><td className="p-4 text-zinc-300">Tek (Merkez)</td><td className="p-4 text-zinc-300">Çok (Kenar)</td></tr>
-                  <tr><td className="p-4 font-bold text-zinc-500">Çalışma</td><td className="p-4 text-zinc-300">İstemsiz</td><td className="p-4 text-zinc-300">İstemli</td></tr>
-                  <tr><td className="p-4 font-bold text-zinc-500">Hız</td><td className="p-4 text-zinc-300">Yavaş</td><td className="p-4 text-zinc-300">Hızlı / Yorulur</td></tr>
-                  <tr><td className="p-4 font-bold text-zinc-500">Yer</td><td className="p-4 text-zinc-300">İç Organlar</td><td className="p-4 text-zinc-300">İskelet Kasları</td></tr>
+                <tbody className="divide-y divide-zinc-800">
+                  <tr><td className="p-4 font-bold text-zinc-500">Yapı</td><td className="p-4">Mekik</td><td className="p-4">Silindirik</td></tr>
+                  <tr><td className="p-4 font-bold text-zinc-500">Çekirdek</td><td className="p-4">Tek (Merkez)</td><td className="p-4">Çok (Kenar)</td></tr>
+                  <tr><td className="p-4 font-bold text-zinc-500">Çalışma</td><td className="p-4 text-green-400">İstemsiz</td><td className="p-4 text-blue-400">İstemli</td></tr>
+                  <tr><td className="p-4 font-bold text-zinc-500">Hız</td><td className="p-4">Yavaş</td><td className="p-4">Hızlı / Yorulur</td></tr>
                 </tbody>
               </table>
+              <div className="p-4 bg-purple-900/10 text-xs text-purple-300 italic border-t border-purple-800/30">
+                Kalp Kası: Yapısal olarak çizgili, çalışma olarak düz kasa benzer.
+              </div>
             </div>
           </div>
         );
       case 6:
         return (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex items-center gap-3 mb-6">
-              <Ear className="text-indigo-500" size={32} />
-              <h2 className="text-3xl font-bold">İşitme ve Denge</h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-zinc-900/50 p-5 rounded-2xl border border-zinc-800">
-                <h3 className="font-bold text-indigo-400 mb-3 underline">Kulak Kısımları</h3>
-                <ul className="text-sm space-y-2 text-zinc-300">
-                  <li><strong>Dış:</strong> Kepçe, Yol, Zar.</li>
-                  <li><strong>Orta:</strong> Çekiç-Örs-Üzengi, Östaki Borusu.</li>
-                  <li><strong>İç:</strong> Dalız, Salyangoz (İşitme), Yarım Daire Kanalları (Denge).</li>
-                </ul>
+          <div className="animate-in fade-in slide-in-from-right-4 duration-500">
+            <h2 className="text-3xl font-black mb-6 text-indigo-400">6. İşitme ve Diğer Duyular</h2>
+            <Card title="Kulak" icon={Icons.Ear} colorClass="indigo">
+              <p className="text-sm"><strong>Dış:</strong> Kepçe, Yol, Zar.</p>
+              <p className="text-sm"><strong>Orta:</strong> Çekiç-Örs-Üzengi (Sesi 20 kat artırır), Östaki (Basınç).</p>
+              <p className="text-sm"><strong>İç:</strong> Salyangoz (İşitme), Yarım Daire Kanalları (Denge).</p>
+              <div className="mt-4 p-3 bg-indigo-500/10 rounded-xl border border-indigo-500/20 text-xs italic">
+                Corti Organı: İşitme reseptörleri buradadır.
               </div>
-              <div className="bg-indigo-900/10 p-5 rounded-2xl border border-indigo-500/20">
-                 <h4 className="font-bold text-white mb-2 underline">Önemli!</h4>
-                 <p className="text-sm text-zinc-300">İşitme reseptörleri <strong>Corti Organı</strong>'ndadır. Dengeyi <strong>Yarım Daire Kanalları</strong> ve <strong>Otolit Taşları</strong> sağlar.</p>
+            </Card>
+            <div className="bg-zinc-900 p-5 rounded-3xl border border-zinc-800 grid grid-cols-2 gap-4">
+              <div>
+                <h4 className="font-bold text-green-400 mb-1 text-sm">Burun</h4>
+                <p className="text-[11px]">Reseptörler mukusta çözünmeli. Çabuk yorulur.</p>
               </div>
-              <div className="bg-zinc-900/50 p-5 rounded-2xl border border-zinc-800 col-span-1 md:col-span-2">
-                 <p className="text-sm"><strong>Dil:</strong> Papilla (tat tomurcuğu). <br/> <strong>Burun:</strong> Kemoreseptörler çabuk yorulur.</p>
+              <div>
+                <h4 className="font-bold text-yellow-400 mb-1 text-sm">Dil</h4>
+                <p className="text-[11px]">Papilla. Besin tükürükte çözünmeli.</p>
               </div>
             </div>
           </div>
         );
       case 7:
         return (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex items-center gap-3 mb-6">
-              <FlaskConical className="text-pink-500" size={32} />
-              <h2 className="text-3xl font-bold">Sindirim Hormonları</h2>
-            </div>
+          <div className="animate-in fade-in slide-in-from-right-4 duration-500">
+            <h2 className="text-3xl font-black mb-6 text-pink-500">7. Sindirim Hormonları</h2>
             <div className="space-y-4">
-              {[
-                { name: "Gastrin", from: "Mide", to: "Mide", effect: "Mide özsuyu salgısını artırır.", color: "border-blue-500" },
-                { name: "Sekretin", from: "Onikiparmak", to: "Pankreas/Karaciğer", effect: "Pankreastan HCO3- salgılatır. Safrayı ürettirir.", color: "border-green-500" },
-                { name: "Kolesistokinin", from: "İnce Bağırsak", to: "Pankreas/Safra Kesesi", effect: "Pankreas enzimi salgılatır. Safrayı boşalttırır.", color: "border-pink-500" }
-              ].map((h, i) => (
-                <div key={i} className={`bg-zinc-900 p-5 rounded-2xl border-l-8 ${h.color} shadow-lg`}>
-                  <div className="flex justify-between items-center mb-1">
-                    <h4 className="text-xl font-bold">{h.name}</h4>
-                    <span className="text-[10px] uppercase font-bold text-zinc-500">{h.from}</span>
-                  </div>
-                  <p className="text-sm text-zinc-300 italic">{h.effect}</p>
-                </div>
-              ))}
+              <div className="bg-zinc-900 p-5 rounded-3xl border-l-8 border-blue-500 shadow-xl">
+                <h4 className="text-xl font-bold mb-1 underline">Gastrin</h4>
+                <p className="text-xs text-zinc-500 uppercase font-bold mb-2">Mideden Salgılanır</p>
+                <p className="text-sm">Mideyi uyarır. Mide özsuyu salgısını (HCL + Pepsinojen) artırır.</p>
+              </div>
+              <div className="bg-zinc-900 p-5 rounded-3xl border-l-8 border-green-500 shadow-xl">
+                <h4 className="text-xl font-bold mb-1 underline text-green-400">Sekretin</h4>
+                <p className="text-xs text-zinc-500 uppercase font-bold mb-2">İnce Bağırsaktan Salgılanır</p>
+                <p className="text-sm">Pankreastan bikarbonat (HCO3-) salgılatır. Karaciğerde safra üretimini sağlar.</p>
+              </div>
+              <div className="bg-zinc-900 p-5 rounded-3xl border-l-8 border-pink-500 shadow-xl">
+                <h4 className="text-xl font-bold mb-1 underline text-pink-400">Kolesistokinin</h4>
+                <p className="text-xs text-zinc-500 uppercase font-bold mb-2">İnce Bağırsaktan Salgılanır</p>
+                <p className="text-sm">Pankreas enzimlerinin salgılanmasını sağlar. Safra kesesini kasar, safra boşaltılır.</p>
+              </div>
             </div>
           </div>
         );
       case 8:
         return (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex items-center gap-3 mb-6">
-              <Droplets className="text-cyan-500" size={32} />
-              <h2 className="text-3xl font-bold">Emilim Yolları</h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-blue-900/10 border border-blue-500/20 p-6 rounded-3xl">
-                <h4 className="font-bold text-blue-400 mb-4 flex items-center gap-2 underline uppercase tracking-widest text-sm">1. Kan Yolu</h4>
-                <p className="text-[10px] text-zinc-500 mb-4">Glikoz, Aminoasit, B-C Vit., Su, Mineraller.</p>
-                <div className="space-y-2 text-[10px] font-mono text-zinc-300">
-                  <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-blue-500"></div> İnce Bağırsak Kılcalları</div>
-                  <div className="flex items-center gap-2 pl-4"><ArrowRight size={10}/> Kapı Toplardamarı</div>
-                  <div className="flex items-center gap-2 pl-4"><ArrowRight size={10}/> KARACİĞER</div>
-                  <div className="flex items-center gap-2 pl-4"><ArrowRight size={10}/> Karaciğer Üstü Toplardamarı</div>
-                  <div className="flex items-center gap-2 pl-4"><ArrowRight size={10}/> Alt Ana Toplardamar</div>
-                  <div className="flex items-center gap-2 pl-4 font-bold text-white"><ArrowRight size={10}/> SAĞ KULAKÇIK</div>
+          <div className="animate-in fade-in slide-in-from-right-4 duration-500">
+            <h2 className="text-3xl font-black mb-6 text-cyan-500">8. Emilim Yolları</h2>
+            <div className="space-y-6">
+              <div className="bg-blue-900/10 p-6 rounded-3xl border border-blue-500/20">
+                <div className="flex items-center gap-3 mb-4">
+                  <Icons.Droplet />
+                  <h4 className="font-bold text-blue-400 text-lg uppercase underline">1. Kan Yolu</h4>
+                </div>
+                <p className="text-[10px] text-zinc-500 mb-4">Besinler: Glikoz, Aminoasit, B-C Vit., Su, Mineraller.</p>
+                <div className="text-[11px] font-mono space-y-1">
+                  <p>İnce Bağırsak → Kan Kılcalları</p>
+                  <p>→ <span className="text-white font-bold">Kapı Toplardamarı</span></p>
+                  <p>→ Karaciğer → Karaciğer Üstü Topl.</p>
+                  <p>→ Alt Ana Toplardamar</p>
+                  <p className="text-white font-bold pt-2">→ SAĞ KULAKÇIK</p>
                 </div>
               </div>
-              <div className="bg-yellow-900/10 border border-yellow-500/20 p-6 rounded-3xl">
-                <h4 className="font-bold text-yellow-400 mb-4 flex items-center gap-2 underline uppercase tracking-widest text-sm">2. Lenf Yolu</h4>
-                <p className="text-[10px] text-zinc-500 mb-4">Yağ Asidi, Gliserol, A-D-E-K Vitaminleri.</p>
-                <div className="space-y-2 text-[10px] font-mono text-zinc-300">
-                  <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-yellow-500"></div> Lenf Kılcalları (Şilomikron)</div>
-                  <div className="flex items-center gap-2 pl-4"><ArrowRight size={10}/> Peke Sarnıcı</div>
-                  <div className="flex items-center gap-2 pl-4"><ArrowRight size={10}/> Göğüs Kanalı</div>
-                  <div className="flex items-center gap-2 pl-4"><ArrowRight size={10}/> Sol Köprücük Altı Toplardamarı</div>
-                  <div className="flex items-center gap-2 pl-4"><ArrowRight size={10}/> Üst Ana Toplardamar</div>
-                  <div className="flex items-center gap-2 pl-4 font-bold text-white"><ArrowRight size={10}/> SAĞ KULAKÇIK</div>
+              <div className="bg-yellow-900/10 p-6 rounded-3xl border border-yellow-500/20">
+                <div className="flex items-center gap-3 mb-4">
+                  <Icons.Droplet />
+                  <h4 className="font-bold text-yellow-400 text-lg uppercase underline">2. Lenf Yolu</h4>
+                </div>
+                <p className="text-[10px] text-zinc-500 mb-4">Besinler: Yağ Asidi, Gliserol, A-D-E-K Vit.</p>
+                <div className="text-[11px] font-mono space-y-1">
+                  <p>İnce Bağırsak → Lenf Kılcalları (Şilomikron)</p>
+                  <p>→ <span className="text-white font-bold">Peke Sarnıcı</span> → Göğüs Kanalı</p>
+                  <p>→ Sol Köprücük Altı Toplardamarı</p>
+                  <p>→ Üst Ana Toplardamar</p>
+                  <p className="text-white font-bold pt-2">→ SAĞ KULAKÇIK</p>
                 </div>
               </div>
-            </div>
-            <div className="mt-8 p-6 bg-zinc-900 rounded-2xl border border-zinc-800 text-center">
-              <p className="text-zinc-500 italic text-sm">Notların Sonu. Başarılar Bedirhan!</p>
+              <div className="text-center p-4 border-t border-zinc-800 text-zinc-600 text-xs italic">
+                Bedirhan İmer Biyoloji Notları - Son Sayfa
+              </div>
             </div>
           </div>
         );
@@ -263,48 +288,42 @@ const App = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white selection:bg-blue-500 selection:text-white pb-32">
-      {/* Header */}
-      <header className="p-6 sticky top-0 bg-black/80 backdrop-blur-xl border-b border-zinc-900 z-50">
-        <div className="max-w-3xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-600 rounded-lg">
-              <Dna size={24} className="text-white" />
-            </div>
-            <div>
-              <h1 className="text-lg font-black tracking-tight leading-none uppercase">Biyoloji Notları</h1>
-              <p className="text-[10px] text-zinc-500 font-bold tracking-widest uppercase">Bedirhan İmer Arşivi</p>
-            </div>
-          </div>
-          <div className="bg-zinc-900 px-4 py-1 rounded-full text-xs font-mono font-bold text-blue-400 border border-zinc-800 shadow-xl">
-            {currentPage} / {totalPages}
-          </div>
+    <div className="min-h-screen bg-black text-white flex flex-col font-sans selection:bg-blue-600">
+      {/* Üst Bar */}
+      <header className="p-6 sticky top-0 bg-black/90 backdrop-blur-xl border-b border-zinc-900 z-50 flex justify-between items-center">
+        <div>
+          <h1 className="text-xl font-black flex items-center gap-2">
+            <span className="text-blue-500"><Icons.Activity /></span> BİYOLOJİ
+          </h1>
+          <p className="text-[10px] text-zinc-600 font-bold tracking-widest uppercase">Eksiksiz Notlar • Bedirhan</p>
+        </div>
+        <div className="bg-zinc-900 px-4 py-1 rounded-full text-xs font-mono font-bold text-blue-400 border border-zinc-800">
+          {currentPage} / {totalPages}
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-3xl mx-auto p-6 md:p-8 overflow-x-hidden">
-        <PageIndicator />
-        {renderPage()}
+      {/* İçerik */}
+      <main className="flex-grow p-4 md:p-10 max-w-2xl mx-auto w-full pb-32">
+        {renderContent()}
       </main>
 
-      {/* Footer Navigation */}
-      <footer className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black via-black/90 to-transparent z-50">
-        <div className="max-w-3xl mx-auto flex gap-4">
+      {/* Navigasyon Butonları */}
+      <footer className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black via-black to-transparent z-50">
+        <div className="max-w-2xl mx-auto flex gap-4">
           <button 
-            onClick={prevPage}
+            onClick={() => navigate(-1)}
             disabled={currentPage === 1}
-            className="flex-1 h-20 bg-zinc-900 border border-zinc-800 rounded-3xl flex items-center justify-center active:scale-95 transition-all disabled:opacity-20 hover:bg-zinc-800"
+            className="flex-1 h-20 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-3xl flex items-center justify-center transition-all active:scale-95 disabled:opacity-10"
           >
-            <ChevronLeft size={36} />
+            <Icons.ChevronLeft />
           </button>
           <button 
-            onClick={nextPage}
+            onClick={() => navigate(1)}
             disabled={currentPage === totalPages}
-            className="flex-[3] h-20 bg-blue-600 rounded-3xl flex items-center justify-center gap-4 text-xl font-black active:scale-95 transition-all disabled:opacity-20 hover:bg-blue-500 shadow-2xl shadow-blue-900/30"
+            className="flex-[3] h-20 bg-blue-600 hover:bg-blue-500 rounded-3xl flex items-center justify-center gap-4 text-xl font-black transition-all active:scale-95 disabled:opacity-10 shadow-2xl shadow-blue-900/40"
           >
-            {currentPage === totalPages ? 'BİTTİ' : 'SONRAKİ SAYFA'}
-            {currentPage !== totalPages && <ChevronRight size={32} />}
+            {currentPage === totalPages ? 'BİTTİ' : 'İLERİ'}
+            {currentPage !== totalPages && <Icons.ChevronRight />}
           </button>
         </div>
       </footer>
@@ -313,4 +332,3 @@ const App = () => {
 };
 
 export default App;
-
