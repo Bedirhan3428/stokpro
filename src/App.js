@@ -23,7 +23,7 @@ const Info = React.lazy(() => import("./components/info")); // Dosya adı küç�
 const ForgotPassword = React.lazy(() => import("./components/ForgotPassword"));
 const VerifyEmail = React.lazy(() => import("./components/VerifyEmail"));
 const ResetPassword = React.lazy(() => import("./components/ResetPassword"));
-const Contact = React.lazy(() => import("./components/Contact"));
+
 
 // --- YENİ EKLENEN BİYOLOJİ BİLEŞENİ ---
 const Biyoloji = React.lazy(() => import("./components/Biyoloji"));
@@ -64,7 +64,7 @@ function App() {
               <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/product-key" element={<ProductKey />} />
-              <Route path="/contact" element={<Contact />} />
+              
 
               {/* Yasal Sayfalar */}
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
