@@ -360,8 +360,9 @@ export default function Dashboard() {
   };
 
   return (
-<div class="kar-efekti">
+
     <div className="dash-sayfa">
+<div class="kar-efekti">
        {!subLoading && !subActive && (
         <div className="acc-kart acc-uyari-kutu">
           <div className="acc-uyari-baslik">Abonelik gerekli</div>
