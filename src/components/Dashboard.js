@@ -496,8 +496,9 @@ export default function Dashboard() {
       </div>
 
       <AdvancedReport />
-    </div>
 <div class="kar-efekti"></div>
+    </div>
+
   );
 }
 
