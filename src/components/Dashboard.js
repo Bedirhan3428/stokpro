@@ -360,6 +360,7 @@ export default function Dashboard() {
   };
 
   return (
+<div class="kar-efekti">
     <div className="dash-sayfa">
        {!subLoading && !subActive && (
         <div className="acc-kart acc-uyari-kutu">
@@ -495,6 +496,7 @@ export default function Dashboard() {
 
       <AdvancedReport />
     </div>
+</div>
   );
 }
 
