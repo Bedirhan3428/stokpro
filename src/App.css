@@ -5,19 +5,22 @@
   --bg-color-1: #ffffff;
   --bg-color-2: #f8fafc; /* Hareketin belli olması için çok açık ton */
   --bg-color-3: #ffffff;
-  
+
   --bg-surface: #ffffff;
   --nav-bg: rgba(255, 255, 255, 0.85); /* Navbar buzlu cam beyazı */
-  
+
   --text-primary: #1e293b; /* Koyu Antrasit */
   --text-secondary: #64748b;
   --border-color: #e2e8f0;
-  
+
   --brand-primary: #1f6feb;
   --brand-primary-light: #eff6ff;
-  
+
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
+
+  /* Kar Rengi (Aydınlık modda hafif gümüşi görünsün) */
+  --kar-rengi: #cbd5e1;
 }
 
 /* --- 2. ADIM: KARANLIK MOD (DARK) --- */
@@ -27,19 +30,22 @@
   --bg-color-1: #0f172a; /* Slate 900 */
   --bg-color-2: #1e293b; /* Slate 800 */
   --bg-color-3: #020617; /* Slate 950 */
-  
+
   --bg-surface: #1e293b;
   --nav-bg: rgba(15, 23, 42, 0.85); /* Navbar buzlu cam koyu */
-  
+
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
   --border-color: #334155;
-  
+
   --brand-primary: #3b82f6;
   --brand-primary-light: #172554;
-  
+
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+
+  /* Kar Rengi (Karanlık modda bembeyaz) */
+  --kar-rengi: #ffffff;
 }
 
 /* --- TEMEL AYARLAR --- */
@@ -58,7 +64,7 @@ html, body {
 body {
   /* --- HAREKETLİ ARKA PLAN --- */
   background-color: var(--bg-color-1);
-  
+
   /* Gradient renkleri yukarıdaki değişkenlerden gelir */
   background: linear-gradient(
     135deg, 
@@ -66,12 +72,12 @@ body {
     var(--bg-color-2) 50%, 
     var(--bg-color-1) 100%
   );
-  
+
   background-size: 400% 400%;
   animation: softFlow 15s ease infinite;
-  
+
   color: var(--text-primary);
-  
+
   /* Renk geçişlerini yumuşatır (Göz yormaz) */
   transition: color 0.3s ease, background-color 0.3s ease;
   overflow-x: hidden;
@@ -207,3 +213,59 @@ button { font-family: inherit; }
   transition: opacity 0.2s;
 }
 .btn-primary:hover { opacity: 0.9; }
+
+/* --- KAR YAĞIŞI EFEKTİ (EKLEME) --- */
+.kar-efekti {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  pointer-events: none; /* KRİTİK: Tıklamalar karın içinden geçer */
+  z-index: 99999; /* Navbar'ın da üstünde */
+  overflow: hidden;
+}
+
+/* 1. Katman: Küçük ve Yavaş Kar Taneleri */
+.kar-efekti::before {
+  content: "";
+  position: absolute;
+  top: -100%;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(3px 3px at 20% 30%, var(--kar-rengi) 50%, transparent),
+    radial-gradient(3px 3px at 40% 70%, var(--kar-rengi) 50%, transparent),
+    radial-gradient(3px 3px at 60% 20%, var(--kar-rengi) 50%, transparent),
+    radial-gradient(2px 2px at 80% 80%, var(--kar-rengi) 50%, transparent),
+    radial-gradient(2px 2px at 10% 90%, var(--kar-rengi) 50%, transparent);
+  background-size: 50% 50%;
+  opacity: 0.7;
+  animation: karYagisi 18s linear infinite;
+}
+
+/* 2. Katman: Daha Büyük ve Hızlı (Derinlik Hissi için) */
+.kar-efekti::after {
+  content: "";
+  position: absolute;
+  top: -100%;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(4px 4px at 10% 10%, var(--kar-rengi) 50%, transparent),
+    radial-gradient(4px 4px at 30% 50%, var(--kar-rengi) 50%, transparent),
+    radial-gradient(4px 4px at 70% 30%, var(--kar-rengi) 50%, transparent),
+    radial-gradient(5px 5px at 90% 90%, var(--kar-rengi) 50%, transparent);
+  background-size: 60% 60%;
+  opacity: 0.5;
+  animation: karYagisi 12s linear infinite;
+  animation-delay: -5s;
+}
+
+/* Yağış Animasyonu */
+@keyframes karYagisi {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(100vh); }
+}
