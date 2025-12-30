@@ -362,7 +362,7 @@ export default function Dashboard() {
   return (
 
     <div className="dash-sayfa">
-<div class="kar-efekti">
+
        {!subLoading && !subActive && (
         <div className="acc-kart acc-uyari-kutu">
           <div className="acc-uyari-baslik">Abonelik gerekli</div>
@@ -497,7 +497,7 @@ export default function Dashboard() {
 
       <AdvancedReport />
     </div>
-</div>
+<div class="kar-efekti"></div>
   );
 }
 
