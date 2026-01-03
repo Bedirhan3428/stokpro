@@ -19,20 +19,28 @@ export default function Home() {
   return (
     <div className="home-kapsul">
       <div className="home-kart">
+        
+        {/* YENİ: Ücretsiz Rozeti */}
+        <div className="free-badge">✨ Artık Tamamen Ücretsiz!</div>
+
         <h1 className="home-baslik">StokPro</h1>
         <p className="home-alt">
-          İşletmeniz için basit, hızlı ve güvenilir stok yönetimi. 
-          Satış, barkod, veresiye ve muhasebe işlemlerini tek bir yerden yönetin.
+          İşletmeniz için <strong>ücretsiz</strong>, basit ve güvenilir stok yönetimi. 
+          Satış, barkod, veresiye ve muhasebe işlemlerini tek bir yerden, 
+          hiçbir ücret ödemeden yönetin.
         </p>
 
         <div className="home-cta">
           <button 
             className="home-btn" 
             onClick={() => navigate(user ? "/dashboard" : "/register")}
-            aria-label="Hemen Başla"
+            aria-label="Ücretsiz Başla"
           >
-            {user ? "Panele Git" : "Hemen Başla"}
+            {user ? "Panele Git" : "Ücretsiz Başla"}
           </button>
+          
+          {/* YENİ: Kredi kartı gerekmez notu */}
+          {!user && <p className="no-card-note">Kredi kartı gerekmez.</p>}
         </div>
 
         {/* YASAL UYARI METNİ */}
@@ -47,4 +55,3 @@ export default function Home() {
     </div>
   );
 }
-
