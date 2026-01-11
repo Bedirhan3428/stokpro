@@ -24,8 +24,8 @@ export default function Home() {
         {!user && <div className="badge">🚀 Ücretsiz ve Kurulumsuz</div>}
         
         <h1 className="hero-title">
-          Karmaşık Defterlere Son. <br />
-          <span className="highlight">Stok ve Veresiyeni Dijitalde Yönet.</span>
+          Karmaşık Defterlere Son <br />
+          <span className="highlight">Stok ve Veresiyeni Dijitalde Yönet</span>
         </h1>
         
         <p className="hero-description">
