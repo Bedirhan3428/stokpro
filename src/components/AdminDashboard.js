@@ -11,7 +11,7 @@ import {
   orderBy, 
   limit 
 } from "firebase/firestore";
-import { MdSecurity, MdLockOutline, MdRefresh } from "react-icons/md";
+import { MdSecurity, MdLockOutline, MdPersonSearch, MdHistory } from "react-icons/md";
 
 // SENİN UID'N
 const MASTER_ADMIN_UID = "p4h4hZYTtaPBk6kp1UUfRA7z2px2";
@@ -21,20 +21,17 @@ const AdminDashboard = () => {
   const [authState, setAuthState] = useState('checking');
   const [pinInput, setPinInput] = useState('');
   const [storedPin, setStoredPin] = useState(null);
-  const [consoleLog, setConsoleLog] = useState([]); 
-
-  // Dashboard Verileri
-  const [allUsersData, setAllUsersData] = useState([]); // Kullanıcılar ve Son İşlemleri
-  const [filteredUsers, setFilteredUsers] = useState([]); 
-  const [globalRecentActivity, setGlobalRecentActivity] = useState([]); // Son 5 işlem (Manuel toplanmış)
+  
+  // Veri State'leri
+  const [usersList, setUsersList] = useState([]); // Sol panel için liste
+  const [filteredUsers, setFilteredUsers] = useState([]); // Arama sonucu
   const [searchTerm, setSearchTerm] = useState('');
-  const [loadingData, setLoadingData] = useState(false);
+  
+  const [selectedUser, setSelectedUser] = useState(null); // Seçili Kullanıcı
+  const [targetLogs, setTargetLogs] = useState([]); // Seçili kişinin son 10 işlemi
+  const [loadingTarget, setLoadingTarget] = useState(false);
 
-  const addLog = (msg) => {
-    setConsoleLog(prev => [`> ${new Date().toLocaleTimeString()} : ${msg}`, ...prev].slice(0, 5));
-  };
-
-  // 1. GİRİŞ KONTROLLERİ
+  // 1. GİRİŞ VE GÜVENLİK
   useEffect(() => {
     const checkAccess = async () => {
       const user = auth.currentUser;
@@ -51,216 +48,224 @@ const AdminDashboard = () => {
         } else {
           setAuthState('create_pin');
         }
-      } catch (err) {
-        setAuthState('unauthorized');
-      }
+      } catch { setAuthState('unauthorized'); }
     };
     checkAccess();
   }, []);
 
   const handleCreatePin = async () => {
     if (pinInput.length < 4) return alert("En az 4 hane.");
-    try {
-      const user = auth.currentUser;
-      await setDoc(doc(db, "artifacts", ARTIFACT_ID, "users", user.uid, "settings", "master_key"), { pin: pinInput });
-      setStoredPin(pinInput);
-      setPinInput('');
-      setAuthState('unlocked');
-    } catch (e) { alert(e.message); }
+    const user = auth.currentUser;
+    await setDoc(doc(db, "artifacts", ARTIFACT_ID, "users", user.uid, "settings", "master_key"), { pin: pinInput });
+    setStoredPin(pinInput);
+    setAuthState('unlocked');
   };
 
   const handleEnterPin = () => {
-    if (pinInput === storedPin) {
-      setPinInput('');
-      setAuthState('unlocked');
-    } else {
-      alert("HATALI ŞİFRE!");
-      setPinInput('');
-    }
+    if (pinInput === storedPin) setAuthState('unlocked');
+    else { alert("ERİŞİM REDDEDİLDİ"); setPinInput(''); }
   };
 
-  // 2. VERİ ÇEKME (STANDART YÖNTEM - INDEX GEREKTİRMEZ)
+  // 2. KULLANICI LİSTESİNİ ÇEK (Sadece Listeyi Alır)
   useEffect(() => {
     if (authState !== 'unlocked') return;
-    fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
+    const fetchUsers = async () => {
+      const usersRef = collection(db, "artifacts", ARTIFACT_ID, "users");
+      const snap = await getDocs(usersRef);
+      const list = snap.docs.map(d => ({
+        uid: d.id,
+        email: d.data().email || "E-posta Yok",
+        createdAt: d.data().createdAt
+      }));
+      setUsersList(list);
+      setFilteredUsers(list);
+    };
+    fetchUsers();
   }, [authState]);
 
-  const fetchData = async () => {
-    setLoadingData(true);
-    addLog("KULLANICILAR TARANIYOR...");
-
-    try {
-      // 1. Tüm Kullanıcıları Bul (artifacts/{id}/users)
-      const usersRef = collection(db, "artifacts", ARTIFACT_ID, "users");
-      const usersSnap = await getDocs(usersRef);
-      
-      let allActivities = [];
-      let usersList = [];
-
-      // 2. Her kullanıcı için tek tek son işlemine bak
-      const promises = usersSnap.docs.map(async (userDoc) => {
-        const uid = userDoc.id;
-        const userData = userDoc.data();
-        
-        // A) Son Eklenen Ürün (Limit 1)
-        const pQuery = query(collection(db, "artifacts", ARTIFACT_ID, "users", uid, "products"), orderBy('createdAt', 'desc'), limit(1));
-        const pSnap = await getDocs(pQuery);
-        const lastProduct = pSnap.docs[0];
-
-        // B) Son Satış (Limit 1)
-        const sQuery = query(collection(db, "artifacts", ARTIFACT_ID, "users", uid, "sales"), orderBy('createdAt', 'desc'), limit(1));
-        const sSnap = await getDocs(sQuery);
-        const lastSale = sSnap.docs[0];
-
-        // Verileri işle
-        let lastSeenTime = null;
-        
-        if (lastProduct) {
-           const t = lastProduct.data().createdAt;
-           allActivities.push({ type: 'ÜRÜN', desc: lastProduct.data().name, time: t, uid: uid });
-           if (!lastSeenTime || new Date(t) > new Date(lastSeenTime)) lastSeenTime = t;
-        }
-
-        if (lastSale) {
-           const t = lastSale.data().createdAt;
-           allActivities.push({ type: 'SATIŞ', desc: `${lastSale.data().totals?.total || 0}₺`, time: t, uid: uid });
-           if (!lastSeenTime || new Date(t) > new Date(lastSeenTime)) lastSeenTime = t;
-        }
-
-        // Kullanıcı Listesine Ekle
-        usersList.push({
-            uid: uid,
-            email: userData.email || "Bilinmiyor",
-            lastSeen: lastSeenTime
-        });
-      });
-
-      await Promise.all(promises);
-
-      // 3. Verileri Sırala ve State'e at
-      // Aktiviteleri tarihe göre sırala (En yeni en üstte)
-      allActivities.sort((a, b) => new Date(b.time) - new Date(a.time));
-      setGlobalRecentActivity(allActivities.slice(0, 5));
-
-      // Kullanıcıları da son işlem tarihine göre sırala
-      usersList.sort((a, b) => {
-          if (!a.lastSeen) return 1;
-          if (!b.lastSeen) return -1;
-          return new Date(b.lastSeen) - new Date(a.lastSeen);
-      });
-
-      setAllUsersData(usersList);
-      setFilteredUsers(usersList);
-      addLog("VERİLER GÜNCELLENDİ.");
-
-    } catch (err) {
-      addLog("HATA: " + err.message);
-      console.error(err);
-    } finally {
-      setLoadingData(false);
-    }
-  };
-
-  // 3. ARAMA
+  // 3. ARAMA FONKSİYONU
   const handleSearch = (e) => {
     const term = e.target.value.toLowerCase();
     setSearchTerm(term);
-    const filtered = allUsersData.filter(u => 
+    const filtered = usersList.filter(u => 
       u.uid.toLowerCase().includes(term) || 
-      (u.email && u.email.toLowerCase().includes(term))
+      u.email.toLowerCase().includes(term)
     );
     setFilteredUsers(filtered);
   };
 
+  // 4. HEDEF SEÇME VE LOGLARI ÇEKME (KRİTİK KISIM)
+  const selectTarget = async (user) => {
+    setSelectedUser(user);
+    setLoadingTarget(true);
+    setTargetLogs([]);
+
+    try {
+      // A) Son 10 Ürün (Ürün Ekleme İşlemi)
+      const pQuery = query(
+        collection(db, "artifacts", ARTIFACT_ID, "users", user.uid, "products"), 
+        orderBy('createdAt', 'desc'), 
+        limit(10)
+      );
+      
+      // B) Son 10 Satış (Satış İşlemi)
+      const sQuery = query(
+        collection(db, "artifacts", ARTIFACT_ID, "users", user.uid, "sales"), 
+        orderBy('createdAt', 'desc'), 
+        limit(10)
+      );
+
+      const [pSnap, sSnap] = await Promise.all([getDocs(pQuery), getDocs(sQuery)]);
+
+      let logs = [];
+
+      // Ürünleri listeye ekle
+      pSnap.forEach(doc => {
+        logs.push({
+          id: doc.id,
+          type: 'ÜRÜN_EKLEME',
+          desc: doc.data().name || 'İsimsiz Ürün',
+          time: doc.data().createdAt, // String ISO veya Timestamp olabilir
+          detail: `${doc.data().price}₺ | Stok: ${doc.data().stock}`
+        });
+      });
+
+      // Satışları listeye ekle
+      sSnap.forEach(doc => {
+        logs.push({
+          id: doc.id,
+          type: 'SATIŞ_İŞLEMİ',
+          desc: `Toplam: ${doc.data().totals?.total || 0}₺`,
+          time: doc.data().createdAt,
+          detail: doc.data().saleType === 'credit' ? 'Veresiye' : 'Nakit'
+        });
+      });
+
+      // Tarihe göre sırala (En yeniden en eskiye)
+      logs.sort((a, b) => new Date(b.time) - new Date(a.time));
+
+      // Sadece en son 10 tanesini al
+      setTargetLogs(logs.slice(0, 10));
+
+    } catch (err) {
+      console.error(err);
+      alert("Veri çekilemedi: " + err.message);
+    } finally {
+      setLoadingTarget(false);
+    }
+  };
+
   // --- RENDER ---
-  if (authState === 'checking') return <div className="hacker-wrapper"><div className="loading">SİSTEM KONTROLÜ...</div></div>;
+  if (authState === 'checking') return <div className="hacker-wrapper"><div className="loading">SİSTEM BAŞLATILIYOR...</div></div>;
+  
+  if (authState === 'unauthorized') return (
+    <div className="hacker-wrapper login-mode">
+      <MdLockOutline size={80} color="red" />
+      <h1 style={{color:'red'}}>YETKİSİZ ERİŞİM</h1>
+      <p>BU TERMİNAL KİLİTLİDİR.</p>
+    </div>
+  );
 
-  if (authState === 'unauthorized') {
-    return (
-      <div className="hacker-wrapper login-mode" style={{justifyContent:'center', textAlign:'center'}}>
-        <MdLockOutline size={80} color="red" />
-        <h1 style={{color:'red'}}>ERİŞİM YASAK</h1>
-        <p>BU PANEL SADECE BEDİRHAN İÇİNDİR.</p>
-      </div>
-    );
-  }
-
-  if (authState === 'create_pin' || authState === 'enter_pin') {
-    return (
-      <div className="hacker-wrapper login-mode">
-        <div className="security-panel">
-          <MdSecurity size={50} className="glitch" />
-          <h2>GÜVENLİK GİRİŞİ</h2>
-          <div className="input-group">
-            <label>{authState === 'create_pin' ? "YENİ ŞİFRE OLUŞTUR:" : "ŞİFREYİ GİRİN:"}</label>
-            <input type="password" value={pinInput} onChange={e => setPinInput(e.target.value)} className="search-input" autoFocus />
-          </div>
-          <button className="cyber-btn" onClick={authState === 'create_pin' ? handleCreatePin : handleEnterPin}>GİRİŞ</button>
+  if (authState === 'create_pin' || authState === 'enter_pin') return (
+    <div className="hacker-wrapper login-mode">
+      <div className="security-panel">
+        <MdSecurity size={50} className="glitch" />
+        <h2>GÜVENLİK PROTOKOLÜ</h2>
+        <div className="input-group">
+          <label>{authState === 'create_pin' ? "YENİ ŞİFRE:" : "ŞİFREYİ GİRİN:"}</label>
+          <input type="password" value={pinInput} onChange={e => setPinInput(e.target.value)} className="search-input" autoFocus />
         </div>
+        <button className="cyber-btn" onClick={authState === 'create_pin' ? handleCreatePin : handleEnterPin}>GİRİŞ</button>
       </div>
-    );
-  }
+    </div>
+  );
 
   return (
     <div className="hacker-wrapper dashboard-mode">
       <header className="cyber-header">
-        <div className="brand">BEDIRHAN ADMIN PANEL</div>
-        <div className="status" style={{display:'flex', alignItems:'center', gap:'10px'}}>
-            <span>ONLINE</span>
-            <MdRefresh style={{cursor:'pointer'}} onClick={fetchData} title="Yenile"/>
-        </div>
+        <div className="brand">BEDIRHAN_MAIN_FRAME // V4</div>
+        <div className="status"><span style={{color:'#0f0'}}>SECURE_CONN</span></div>
       </header>
 
       <div className="control-bar">
-        <span className="prompt">{'>'} KULLANICI ARA:</span>
-        <input type="text" className="search-input" placeholder="UID veya E-posta..." value={searchTerm} onChange={handleSearch}/>
+        <MdPersonSearch size={24} style={{marginRight:10}} />
+        <input 
+          type="text" 
+          className="search-input" 
+          placeholder="UID VEYA E-POSTA İLE HEDEF ARA..." 
+          value={searchTerm}
+          onChange={handleSearch}
+        />
       </div>
 
       <div className="grid-container">
-        {/* SOL: SON 5 HAREKET */}
+        
+        {/* SOL PANEL: KULLANICI LİSTESİ */}
         <div className="cyber-card">
-          <h3 className="card-title">{'>'} AĞDAKİ SON 5 İŞLEM</h3>
-          {loadingData ? <div className="loading">YÜKLENİYOR...</div> : (
+          <h3 className="card-title">{'>'} TESPİT EDİLEN KULLANICILAR ({filteredUsers.length})</h3>
+          <ul className="data-list">
+            {filteredUsers.map((u) => (
+              <li 
+                key={u.uid} 
+                className="data-item" 
+                onClick={() => selectTarget(u)}
+                style={{background: selectedUser?.uid === u.uid ? '#003300' : 'transparent'}}
+              >
+                <span className="id-tag">USR</span>
+                <div style={{display:'flex', flexDirection:'column', width:'100%'}}>
+                  <span className="value">{u.email}</span>
+                  <span className="info" style={{fontSize:'0.7rem'}}>UID: {u.uid.slice(0,12)}...</span>
+                </div>
+                <button className="cyber-btn" style={{width:'auto', padding:'5px 10px', fontSize:'0.8rem', marginTop:0}}>SEÇ</button>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* SAĞ PANEL: SEÇİLİ KİŞİNİN LOGLARI */}
+        <div className="cyber-card">
+          <h3 className="card-title">
+            {'>'} {selectedUser ? `HEDEF ANALİZİ: ${selectedUser.email}` : 'HEDEF SEÇİLMESİ BEKLENİYOR...'}
+          </h3>
+          
+          {!selectedUser ? (
+            <div style={{display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:'100%', opacity:0.5}}>
+               <MdPersonSearch size={64} />
+               <p>LÜTFEN LİSTEDEN BİR KULLANICI SEÇİN</p>
+            </div>
+          ) : loadingTarget ? (
+            <div className="loading">VERİLER DEŞİFRE EDİLİYOR...</div>
+          ) : (
             <ul className="data-list">
-              {globalRecentActivity.map((log, i) => (
-                <li key={i} className="data-item">
-                  <span className="id-tag">[{log.type}]</span>
-                  <div style={{display:'flex', flexDirection:'column', width:'100%'}}>
-                    <span className="value">{log.desc}</span>
-                    <span className="info">Yapan: {log.uid.slice(0,5)}...</span>
-                  </div>
-                  <span className="date">{new Date(log.time).toLocaleTimeString()}</span>
-                </li>
-              ))}
-              {globalRecentActivity.length === 0 && <div>Haraket yok.</div>}
+              {targetLogs.length === 0 ? (
+                 <div style={{textAlign:'center', marginTop:20}}>BU KULLANICIYA AİT KAYIT BULUNAMADI.</div>
+              ) : (
+                targetLogs.map((log, i) => (
+                  <li key={i} className="data-item">
+                    <span className="id-tag" style={{width:'80px', color: log.type === 'SATIŞ_İŞLEMİ' ? '#ffcc00' : '#00ccff'}}>
+                      [{log.type === 'SATIŞ_İŞLEMİ' ? 'SATIŞ' : 'EKLE'}]
+                    </span>
+                    <div style={{display:'flex', flexDirection:'column', width:'100%'}}>
+                      <span className="value">{log.desc}</span>
+                      <span className="info">{log.detail}</span>
+                    </div>
+                    <span className="date">
+                      {new Date(log.time).toLocaleDateString()} <br/>
+                      {new Date(log.time).toLocaleTimeString()}
+                    </span>
+                  </li>
+                ))
+              )}
             </ul>
           )}
         </div>
 
-        {/* SAĞ: KULLANICI LİSTESİ */}
-        <div className="cyber-card">
-          <h3 className="card-title">{'>'} KULLANICILAR ({filteredUsers.length})</h3>
-          {loadingData ? <div className="loading">TARANIYOR...</div> : (
-            <ul className="data-list">
-              {filteredUsers.map((user) => (
-                <li key={user.uid} className="data-item">
-                  <span className="id-tag">USR</span>
-                  <div style={{display:'flex', flexDirection:'column', width:'100%'}}>
-                    <span className="value" title={user.uid}>{user.email !== "Bilinmiyor" ? user.email : user.uid.slice(0,12)+"..."}</span>
-                    <span className="info">
-                      Son Görülme: {user.lastSeen ? <span style={{color:'#0f0'}}>{new Date(user.lastSeen).toLocaleString()}</span> : <span style={{color:'gray'}}>Yok</span>}
-                    </span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
       </div>
       
       <div className="terminal-footer">
-        {consoleLog.map((log, i) => <span key={i} className="log-line">{log}</span>)}
+        <span className="log-line">{'>'} SYSTEM_READY.</span>
+        {selectedUser && <span className="log-line">{'>'} TARGET_LOCKED: {selectedUser.uid}</span>}
       </div>
     </div>
   );
