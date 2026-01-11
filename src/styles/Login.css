@@ -1,35 +1,48 @@
+/* --- LOGIN STİLLERİ (DÜZELTİLMİŞ) --- */
 :root {
-  --lg-primary: #3b82f6; /* Modern, canlı bir mavi */
+  --lg-primary: #3b82f6;
   --lg-primary-hover: #2563eb;
+  
+  /* Varsayılan (Aydınlık) */
   --lg-bg: #f8fafc;
   --lg-surface: #ffffff;
   --lg-text-main: #1e293b;
   --lg-text-sub: #64748b;
   --lg-border: #e2e8f0;
   --lg-error: #ef4444;
-  --lg-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  --lg-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+/* KARANLIK MOD */
+body.dark-mode,
+[data-theme="dark"] {
+  --lg-bg: #0f172a;
+  --lg-surface: #1e293b;
+  --lg-text-main: #f1f5f9;
+  --lg-text-sub: #94a3b8;
+  --lg-border: #334155;
+  --lg-shadow: 0 20px 30px rgba(0,0,0,0.5);
 }
 
 body {
   background-color: var(--lg-bg);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  transition: background-color 0.3s ease;
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
-/* Ana Kapsayıcı */
 .lg-kapsul {
   max-width: 420px;
   width: 90%;
   margin: 6vh auto;
-  background: var(--lg-surface);
+  background-color: var(--lg-surface);
   border-radius: 24px;
   padding: 40px;
   box-shadow: var(--lg-shadow);
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--lg-border);
   animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 @keyframes slideUp {
@@ -59,7 +72,7 @@ body {
   gap: 20px;
 }
 
-/* Floating Label Yapısı */
+/* Floating Label */
 .lg-input-grup {
   position: relative;
 }
@@ -77,29 +90,27 @@ body {
   font-weight: 500;
 }
 
-/* Input Focus Efekti */
 .lg-input:focus {
   border-color: var(--lg-primary);
-  background: #fff;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+  /* Gölge kaldırıldı */
+  box-shadow: none;
 }
 
-/* Etiket (Label) Stili */
 .lg-etiket {
   position: absolute;
   left: 14px;
   top: 50%;
   transform: translateY(-50%);
-  background-color: var(--lg-surface);
+  background-color: var(--lg-surface); /* Kart rengi ile aynı */
   padding: 0 6px;
   color: var(--lg-text-sub);
   font-size: 15px;
   transition: all 0.2s ease;
-  pointer-events: none; /* Tıklamayı inputa geçirir */
+  pointer-events: none;
   font-weight: 500;
+  border-radius: 4px;
 }
 
-/* Floating Animasyonu: Focus olduğunda veya içi dolu olduğunda (placeholder-shown değilse) */
 .lg-input:focus ~ .lg-etiket,
 .lg-input:not(:placeholder-shown) ~ .lg-etiket {
   top: 0;
@@ -109,13 +120,12 @@ body {
 }
 
 .lg-input:not(:focus):not(:placeholder-shown) ~ .lg-etiket {
-  color: var(--lg-text-sub); /* Focus değilse ama doluysa gri kalsın */
+  color: var(--lg-text-sub);
 }
 
-/* Hata Mesajı */
 .lg-hata {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid var(--lg-error);
   color: var(--lg-error);
   padding: 12px;
   border-radius: 12px;
@@ -131,31 +141,26 @@ body {
   75% { transform: translateX(4px); }
 }
 
-/* Linkler */
 .lg-link {
   color: var(--lg-primary);
   font-weight: 600;
   text-decoration: none;
   font-size: 14px;
-  align-self: flex-end; /* Sağa yasla */
+  align-self: flex-end;
   transition: color 0.2s;
 }
-
 .lg-link:hover {
   color: var(--lg-primary-hover);
   text-decoration: underline;
 }
 
 .lg-link.ikincil {
-  align-self: center; /* Ortala */
+  align-self: center;
   margin-top: 16px;
   color: var(--lg-text-sub);
 }
-.lg-link.ikincil:hover {
-  color: var(--lg-text-main);
-}
+.lg-link.ikincil:hover { color: var(--lg-text-main); }
 
-/* Butonlar */
 .lg-aksiyon {
   display: flex;
   flex-direction: column;
@@ -172,15 +177,10 @@ body {
   font-size: 15px;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 8px;
+  display: flex; justify-content: center; align-items: center; gap: 8px;
 }
 
-.lg-btn:active {
-  transform: scale(0.98);
-}
+.lg-btn:active { transform: scale(0.98); }
 
 .lg-btn.mavi {
   background: var(--lg-primary);
@@ -195,58 +195,12 @@ body {
 }
 
 .lg-btn.google {
-  background: #fff;
+  background: var(--lg-surface);
   color: var(--lg-text-main);
   border: 2px solid var(--lg-border);
 }
 
 .lg-btn.google:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-}
-
-/* Koyu tema override */
-:root[data-theme="dark"] .lg-kapsul {
-  background: var(--card);
-  border: 1px solid var(--border);
-  color: var(--text);
-  box-shadow: 0 20px 30px rgba(0,0,0,0.55);
-}
-
-:root[data-theme="dark"] .lg-baslik { color: var(--text); }
-:root[data-theme="dark"] .lg-alt { color: var(--subtext); }
-
-:root[data-theme="dark"] .lg-input {
-  background: var(--card);
-  color: var(--text);
-  border: 2px solid var(--border);
-}
-:root[data-theme="dark"] .lg-input::placeholder { color: var(--subtext); }
-:root[data-theme="dark"] .lg-input:focus {
-  background: var(--card);
-  color: var(--text);
-  border-color: var(--lg-primary);
-  box-shadow: 0 0 0 4px rgba(59,130,246,0.18);
-}
-
-/* Floating label renkleri */
-:root[data-theme="dark"] .lg-etiket { color: var(--subtext); }
-:root[data-theme="dark"] .lg-input:focus ~ .lg-etiket,
-:root[data-theme="dark"] .lg-input:not(:placeholder-shown) ~ .lg-etiket {
-  color: var(--lg-primary);
-}
-
-/* Linkler */
-:root[data-theme="dark"] .lg-link { color: var(--lg-primary); }
-:root[data-theme="dark"] .lg-link.ikincil { color: var(--subtext); }
-
-/* Google ve çizgi butonları */
-:root[data-theme="dark"] .lg-btn.google {
-  background: var(--card);
-  color: var(--text);
-  border: 2px solid var(--border);
-}
-:root[data-theme="dark"] .lg-btn.google:hover {
-  background: #1f2937;
-  border-color: var(--lg-primary);
+  background-color: var(--lg-bg);
+  border-color: var(--lg-text-sub);
 }
