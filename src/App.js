@@ -6,7 +6,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 
 import RequireAuth from "./components/RequireAuth";
 
-// Mevcut Bileşenler
+// Mevcut Bileşenler (Lazy Load)
 const Home = React.lazy(() => import("./components/Home"));
 const ProductKey = React.lazy(() => import("./components/ProductKey"));
 const Dashboard = React.lazy(() => import("./components/Dashboard"));
@@ -19,15 +19,17 @@ const Navbar = React.lazy(() => import("./components/Navbar"));
 const Login = React.lazy(() => import("./components/Login"));
 const Register = React.lazy(() => import("./components/Register"));
 const Settings = React.lazy(() => import("./components/Settings"));
-const Info = React.lazy(() => import("./components/info"));
+const Info = React.lazy(() => import("./components/info")); // Import edilmişti, rotaya eklendi
 const ForgotPassword = React.lazy(() => import("./components/ForgotPassword"));
 const VerifyEmail = React.lazy(() => import("./components/VerifyEmail"));
 const ResetPassword = React.lazy(() => import("./components/ResetPassword"));
 
-// --- YENİ EKLENEN BİYOLOJİ BİLEŞENİ ---
+// --- YENİ EKLENEN BİLEŞENLER ---
 const Biyoloji = React.lazy(() => import("./components/Biyoloji"));
+// Hacker Temalı Admin Paneli
+const AdminDashboard = React.lazy(() => import("./components/AdminDashboard"));
 
-// Yasal Sayfalar (Eğer oluşturduysan kalsın, yoksa bunları da silebilirsin)
+// Yasal Sayfalar
 const PrivacyPolicy = React.lazy(() => import("./PrivacyPolicy"));
 const TermsOfService = React.lazy(() => import("./TermsOfService"));
 
@@ -63,21 +65,31 @@ function App() {
               <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/product-key" element={<ProductKey />} />
+              
+              {/* Info Sayfası (Import edilmişti ama rotası yoktu) */}
+              <Route path="/info" element={<Info />} />
 
               {/* Yasal Sayfalar */}
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/terms-of-service" element={<TermsOfService />} />
 
-              {/* --- YENİ ROTA: BİYOLOJİ --- */}
+              {/* Özel Sayfalar */}
               <Route path="/biyoloji" element={<Biyoloji />} />
 
-              {/* Korumalı Sayfalar (Giriş Gerekli) */}
+              {/* --- Korumalı Sayfalar (Giriş Gerekli) --- */}
               <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
+              
+              {/* Güvenli Ürünler Sayfası (Kendi iç güvenlik kontrolü de var) */}
               <Route path="/products" element={<RequireAuth><Products /></RequireAuth>} />
+              
               <Route path="/sales" element={<RequireAuth><Sales /></RequireAuth>} />
               <Route path="/customers" element={<RequireAuth><Customers /></RequireAuth>} />
               <Route path="/accounting" element={<RequireAuth><Accounting /></RequireAuth>} />
               <Route path="/settings" element={<RequireAuth><Settings /></RequireAuth>} />
+
+              {/* --- YENİ ADMİN PANELİ ROTASI --- */}
+              {/* RequireAuth ile sarmaladık ki sadece giriş yapmış kullanıcılar hacker ekranını görebilsin */}
+              <Route path="/admin" element={<RequireAuth><AdminDashboard /></RequireAuth>} />
 
               {/* 404 */}
               <Route path="*" element={<NotFound />} />
@@ -90,3 +102,4 @@ function App() {
 }
 
 export default App;
+
