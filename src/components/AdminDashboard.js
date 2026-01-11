@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import "../styles/AdminDashboard.css"; 
-import { auth, db } from './firebase'; 
+import { auth, db } from '../firebase'; 
 import { 
   doc, 
   getDoc, 
