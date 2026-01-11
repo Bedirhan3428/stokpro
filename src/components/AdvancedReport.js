@@ -1,5 +1,16 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Line } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+} from 'chart.js';
 import { 
   FiAlertTriangle, FiTrendingUp, FiPackage, FiActivity, FiCheckCircle, FiInfo 
 } from "react-icons/fi";
@@ -7,8 +18,19 @@ import {
   listSales,
   listProductsForCurrentUser
 } from "../utils/firebaseHelpers";
-import "../utils/chartSetup";
 import "../styles/AdvancedReport.css";
+
+// --- KRİTİK DÜZELTME: Çizgi Grafik Modüllerini Kaydet ---
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
 
 // --- YARDIMCI FONKSİYONLAR ---
 function parseTimestamp(v) {
@@ -30,15 +52,22 @@ export default function AdvancedReport() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let mounted = true;
     async function init() {
       try {
         const [s, p] = await Promise.all([listSales(), listProductsForCurrentUser()]);
-        setSalesRaw(Array.isArray(s) ? s : []);
-        setProducts(Array.isArray(p) ? p : []);
-      } catch (err) { console.error(err); } 
-      finally { setLoading(false); }
+        if(mounted) {
+          setSalesRaw(Array.isArray(s) ? s : []);
+          setProducts(Array.isArray(p) ? p : []);
+        }
+      } catch (err) { 
+        console.error("Rapor hatası:", err); 
+      } finally { 
+        if(mounted) setLoading(false); 
+      }
     }
     init();
+    return () => { mounted = false; };
   }, []);
 
   // --- GELİŞMİŞ ALGORİTMA MOTORU ---
@@ -48,12 +77,12 @@ export default function AdvancedReport() {
     const cutoffDate = new Date();
     cutoffDate.setDate(today.getDate() - lookbackDays);
 
-    // 1. Veri Hazırlığı & Ürün Bazlı Toplamlar
+    // 1. Veri Hazırlığı
     const productMetrics = {};
     let totalRevenue = 0;
     
-    // Ürünleri haritaya dök
-    products.forEach(p => {
+    // Ürünleri başlangıç verisiyle doldur
+    (products || []).forEach(p => {
       productMetrics[p.id] = {
         ...p,
         stock: Number(p.stock || 0),
@@ -67,7 +96,7 @@ export default function AdvancedReport() {
     const dailyRevenue = {};
     
     // Satışları İşle
-    salesRaw.forEach(s => {
+    (salesRaw || []).forEach(s => {
       const d = parseTimestamp(s.createdAt || s.date);
       if (!d || d < cutoffDate) return;
 
@@ -89,19 +118,18 @@ export default function AdvancedReport() {
       });
     });
 
-    // 2. Metrik Hesaplama (Hız, ABC Sınıfı, Stok Gün Sayısı)
+    // 2. Metrik Hesaplama (ABC Analizi & Hız)
     const analyzedProducts = Object.values(productMetrics).map(p => {
-      // Satış Hızı (Günde ortalama kaç satıyor?)
+      // Satış Hızı (Günde ortalama kaç adet)
       const velocity = p.soldQty / lookbackDays;
       
-      // Stok Ömrü (Mevcut stok bu hızla kaç gün dayanır?)
-      // Eğer hız 0 ise ve stok varsa ömür sonsuz (999), stok yoksa 0
+      // Stok Ömrü (Mevcut stok kaç gün yeter?)
       const runwayDays = velocity > 0 ? (p.stock / velocity) : (p.stock > 0 ? 999 : 0);
 
       return { ...p, velocity, runwayDays };
     });
 
-    // ABC Analizi İçin Sıralama (Ciroya göre)
+    // Ciroya göre sırala
     analyzedProducts.sort((a, b) => b.revenue - a.revenue);
     
     let cumulativeRevenue = 0;
@@ -109,9 +137,9 @@ export default function AdvancedReport() {
       cumulativeRevenue += p.revenue;
       const percentage = totalRevenue > 0 ? (cumulativeRevenue / totalRevenue) : 0;
       
-      // A Sınıfı: Cironun %80'ini oluşturanlar (En değerli)
-      // B Sınıfı: Sonraki %15
-      // C Sınıfı: Son %5 (En az değerli)
+      // A Sınıfı: Cironun ilk %80'i (En değerli)
+      // B Sınıfı: %80-%95 arası
+      // C Sınıfı: Son %5
       let grade = 'C';
       if (percentage <= 0.80) grade = 'A';
       else if (percentage <= 0.95) grade = 'B';
@@ -119,26 +147,26 @@ export default function AdvancedReport() {
       return { ...p, grade };
     });
 
-    // 3. Segmentasyon (Kategorilere Ayırma)
+    // 3. Segmentasyon
 
-    // Acil Stok: Hızlı satıyor (A veya B sınıfı) ve 7 günden az stoğu kaldı
+    // Acil Stok: Hızlı satıyor (A veya B) ve stoğu 7 günden az
     const urgentRestock = scoredProducts.filter(p => 
       p.stock > 0 && p.runwayDays < 7 && (p.grade === 'A' || p.grade === 'B')
     );
 
-    // Ölü Stok: 30 gündür hiç satmamış ama stoğu var ve yeni ürün değil (>15 günlük)
+    // Ölü Stok: 15 gündür var, stoğu var ama 30 gündür hiç satmamış
     const deadStock = scoredProducts.filter(p => 
       p.stock > 0 && p.soldQty === 0 && p.daysSinceCreation > 15
     ).sort((a, b) => b.stock - a.stock);
 
-    // Yıldız Ürünler: A sınıfı ürünler (Cironun bel kemiği)
+    // Yıldız Ürünler (En çok ciro yapan ilk 5)
     const starProducts = scoredProducts.filter(p => p.grade === 'A').slice(0, 5);
 
-    // Grafik Verisi Hazırlama
+    // Grafik Verisi
     const sortedDates = Object.keys(dailyRevenue).sort();
-    const chartData = sortedDates.map(d => dailyRevenue[d]);
+    const dataSeries = sortedDates.map(d => dailyRevenue[d]);
 
-    // Tahmin (Basit lineer projeksiyon)
+    // Tahmini Ay Sonu
     const avgDailyRev = totalRevenue / lookbackDays;
     const projectedMonth = avgDailyRev * 30;
 
@@ -153,16 +181,16 @@ export default function AdvancedReport() {
          const dx = new Date(d);
          return `${dx.getDate()}/${dx.getMonth()+1}`;
       }),
-      chartData
+      chartDataValues: dataSeries
     };
   }, [salesRaw, products]);
 
-  // Grafik Ayarları
-  const chartData = {
+  // Grafik Konfigürasyonu
+  const lineChartConfig = {
     labels: report.chartLabels,
     datasets: [{
       label: 'Günlük Ciro',
-      data: report.chartData,
+      data: report.chartDataValues,
       borderColor: '#2563eb',
       backgroundColor: (context) => {
         const ctx = context.chart.ctx;
@@ -178,7 +206,7 @@ export default function AdvancedReport() {
     }]
   };
 
-  const chartOptions = {
+  const lineChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
@@ -195,10 +223,10 @@ export default function AdvancedReport() {
       
       <div className="adv-intro">
         <h3>İş Zekası Raporu</h3>
-        <p>Stok devir hızı ve ABC analizine dayalı içgörüler.</p>
+        <p>Gelişmiş ABC analizi ve stok öngörüleri.</p>
       </div>
 
-      {/* ÖZET KARTLAR */}
+      {/* KPI KARTLARI */}
       <div className="adv-summary-grid">
         <div className="adv-stat-card">
           <div className="stat-icon blue"><FiTrendingUp /></div>
@@ -223,20 +251,20 @@ export default function AdvancedReport() {
         </div>
       </div>
 
-      {/* GRAFİK ALANI */}
+      {/* GRAFİK */}
       <div className="adv-chart-box">
         <div className="box-header">
           <h4>Satış Trendi</h4>
         </div>
         <div className="chart-container">
-          <Line data={chartData} options={chartOptions} />
+          <Line data={lineChartConfig} options={lineChartOptions} />
         </div>
       </div>
 
-      {/* ANALİZ GRUPLARI */}
+      {/* İÇGÖRÜLER */}
       <div className="adv-insights-grid">
         
-        {/* KRİTİK STOKLAR */}
+        {/* ACİL STOK */}
         <div className="insight-card">
           <div className="insight-header">
             <div className="header-left">
@@ -245,7 +273,7 @@ export default function AdvancedReport() {
             </div>
             <span className="header-badge">{report.urgentRestock.length} Ürün</span>
           </div>
-          <p className="insight-desc">En çok satan (A/B Sınıfı) ve stoğu 7 günden az kalacak ürünler.</p>
+          <p className="insight-desc">Çok satan ve stoğu 7 günden az kalacak kritik ürünler.</p>
           
           <div className="insight-list">
             {report.urgentRestock.length === 0 && <div className="empty-msg"><FiCheckCircle /> Stoklar güvende.</div>}
@@ -263,7 +291,7 @@ export default function AdvancedReport() {
           </div>
         </div>
 
-        {/* YILDIZ ÜRÜNLER (A CLASS) */}
+        {/* YILDIZLAR */}
         <div className="insight-card">
           <div className="insight-header">
             <div className="header-left">
@@ -271,7 +299,7 @@ export default function AdvancedReport() {
               <h4>Ciro Liderleri (A Sınıfı)</h4>
             </div>
           </div>
-          <p className="insight-desc">İşletme cironuzun %80'ini oluşturan en değerli ürünler.</p>
+          <p className="insight-desc">Cironun %80'ini sırtlayan en değerli ürünleriniz.</p>
           
           <div className="insight-list">
             {report.starProducts.slice(0, 5).map((p, idx) => (
@@ -289,7 +317,7 @@ export default function AdvancedReport() {
           </div>
         </div>
 
-        {/* ÖLÜ STOKLAR */}
+        {/* ÖLÜ STOK */}
         <div className="insight-card full-width">
           <div className="insight-header">
             <div className="header-left">
@@ -297,7 +325,7 @@ export default function AdvancedReport() {
               <h4>Hareketsiz Stoklar (Ölü Stok)</h4>
             </div>
           </div>
-          <p className="insight-desc">En az 15 gündür ekli olan ama son 30 gündür hiç satılmayan ürünler. Sermayenizi bağlıyor olabilirler.</p>
+          <p className="insight-desc">En az 15 gündür sistemde olan ama son 30 gündür hiç satılmayan ürünler.</p>
           
           <div className="insight-grid-list">
             {report.deadStock.length === 0 && <div className="empty-msg">Hareketsiz ürün yok.</div>}
@@ -314,4 +342,5 @@ export default function AdvancedReport() {
     </div>
   );
 }
+
 
