@@ -2,24 +2,22 @@
 /* DEĞİŞKENLER & TEMEL AYARLAR                                                */
 /* -------------------------------------------------------------------------- */
 :root {
-  --primary: #2563eb;       /* Ana Mavi */
-  --primary-dark: #1d4ed8;  /* Koyu Mavi */
-  --text-main: #0f172a;     /* Koyu Slate */
-  --text-muted: #64748b;    /* Gri Metin */
-  --bg-color: #f8fafc;      /* Sayfa Arkaplanı */
-  --card-bg: #ffffff;       /* Kart Arkaplanı */
-  --border-color: #e2e8f0;  /* İnce Çizgiler */
+  --primary: #2563eb;       
+  --primary-hover: #1d4ed8; 
+  --text-main: #0f172a;     
+  --text-muted: #64748b;    
+  --bg-color: #f8fafc;      
+  --card-bg: #ffffff;       
+  --border-color: #e2e8f0;  
   
-  /* Feature Renkleri */
-  --icon-bg-blue: #dbeafe;
-  --icon-text-blue: #2563eb;
-  --icon-bg-green: #dcfce7;
-  --icon-text-green: #16a34a;
-  --icon-bg-purple: #f3e8ff;
-  --icon-text-purple: #9333ea;
+  /* İkon Arka Planları */
+  --bg-blue: #dbeafe; --text-blue: #2563eb;
+  --bg-red: #fee2e2; --text-red: #ef4444;
+  --bg-orange: #ffedd5; --text-orange: #f97316;
+  --bg-purple: #f3e8ff; --text-purple: #9333ea;
 }
 
-/* Dark Mode Desteği */
+/* Dark Mode */
 body.dark-mode, [data-theme="dark"] {
   --text-main: #f1f5f9;
   --text-muted: #94a3b8;
@@ -27,46 +25,41 @@ body.dark-mode, [data-theme="dark"] {
   --card-bg: #1e293b;
   --border-color: #334155;
   
-  --icon-bg-blue: rgba(37, 99, 235, 0.2);
-  --icon-text-blue: #60a5fa;
-  --icon-bg-green: rgba(22, 163, 74, 0.2);
-  --icon-text-green: #4ade80;
-  --icon-bg-purple: rgba(147, 51, 234, 0.2);
-  --icon-text-purple: #c084fc;
+  --bg-blue: rgba(37, 99, 235, 0.2); --text-blue: #60a5fa;
+  --bg-red: rgba(239, 68, 68, 0.2); --text-red: #f87171;
+  --bg-orange: rgba(249, 115, 22, 0.2); --text-orange: #fbbf24;
+  --bg-purple: rgba(147, 51, 234, 0.2); --text-purple: #c084fc;
 }
 
-/* -------------------------------------------------------------------------- */
-/* SAYFA YAPISI                                                               */
-/* -------------------------------------------------------------------------- */
 .home-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 80px 20px 40px;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  padding: 60px 20px 40px;
+  font-family: 'Inter', system-ui, sans-serif;
   color: var(--text-main);
   animation: fadeIn 0.8s ease-out;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
+  from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 /* -------------------------------------------------------------------------- */
-/* HERO BÖLÜMÜ (Başlık Alanı)                                                 */
+/* HERO BÖLÜMÜ                                                                */
 /* -------------------------------------------------------------------------- */
 .hero-section {
   text-align: center;
   max-width: 800px;
-  margin: 0 auto 80px; /* Aşağıdaki özelliklerden uzaklaştır */
+  margin: 0 auto 100px;
 }
 
 .badge {
   display: inline-block;
-  background-color: var(--icon-bg-blue);
-  color: var(--icon-text-blue);
+  background-color: var(--bg-blue);
+  color: var(--text-blue);
   padding: 6px 16px;
-  border-radius: 9999px;
+  border-radius: 20px;
   font-size: 0.85rem;
   font-weight: 600;
   margin-bottom: 24px;
@@ -76,12 +69,12 @@ body.dark-mode, [data-theme="dark"] {
   font-size: 3.5rem;
   font-weight: 800;
   line-height: 1.1;
-  letter-spacing: -0.02em;
   margin-bottom: 24px;
+  letter-spacing: -1px;
 }
 
 .hero-title .highlight {
-  background: linear-gradient(135deg, var(--primary) 0%, #60a5fa 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, #9333ea 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -96,7 +89,6 @@ body.dark-mode, [data-theme="dark"] {
   margin-right: auto;
 }
 
-/* CTA Buton Grubu */
 .cta-group {
   display: flex;
   flex-direction: column;
@@ -110,20 +102,20 @@ body.dark-mode, [data-theme="dark"] {
   gap: 10px;
   background-color: var(--primary);
   color: white;
-  padding: 18px 48px;
+  padding: 16px 48px;
   border-radius: 12px;
   font-size: 1.1rem;
   font-weight: 600;
   border: none;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2), 0 2px 4px -1px rgba(37, 99, 235, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
 }
 
 .primary-btn:hover {
-  background-color: var(--primary-dark);
+  background-color: var(--primary-hover);
   transform: translateY(-2px);
-  box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 8px 16px rgba(37, 99, 235, 0.4);
 }
 
 .sub-note {
@@ -131,17 +123,28 @@ body.dark-mode, [data-theme="dark"] {
   color: var(--text-muted);
   display: flex;
   align-items: center;
-  opacity: 0.8;
+  opacity: 0.9;
 }
 
 /* -------------------------------------------------------------------------- */
-/* ÖZELLİKLER GRID (3 Kutu)                                                   */
+/* ÖZELLİKLER BÖLÜMÜ                                                          */
 /* -------------------------------------------------------------------------- */
+.features-section {
+  margin-bottom: 100px;
+}
+
+.section-title {
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 50px;
+}
+.blue-text { color: var(--primary); }
+
 .features-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 30px;
-  margin-bottom: 80px;
 }
 
 .feature-card {
@@ -149,7 +152,9 @@ body.dark-mode, [data-theme="dark"] {
   border: 1px solid var(--border-color);
   padding: 32px;
   border-radius: 20px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
 }
 
 .feature-card:hover {
@@ -159,31 +164,33 @@ body.dark-mode, [data-theme="dark"] {
 }
 
 .icon-box {
-  width: 50px;
-  height: 50px;
-  border-radius: 12px;
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
-  margin-bottom: 20px;
+  font-size: 1.6rem;
+  margin-bottom: 24px;
 }
 
-.icon-box.blue { background: var(--icon-bg-blue); color: var(--icon-text-blue); }
-.icon-box.green { background: var(--icon-bg-green); color: var(--icon-text-green); }
-.icon-box.purple { background: var(--icon-bg-purple); color: var(--icon-text-purple); }
+.icon-box.blue { background: var(--bg-blue); color: var(--text-blue); }
+.icon-box.red { background: var(--bg-red); color: var(--text-red); }
+.icon-box.orange { background: var(--bg-orange); color: var(--text-orange); }
+.icon-box.purple { background: var(--bg-purple); color: var(--text-purple); }
 
 .feature-card h3 {
   font-size: 1.25rem;
   font-weight: 700;
-  margin-bottom: 12px;
+  margin: 0 0 12px 0;
   color: var(--text-main);
 }
 
 .feature-card p {
   color: var(--text-muted);
-  line-height: 1.5;
+  line-height: 1.6;
   font-size: 0.95rem;
+  margin: 0;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -207,30 +214,13 @@ body.dark-mode, [data-theme="dark"] {
   font-weight: 500;
   border-bottom: 1px dotted var(--text-muted);
 }
-
-.legal-links a:hover {
-  color: var(--primary);
-  border-bottom-style: solid;
-}
+.legal-links a:hover { color: var(--primary); border-bottom-style: solid; }
 
 /* -------------------------------------------------------------------------- */
-/* MOBİL UYUMLULUK                                                            */
+/* MOBİL                                                                      */
 /* -------------------------------------------------------------------------- */
 @media (max-width: 768px) {
-  .hero-title {
-    font-size: 2.25rem;
-  }
-  
-  .home-container {
-    padding-top: 40px;
-  }
-
-  .primary-btn {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .features-grid {
-    grid-template-columns: 1fr; /* Mobilde tek sütun */
-  }
+  .hero-title { font-size: 2.5rem; }
+  .features-grid { grid-template-columns: 1fr; }
+  .primary-btn { width: 100%; justify-content: center; }
 }
