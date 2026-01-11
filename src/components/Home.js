@@ -32,11 +32,11 @@ export default function Home() {
       
       {/* 1. HERO BÖLÜMÜ (ANA GİRİŞ) */}
       <section className="hero-section">
-        {!user && <div className="badge">✨ Küçük İşletmeler İçin Ücretsiz</div>}
+        {!user && <div className="badge"> Küçük İşletmeler İçin Ücretsiz</div>}
         
         <h1 className="hero-title">
-          Karmaşık Defterlere Son. <br />
-          <span className="highlight">Stok ve Veresiyeni Dijitalde Yönet.</span>
+          Karmaşık Defterlere Son <br />
+          <span className="highlight">Stok ve Veresiyeni Dijitalde Yönet</span>
         </h1>
         
         <p className="hero-description">
