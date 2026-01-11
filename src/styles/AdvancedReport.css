@@ -11,7 +11,9 @@
   --c-good: #10b981;
 }
 
-body.dark-mode {
+/* KARANLIK MOD */
+body.dark-mode,
+[data-theme="dark"] {
   --bg-card: #1e293b;
   --bg-page: #0f172a;
   --border: #334155;
@@ -27,12 +29,8 @@ body.dark-mode {
   color: var(--txt-dark);
 }
 
-.adv-intro h3 {
-  font-size: 1.25rem; font-weight: 700; margin: 0 0 4px 0;
-}
-.adv-intro p {
-  color: var(--txt-gray); font-size: 0.9rem; margin-bottom: 24px;
-}
+.adv-intro h3 { font-size: 1.25rem; font-weight: 700; margin: 0 0 4px 0; color: var(--txt-dark); }
+.adv-intro p { color: var(--txt-gray); font-size: 0.9rem; margin-bottom: 24px; }
 
 /* KARTLAR */
 .adv-summary-grid {
@@ -49,12 +47,12 @@ body.dark-mode {
 
 .stat-icon {
   width: 48px; height: 48px; border-radius: 12px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.4rem;
+  display: flex; align-items: center; justify-content: center; font-size: 1.4rem;
 }
-.stat-icon.blue { background: #eff6ff; color: #2563eb; }
-.stat-icon.green { background: #ecfdf5; color: #10b981; }
-.stat-icon.purple { background: #f5f3ff; color: #8b5cf6; }
+/* Şeffaflık ile dark mode uyumu */
+.stat-icon.blue { background: rgba(37, 99, 235, 0.15); color: #2563eb; }
+.stat-icon.green { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+.stat-icon.purple { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; }
 
 .stat-info { display: flex; flex-direction: column; }
 .stat-label { font-size: 0.8rem; color: var(--txt-gray); font-weight: 600; text-transform: uppercase; }
@@ -67,7 +65,7 @@ body.dark-mode {
   box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
 .box-header { margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
-.box-header h4 { margin: 0; font-size: 1.05rem; font-weight: 600; }
+.box-header h4 { margin: 0; font-size: 1.05rem; font-weight: 600; color: var(--txt-dark); }
 .chart-container { height: 280px; position: relative; }
 
 /* İÇGÖRÜLER */
@@ -84,14 +82,14 @@ body.dark-mode {
 
 .insight-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .header-left { display: flex; align-items: center; gap: 10px; }
-.header-left h4 { margin: 0; font-size: 1rem; font-weight: 700; }
+.header-left h4 { margin: 0; font-size: 1rem; font-weight: 700; color: var(--txt-dark); }
 
 .icon-alert { color: var(--c-crit); font-size: 1.2rem; }
 .icon-star { color: var(--pri); font-size: 1.2rem; }
 .icon-info { color: var(--txt-gray); font-size: 1.2rem; }
 
 .header-badge {
-  background: #fef2f2; color: var(--c-crit);
+  background: rgba(239, 68, 68, 0.15); color: var(--c-crit);
   padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 700;
 }
 
@@ -118,7 +116,7 @@ body.dark-mode {
 .val-text { font-weight: 700; color: var(--pri); font-size: 0.95rem; }
 
 .badge-critical {
-  background: #fef2f2; color: var(--c-crit);
+  background: rgba(239, 68, 68, 0.15); color: var(--c-crit);
   padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; font-weight: 700;
 }
 
@@ -131,7 +129,7 @@ body.dark-mode {
   background: var(--bg-page); border: 1px solid var(--border);
   border-radius: 8px; padding: 10px; display: flex; flex-direction: column;
 }
-.grid-name { font-weight: 600; font-size: 0.9rem; margin-bottom: 4px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.grid-name { font-weight: 600; font-size: 0.9rem; margin-bottom: 4px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--txt-dark); }
 .grid-stock { font-size: 0.8rem; color: var(--txt-gray); }
 
 .adv-loading { text-align: center; color: var(--txt-gray); padding: 40px; font-style: italic; }
