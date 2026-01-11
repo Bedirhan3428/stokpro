@@ -7,7 +7,10 @@ import {
   FiAlertTriangle, 
   FiTrendingDown, 
   FiAward, 
-  FiCheckCircle 
+  FiCheckCircle,
+  FiBox,
+  FiUsers,
+  FiPieChart
 } from "react-icons/fi"; // Modern İkonlar
 import Info from "./info";
 import "../styles/Home.css";
@@ -27,18 +30,18 @@ export default function Home() {
   return (
     <div className="home-container">
       
-      {/* 1. HERO BÖLÜMÜ (Giriş) */}
+      {/* 1. HERO BÖLÜMÜ (ANA GİRİŞ) */}
       <section className="hero-section">
         {!user && <div className="badge">✨ Küçük İşletmeler İçin Ücretsiz</div>}
         
         <h1 className="hero-title">
           Karmaşık Defterlere Son. <br />
-          <span className="highlight">Mağaza Zekası ile Tanışın.</span>
+          <span className="highlight">Stok ve Veresiyeni Dijitalde Yönet.</span>
         </h1>
         
         <p className="hero-description">
-          StokPro sadece bir defter değil, işletmenizin akıl hocasıdır. 
-          Stoklarını, veresiyelerini ve karlılığını tek ekrandan yönet.
+          StokPro sadece bir kayıt defteri değil, işletmenizin akıl hocasıdır. 
+          Stoklarını saniyeler içinde gir, veresiyelerini takip et ve mağaza zekasıyla işini büyüt.
         </p>
 
         <div className="cta-group">
@@ -57,52 +60,92 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 2. ÖZELLİKLER (Zeka Vurgusu) */}
+      {/* 2. TEMEL ÖZELLİKLER (ESKİ İSTEDİKLERİN) */}
       <section className="features-section">
-        <h2 className="section-title">Stok Pro: Sadece Stok Değil, <span className="blue-text">Mağaza Zekası!</span></h2>
+        <div className="section-header">
+          <h2 className="section-title">İhtiyacın Olan <span className="blue-text">Temel Çözümler</span></h2>
+          <p className="section-subtitle">İşletmeni yönetmek için gereken her şey elinin altında.</p>
+        </div>
         
-        <div className="features-grid">
-          
-          {/* Özellik 1 */}
+        <div className="features-grid three-col">
+          {/* Eski Özellik 1 */}
           <div className="feature-card">
             <div className="icon-box blue">
-              <FiSearch />
+              <FiBox />
             </div>
-            <h3>Işık Hızında Arama</h3>
-            <p>Ürünlerini saniyeler içinde bul, müşterini asla bekletme. Barkod veya isimle anında erişim.</p>
+            <h3>Hızlı Stok Girişi</h3>
+            <p>Ürünlerini barkodla veya elle saniyeler içinde ekle. Karmaşık menülerle uğraşma.</p>
           </div>
 
-          {/* Özellik 2 */}
+          {/* Eski Özellik 2 */}
           <div className="feature-card">
-            <div className="icon-box red">
-              <FiAlertTriangle />
+            <div className="icon-box green">
+              <FiUsers />
             </div>
-            <h3>Kritik Stok Radarı</h3>
-            <p>Stoğu 7 günden az kalacak ürünleri önceden haber al. Satış kaçırma, müşterini geri çevirme.</p>
+            <h3>Veresiye Takibi</h3>
+            <p>Kimin ne kadar borcu var asla unutma. Müşteri bazlı detaylı döküm al.</p>
           </div>
 
-          {/* Özellik 3 */}
-          <div className="feature-card">
-            <div className="icon-box orange">
-              <FiTrendingDown />
-            </div>
-            <h3>Ölü Stok Analizi</h3>
-            <p>30 gündür satılmayan ürünleri tespit et. Rafa bağladığın parayı kurtar ve nakite çevir.</p>
-          </div>
-
-          {/* Özellik 4 */}
+          {/* Eski Özellik 3 */}
           <div className="feature-card">
             <div className="icon-box purple">
+              <FiPieChart />
+            </div>
+            <h3>Anlık Raporlar</h3>
+            <p>Ay sonunu bekleme. Kazancını, stoğunu ve alacaklarını tek tıkla gör.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* 3. MAĞAZA ZEKASI (YENİ İSTEDİKLERİN) */}
+      <section className="features-section alt-bg">
+        <div className="section-header">
+          <h2 className="section-title">Sadece Stok Değil, <span className="highlight">Mağaza Zekası!</span></h2>
+          <p className="section-subtitle">Verilerinizi işleyerek size para kazandıran içgörüler sunuyoruz.</p>
+        </div>
+        
+        <div className="features-grid four-col">
+          
+          {/* Yeni Özellik 1 */}
+          <div className="feature-card small-card">
+            <div className="icon-box-sm blue">
+              <FiSearch />
+            </div>
+            <h4>Işık Hızında Arama</h4>
+            <p>Müşterini bekletme, aradığını anında bul.</p>
+          </div>
+
+          {/* Yeni Özellik 2 */}
+          <div className="feature-card small-card">
+            <div className="icon-box-sm red">
+              <FiAlertTriangle />
+            </div>
+            <h4>Kritik Stok Radarı</h4>
+            <p>Biten ürünleri önceden haber al, satışı kaçırma.</p>
+          </div>
+
+          {/* Yeni Özellik 3 */}
+          <div className="feature-card small-card">
+            <div className="icon-box-sm orange">
+              <FiTrendingDown />
+            </div>
+            <h4>Ölü Stok Analizi</h4>
+            <p>Satılmayan ürünleri tespit et, nakite çevir.</p>
+          </div>
+
+          {/* Yeni Özellik 4 */}
+          <div className="feature-card small-card">
+            <div className="icon-box-sm purple">
               <FiAward />
             </div>
-            <h3>Şampiyon Ürünler</h3>
-            <p>En çok ne sattığını ve sana neyin kazandırdığını bil. Dükkanın rotasını verilerle çiz.</p>
+            <h4>Şampiyon Ürünler</h4>
+            <p>En çok kazandıran ürünlerini keşfet.</p>
           </div>
 
         </div>
       </section>
 
-      {/* 3. FOOTER */}
+      {/* 4. FOOTER */}
       <footer className="home-footer">
         <div className="legal-links">
           Uygulamayı kullanarak <Link to="/terms-of-service">Hizmet Şartları</Link> ve <Link to="/privacy-policy">Gizlilik Politikası</Link>'nı kabul etmiş sayılırsınız.
