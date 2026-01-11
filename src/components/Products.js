@@ -1,5 +1,5 @@
 import "../styles/Products.css";
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import {
   listProductsForCurrentUser,
   addProduct,
@@ -7,8 +7,9 @@ import {
   deleteProduct
 } from "../utils/artifactUserProducts";
 import useSubscription from "../hooks/useSubscription";
-import { IoMdTrash } from "react-icons/io";
-import { MdEdit } from "react-icons/md";
+import { 
+  FiTrash2, FiEdit2, FiSearch, FiPlus, FiAlertCircle, FiFilter, FiCheck 
+} from "react-icons/fi";
 
 // Basit Bildirim Bileşeni
 function Bildirim({ note }) {
@@ -16,13 +17,14 @@ function Bildirim({ note }) {
   const tipClass = note.type === "error" ? "hata" : note.type === "success" ? "basari" : "bilgi";
   return (
     <div className={`prd-bildirim ${tipClass}`}>
-      <div className="prd-bildirim-baslik">{note.title || "Bilgi"}</div>
+      <div className="prd-bildirim-baslik">{note.title}</div>
       <div className="prd-bildirim-icerik">{note.message}</div>
     </div>
   );
 }
 
-const DEFAULT_CATEGORIES = ["Genel", "Gıda", "Elektronik", "Giyim", "Kırtasiye"];
+// Varsayılan Kategoriler
+const DEFAULT_CATEGORIES = ["Genel", "Gıda", "Elektronik", "Giyim", "Kırtasiye", "Temizlik", "Hırdavat"];
 
 export default function Products() {
   const [products, setProducts] = useState([]);
@@ -33,14 +35,18 @@ export default function Products() {
   const [barcode, setBarcode] = useState("");
   const [price, setPrice] = useState("");
   const [stock, setStock] = useState("");
+  
+  // Kategori Yönetimi
   const [category, setCategory] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
+  const [showCatSuggestions, setShowCatSuggestions] = useState(false);
 
+  const [searchTerm, setSearchTerm] = useState("");
   const [editing, setEditing] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [note, setNote] = useState(null);
 
   const { loading: subLoading, active: subActive } = useSubscription();
+  const catWrapperRef = useRef(null);
 
   // Bildirim Yardımcısı
   function bildir(n) {
@@ -63,28 +69,38 @@ export default function Products() {
 
   useEffect(() => {
     yukle();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
+    // Kategori menüsü dışına tıklanırsa kapat
+    function handleClickOutside(event) {
+      if (catWrapperRef.current && !catWrapperRef.current.contains(event.target)) {
+        setShowCatSuggestions(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Kategori Listesi Hesaplama
+  // Dinamik Kategori Listesi
   const categoryOptions = useMemo(() => {
     const existing = products.map(p => p.category).filter(c => c && c.trim() !== "");
-    return [...new Set([...existing, ...DEFAULT_CATEGORIES])].sort();
-  }, [products]);
+    const allCats = [...new Set([...DEFAULT_CATEGORIES, ...existing])];
+    // Kullanıcının yazdığına göre filtrele
+    if (!category) return allCats.sort();
+    return allCats.filter(c => c.toLowerCase().includes(category.toLowerCase())).sort();
+  }, [products, category]);
 
   // Ürün Ekleme
   async function urunEkle() {
-    if (!subActive) return bildir({ type: "error", title: "Abonelik", message: "İşlem için abonelik gerekli." });
-    
-    const tName = name.trim();
-    if (!tName) return bildir({ type: "error", title: "Eksik", message: "Ürün adı zorunludur." });
+    if (!subActive) return bildir({ type: "error", title: "Kısıtlı Mod", message: "Ücretsiz etkinleştirme gerekli." });
 
-    // Mükerrer Kontrolü
+    const tName = name.trim();
+    if (!tName) return bildir({ type: "error", title: "Eksik Bilgi", message: "Ürün adı girmelisiniz." });
+
     const isDuplicate = products.some(p => 
       p.name.toLowerCase() === tName.toLowerCase() || 
       (barcode && p.barcode === barcode)
     );
-    if (isDuplicate) return bildir({ type: "error", title: "Mevcut", message: "Bu ürün veya barkod zaten var." });
+    if (isDuplicate) return bildir({ type: "error", title: "Dikkat", message: "Bu ürün veya barkod zaten kayıtlı." });
 
     try {
       await addProduct({
@@ -92,19 +108,19 @@ export default function Products() {
         barcode: barcode.trim() || null,
         price: parseFloat(price) || 0,
         stock: parseInt(stock, 10) || 0,
-        category: category.trim() || null
+        category: category.trim() || "Genel"
       });
-      
-      // Formu Temizle
+
+      // Temizle
       setName(""); setBarcode(""); setPrice(""); setStock(""); setCategory("");
       await yukle();
-      bildir({ type: "success", title: "Başarılı", message: "Ürün eklendi." });
+      bildir({ type: "success", title: "Başarılı", message: "Ürün envantere eklendi." });
     } catch (err) {
       bildir({ type: "error", title: "Hata", message: err.message });
     }
   }
 
-  // Düzenleme İşlemleri
+  // Düzenleme
   function duzenlemeAc(p) {
     setEditing({ ...p, price: p.price || 0, stock: p.stock || 0, category: p.category || "" });
   }
@@ -112,8 +128,8 @@ export default function Products() {
   async function duzenlemeKaydet() {
     if (!subActive) return;
     const { id, name: n, barcode: b, price: pr, stock: st, category: cat } = editing;
-    
-    if (!n.trim()) return bildir({ type: "error", title: "Eksik", message: "Ürün adı boş olamaz." });
+
+    if (!n.trim()) return bildir({ type: "error", title: "Eksik", message: "Ürün adı gerekli." });
 
     try {
       await updateProduct(id, {
@@ -125,40 +141,39 @@ export default function Products() {
       });
       setEditing(null);
       await yukle();
-      bildir({ type: "success", title: "Güncellendi", message: "Ürün bilgileri kaydedildi." });
+      bildir({ type: "success", title: "Güncellendi", message: "Değişiklikler kaydedildi." });
     } catch (err) {
       bildir({ type: "error", title: "Hata", message: err.message });
     }
   }
 
-  // Silme İşlemleri
+  // Silme
   async function silGercek() {
     if (!subActive || !confirmDelete) return;
     try {
       await deleteProduct(confirmDelete.id);
       setConfirmDelete(null);
       await yukle();
-      bildir({ type: "success", title: "Silindi", message: "Ürün silindi." });
+      bildir({ type: "success", title: "Silindi", message: "Ürün kaldırıldı." });
     } catch (err) {
       bildir({ type: "error", title: "Hata", message: err.message });
     }
   }
 
-  // Hızlı Stok Güncelleme
+  // Hızlı Stok
   async function hizliStok(id, val) {
     if (!subActive) return;
     const newVal = Number(val);
-    const oldProducts = [...products]; // Yedek
-    
-    // Optimistik UI Güncellemesi
-    setProducts(prev => prev.map(p => p.id === id ? { ...p, stock: newVal } : p));
-    bildir({ type: "success", title: "Güncellendi", message: `Yeni stok: ${newVal}` });
+    const oldProducts = [...products];
 
+    setProducts(prev => prev.map(p => p.id === id ? { ...p, stock: newVal } : p));
+    
     try {
       await updateProduct(id, { stock: newVal });
+      bildir({ type: "success", title: "Stok Güncellendi", message: `Yeni miktar: ${newVal}` });
     } catch {
-      setProducts(oldProducts); // Hata varsa geri al
-      bildir({ type: "error", title: "Hata", message: "Stok güncellenemedi." });
+      setProducts(oldProducts);
+      bildir({ type: "error", title: "Hata", message: "Güncelleme başarısız." });
     }
   }
 
@@ -173,100 +188,159 @@ export default function Products() {
   });
 
   return (
-    <div className="prd-sayfa">
+    <div className="prd-container">
       <Bildirim note={note} />
 
+      {/* ÜCRETSİZ ETKİNLEŞTİRME UYARISI */}
       {!subLoading && !subActive && (
-        <div className="prd-uyari-kutu">
-          <div className="prd-uyari-baslik">Abonelik Gerekli</div>
-          <a href="https://www.stokpro.shop/product-key" className="prd-link">Abonelik Satın Al</a>
+        <div className="alert-banner">
+          <FiAlertCircle size={20} />
+          <span>Hesabınız kısıtlı. Tüm özellikleri açmak için:</span>
+          <a href="https://www.stokpro.shop/product-key" className="alert-link">Ücretsiz Etkinleştir</a>
         </div>
       )}
 
-      {/* --- ÜRÜN EKLE --- */}
-      <div className="prd-kart">
-        <h3 className="prd-baslik">Hızlı Ürün Ekle</h3>
-        <div className="prd-form-grid">
-          <input placeholder="Ürün Adı" value={name} onChange={e => setName(e.target.value)} className="prd-input" />
-          <input placeholder="Barkod" value={barcode} onChange={e => setBarcode(e.target.value)} className="prd-input" />
-          
-          <div className="prd-input-grup">
-            <input type="number" placeholder="Fiyat" value={price} onChange={e => setPrice(e.target.value)} className="prd-input" />
-            <span className="prd-birim">₺</span>
-          </div>
-          
-          <input type="number" placeholder="Stok" value={stock} onChange={e => setStock(e.target.value)} className="prd-input" />
-
-          {/* Kategori Combo */}
-          <div className="prd-combo-grup">
+      {/* --- EKLEME KARTI --- */}
+      <div className="prd-card add-section">
+        <div className="card-header">
+           <h3>Yeni Ürün Ekle</h3>
+        </div>
+        
+        <div className="form-grid">
+          <div className="form-group">
+            <label>Ürün Adı</label>
             <input 
-              placeholder="Kategori" 
-              value={category} 
-              onChange={e => setCategory(e.target.value)} 
-              className="prd-input combo-input"
+              placeholder="Örn: A4 Kağıt" 
+              value={name} 
+              onChange={e => setName(e.target.value)} 
+              className="modern-input" 
             />
-            <select 
-              className="prd-select-trigger" 
-              onChange={e => { if(e.target.value) setCategory(e.target.value); e.target.value=""; }}
-            >
-              <option value="">▼</option>
-              {categoryOptions.map((c, i) => <option key={i} value={c}>{c}</option>)}
-            </select>
           </div>
 
-          <button className="prd-btn primary" onClick={urunEkle} disabled={!subActive}>Ekle</button>
+          <div className="form-group">
+            <label>Barkod (İsteğe Bağlı)</label>
+            <input 
+              placeholder="Barkod okutun veya yazın" 
+              value={barcode} 
+              onChange={e => setBarcode(e.target.value)} 
+              className="modern-input" 
+            />
+          </div>
+
+          <div className="form-group half">
+            <label>Fiyat (₺)</label>
+            <input 
+              type="number" 
+              placeholder="0.00" 
+              value={price} 
+              onChange={e => setPrice(e.target.value)} 
+              className="modern-input" 
+            />
+          </div>
+
+          <div className="form-group half">
+            <label>Stok Adedi</label>
+            <input 
+              type="number" 
+              placeholder="0" 
+              value={stock} 
+              onChange={e => setStock(e.target.value)} 
+              className="modern-input" 
+            />
+          </div>
+
+          {/* AKILLI KATEGORİ SEÇİMİ */}
+          <div className="form-group full" ref={catWrapperRef}>
+            <label>Kategori</label>
+            <div className="custom-select-wrapper">
+              <div className="input-icon-wrapper">
+                <FiFilter className="input-icon" />
+                <input 
+                  placeholder="Kategori yazın veya seçin..." 
+                  value={category}
+                  onChange={e => { setCategory(e.target.value); setShowCatSuggestions(true); }}
+                  onFocus={() => setShowCatSuggestions(true)}
+                  className="modern-input with-icon"
+                />
+              </div>
+              
+              {showCatSuggestions && (
+                <ul className="suggestions-list">
+                  {categoryOptions.length === 0 && <li className="no-suggestion">"{category}" yenisi eklenecek.</li>}
+                  {categoryOptions.map((c, i) => (
+                    <li key={i} onClick={() => { setCategory(c); setShowCatSuggestions(false); }}>
+                      {c}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+
+          <div className="form-actions">
+             <button className="modern-btn primary full-width" onClick={urunEkle} disabled={!subActive}>
+               <FiPlus /> Ürünü Kaydet
+             </button>
+          </div>
         </div>
       </div>
 
-      {/* --- ÜRÜN LİSTESİ --- */}
-      <div className="prd-kart full-height">
-        <div className="prd-liste-header">
-          <h3 className="prd-baslik">Ürünler ({filtered.length})</h3>
-          <input 
-            placeholder="Ara..." 
-            value={searchTerm} 
-            onChange={e => setSearchTerm(e.target.value)} 
-            className="prd-input search"
-          />
+      {/* --- LİSTELEME KARTI --- */}
+      <div className="prd-card list-section">
+        <div className="list-header">
+          <h3>Ürün Listesi <span className="count-badge">{filtered.length}</span></h3>
+          <div className="search-wrapper">
+            <FiSearch className="search-icon" />
+            <input 
+              placeholder="Ürün, barkod veya kategori ara..." 
+              value={searchTerm} 
+              onChange={e => setSearchTerm(e.target.value)} 
+              className="search-input"
+            />
+          </div>
         </div>
 
         {loading ? (
-          <div className="prd-loading"><div className="prd-spinner"></div>Yükleniyor...</div>
+          <div className="prd-loading"><div className="spinner"></div></div>
         ) : filtered.length === 0 ? (
-          <div className="prd-empty">Ürün bulunamadı.</div>
+          <div className="prd-empty">
+             <FiSearch size={40} />
+             <p>Aradığınız kriterde ürün bulunamadı.</p>
+          </div>
         ) : (
-          <div className="prd-liste-container">
+          <div className="product-list">
             {filtered.map(p => (
-              <div key={p.id} className="prd-item">
-                <div className="prd-info">
-                  <div className="prd-name">{p.name}</div>
-                  <div className="prd-meta">
-                    <span>{p.category || "Genel"}</span> • 
-                    <span>{p.barcode || "Barkodsuz"}</span> • 
-                    <span className="prd-price">{Number(p.price).toLocaleString("tr-TR", {style:"currency", currency:"TRY"})}</span>
+              <div key={p.id} className="product-item">
+                <div className="prod-main">
+                  <div className="prod-name">{p.name}</div>
+                  <div className="prod-tags">
+                     <span className="tag cat">{p.category || "Genel"}</span>
+                     {p.barcode && <span className="tag bar">{p.barcode}</span>}
                   </div>
                 </div>
 
-                <div className="prd-actions">
-                  <div className="prd-stock-control">
-                    <label>Stok</label>
-                    <input 
-                      type="number" 
-                      defaultValue={p.stock} 
-                      onBlur={e => hizliStok(p.id, e.target.value)}
-                      disabled={!subActive}
-                    />
-                  </div>
-                  
-                  {/* Buton Grubu: Düzenle ve Sil */}
-                  <div className="prd-action-btns">
-                    <button onClick={() => duzenlemeAc(p)} className="prd-btn icon-btn edit" title="Düzenle">
-                      <MdEdit />
-                    </button>
-                    <button onClick={() => setConfirmDelete({id:p.id, label:p.name})} className="prd-btn icon-btn delete" title="Sil">
-                      <IoMdTrash />
-                    </button>
-                  </div>
+                <div className="prod-price-box">
+                   {Number(p.price).toLocaleString("tr-TR", {style:"currency", currency:"TRY"})}
+                </div>
+
+                <div className="prod-stock-box">
+                  <input 
+                    type="number" 
+                    className="stock-input"
+                    defaultValue={p.stock}
+                    onBlur={e => hizliStok(p.id, e.target.value)}
+                    disabled={!subActive}
+                  />
+                  <span className="stock-label">Adet</span>
+                </div>
+
+                <div className="prod-actions">
+                  <button onClick={() => duzenlemeAc(p)} className="action-btn edit" title="Düzenle">
+                    <FiEdit2 />
+                  </button>
+                  <button onClick={() => setConfirmDelete({id:p.id, label:p.name})} className="action-btn delete" title="Sil">
+                    <FiTrash2 />
+                  </button>
                 </div>
               </div>
             ))}
@@ -276,49 +350,36 @@ export default function Products() {
 
       {/* --- DÜZENLEME MODALI --- */}
       {editing && (
-        <div className="prd-modal-overlay">
-          <div className="prd-modal">
-            <div className="prd-modal-header">
+        <div className="modal-overlay">
+          <div className="modal-card">
+            <div className="modal-header">
               <h4>Ürün Düzenle</h4>
-              <button onClick={() => setEditing(null)} className="prd-close">×</button>
+              <button onClick={() => setEditing(null)} className="close-btn">×</button>
             </div>
-            <div className="prd-modal-body">
+            <div className="modal-body">
               <label>Ürün Adı</label>
-              <input value={editing.name} onChange={e => setEditing(s => ({...s, name: e.target.value}))} className="prd-input" />
+              <input value={editing.name} onChange={e => setEditing(s => ({...s, name: e.target.value}))} className="modern-input" />
               
-              <div className="prd-row-2">
-                <div>
-                  <label>Fiyat</label>
-                  <input type="number" value={editing.price} onChange={e => setEditing(s => ({...s, price: e.target.value}))} className="prd-input" />
-                </div>
-                <div>
-                  <label>Stok</label>
-                  <input type="number" value={editing.stock} onChange={e => setEditing(s => ({...s, stock: e.target.value}))} className="prd-input" />
-                </div>
+              <div className="row-2">
+                 <div>
+                    <label>Fiyat</label>
+                    <input type="number" value={editing.price} onChange={e => setEditing(s => ({...s, price: e.target.value}))} className="modern-input" />
+                 </div>
+                 <div>
+                    <label>Stok</label>
+                    <input type="number" value={editing.stock} onChange={e => setEditing(s => ({...s, stock: e.target.value}))} className="modern-input" />
+                 </div>
               </div>
 
               <label>Kategori</label>
-              <div className="prd-combo-grup">
-                <input 
-                  value={editing.category} 
-                  onChange={e => setEditing(s => ({...s, category: e.target.value}))} 
-                  className="prd-input combo-input"
-                />
-                <select 
-                  className="prd-select-trigger" 
-                  onChange={e => { if(e.target.value) setEditing(s => ({...s, category: e.target.value})); e.target.value=""; }}
-                >
-                  <option value="">▼</option>
-                  {categoryOptions.map((c, i) => <option key={i} value={c}>{c}</option>)}
-                </select>
-              </div>
+              <input value={editing.category} onChange={e => setEditing(s => ({...s, category: e.target.value}))} className="modern-input" />
 
               <label>Barkod</label>
-              <input value={editing.barcode} onChange={e => setEditing(s => ({...s, barcode: e.target.value}))} className="prd-input" />
+              <input value={editing.barcode} onChange={e => setEditing(s => ({...s, barcode: e.target.value}))} className="modern-input" />
             </div>
-            <div className="prd-modal-footer">
-              <button onClick={() => setEditing(null)} className="prd-btn ghost">İptal</button>
-              <button onClick={duzenlemeKaydet} className="prd-btn primary">Kaydet</button>
+            <div className="modal-footer">
+              <button onClick={() => setEditing(null)} className="modern-btn ghost">Vazgeç</button>
+              <button onClick={duzenlemeKaydet} className="modern-btn primary">Kaydet</button>
             </div>
           </div>
         </div>
@@ -326,23 +387,20 @@ export default function Products() {
 
       {/* --- SİLME ONAYI --- */}
       {confirmDelete && (
-        <div className="prd-modal-overlay">
-          <div className="prd-modal small">
-            <div className="prd-modal-header">
-              <h4>Siliniyor</h4>
-            </div>
-            <div className="prd-modal-body">
-              <p><b>{confirmDelete.label}</b> ürününü silmek istediğine emin misin?</p>
-            </div>
-            <div className="prd-modal-footer">
-              <button onClick={() => setConfirmDelete(null)} className="prd-btn ghost">Vazgeç</button>
-              <button onClick={silGercek} className="prd-btn danger">Evet, Sil</button>
-            </div>
+        <div className="modal-overlay">
+          <div className="modal-card small">
+             <div className="modal-icon danger"><FiTrash2 /></div>
+             <h4>Siliniyor</h4>
+             <p><b>{confirmDelete.label}</b> adlı ürünü silmek istediğine emin misin?</p>
+             <div className="modal-footer center">
+               <button onClick={() => setConfirmDelete(null)} className="modern-btn ghost">İptal</button>
+               <button onClick={silGercek} className="modern-btn danger">Evet, Sil</button>
+             </div>
           </div>
         </div>
       )}
+
     </div>
   );
 }
-
 
