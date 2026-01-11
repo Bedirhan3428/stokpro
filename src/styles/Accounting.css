@@ -1,8 +1,9 @@
-/* --- ACCOUNTING STİLLERİ --- */
+/* --- ACCOUNTING STİLLERİ (DÜZELTİLMİŞ) --- */
 :root {
   --primary: #2563eb;
   --bg-page: #f8fafc;
   --bg-card: #ffffff;
+  --bg-item: #f8fafc; /* Liste elemanları için özel */
   --text-main: #0f172a;
   --text-sub: #64748b;
   --border: #e2e8f0;
@@ -14,12 +15,13 @@
   --orange: #f59e0b;
 }
 
-/* KARANLIK MOD */
+/* KARANLIK MOD (Daha Güçlü Seçiciler) */
 body.dark-mode,
 [data-theme="dark"] {
   --bg-page: #0f172a;
   --bg-card: #1e293b;
-  --text-main: #f8fafc;
+  --bg-item: #0f172a; /* Kartın içinde daha koyu duracak */
+  --text-main: #f1f5f9;
   --text-sub: #94a3b8;
   --border: #334155;
   --danger-bg: rgba(239, 68, 68, 0.15);
@@ -42,6 +44,7 @@ body.dark-mode,
   color: var(--primary);
   padding: 14px; border-radius: 12px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
 }
+/* Karanlık modda okunurluk */
 body.dark-mode .alert-banner { color: #60a5fa; }
 
 .alert-link {
@@ -51,10 +54,11 @@ body.dark-mode .alert-banner { color: #60a5fa; }
 
 /* KART & LİSTE */
 .acc-card {
-  background: var(--bg-card);
+  background-color: var(--bg-card); /* -color ekledim garanti olsun */
   border: 1px solid var(--border);
   border-radius: 16px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05); padding: 24px;
+  transition: background-color 0.3s, border-color 0.3s;
 }
 
 .list-header {
@@ -67,9 +71,11 @@ body.dark-mode .alert-banner { color: #60a5fa; }
 .search-input {
   width: 100%; padding: 10px 12px 10px 36px;
   border: 1px solid var(--border); border-radius: 10px;
-  background: var(--bg-page); outline: none; color: var(--text-main);
+  background-color: var(--bg-item); /* Input arkaplanı */
+  outline: none; color: var(--text-main);
+  transition: all 0.2s;
 }
-.search-input:focus { border-color: var(--primary); background: var(--bg-card); }
+.search-input:focus { border-color: var(--primary); background-color: var(--bg-card); }
 
 /* --- TIMELINE --- */
 .timeline-wrapper { display: flex; flex-direction: column; gap: 24px; }
@@ -83,13 +89,16 @@ body.dark-mode .alert-banner { color: #60a5fa; }
 
 .transaction-list { display: flex; flex-direction: column; gap: 10px; }
 
+/* İşlem Satırları */
 .trans-item {
   display: flex; align-items: center; gap: 16px;
-  background: var(--bg-page); border: 1px solid var(--border);
+  background-color: var(--bg-item); /* Özel değişken */
+  border: 1px solid var(--border);
   padding: 14px; border-radius: 12px; transition: all 0.2s;
 }
 .trans-item:hover {
-  background: var(--bg-card); border-color: var(--primary);
+  background-color: var(--bg-card); 
+  border-color: var(--primary);
   transform: translateX(4px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
 }
 
@@ -120,7 +129,7 @@ body.dark-mode .alert-banner { color: #60a5fa; }
 .trans-actions { display: flex; gap: 6px; }
 .action-btn {
   width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border);
-  background: var(--bg-card); color: var(--text-sub); cursor: pointer;
+  background-color: var(--bg-card); color: var(--text-sub); cursor: pointer;
   display: flex; align-items: center; justify-content: center; transition: all 0.2s;
 }
 .action-btn.edit:hover { border-color: var(--primary); color: var(--primary); background: rgba(37, 99, 235, 0.1); }
@@ -132,7 +141,8 @@ body.dark-mode .alert-banner { color: #60a5fa; }
   display: flex; justify-content: center; align-items: center; z-index: 100; backdrop-filter: blur(4px);
 }
 .modal-card {
-  background: var(--bg-card); width: 100%; max-width: 400px; padding: 24px;
+  background-color: var(--bg-card); /* Modal arkaplan */
+  width: 100%; max-width: 400px; padding: 24px;
   border-radius: 16px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); border: 1px solid var(--border);
   display: flex; flex-direction: column; gap: 16px;
 }
@@ -147,10 +157,11 @@ body.dark-mode .alert-banner { color: #60a5fa; }
 
 .modern-input, select.modern-input {
   width: 100%; padding: 10px 14px; border-radius: 10px;
-  border: 1px solid var(--border); background: var(--bg-page);
+  border: 1px solid var(--border); 
+  background-color: var(--bg-page); /* Input arkaplanı */
   color: var(--text-main); outline: none; transition: all 0.2s;
 }
-.modern-input:focus { border-color: var(--primary); background: var(--bg-card); }
+.modern-input:focus { border-color: var(--primary); background-color: var(--bg-card); }
 
 .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; }
 .modal-footer.center { justify-content: center; }
@@ -162,6 +173,7 @@ body.dark-mode .alert-banner { color: #60a5fa; }
 .modern-btn.primary { background: var(--primary); color: white; }
 .modern-btn.danger { background: var(--danger); color: white; }
 .modern-btn.ghost { background: transparent; color: var(--text-sub); border: 1px solid var(--border); }
+.modern-btn.ghost:hover { background-color: var(--bg-page); color: var(--text-main); }
 
 .modal-icon.danger {
   width: 50px; height: 50px; background: var(--danger-bg); color: var(--danger);
