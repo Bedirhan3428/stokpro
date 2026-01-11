@@ -13,6 +13,7 @@
   /* İkon Arka Planları */
   --bg-blue: #dbeafe; --text-blue: #2563eb;
   --bg-red: #fee2e2; --text-red: #ef4444;
+  --bg-green: #dcfce7; --text-green: #16a34a;
   --bg-orange: #ffedd5; --text-orange: #f97316;
   --bg-purple: #f3e8ff; --text-purple: #9333ea;
 }
@@ -27,6 +28,7 @@ body.dark-mode, [data-theme="dark"] {
   
   --bg-blue: rgba(37, 99, 235, 0.2); --text-blue: #60a5fa;
   --bg-red: rgba(239, 68, 68, 0.2); --text-red: #f87171;
+  --bg-green: rgba(22, 163, 74, 0.2); --text-green: #4ade80;
   --bg-orange: rgba(249, 115, 22, 0.2); --text-orange: #fbbf24;
   --bg-purple: rgba(147, 51, 234, 0.2); --text-purple: #c084fc;
 }
@@ -132,20 +134,36 @@ body.dark-mode, [data-theme="dark"] {
 .features-section {
   margin-bottom: 100px;
 }
+.features-section.alt-bg {
+  /* Arka planı hafif farklı yaparak ayırabiliriz, şimdilik sade bırakıyorum */
+  padding-top: 20px;
+}
 
-.section-title {
+.section-header {
   text-align: center;
-  font-size: 2rem;
-  font-weight: 700;
   margin-bottom: 50px;
 }
+
+.section-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.section-subtitle {
+  color: var(--text-muted);
+  font-size: 1.1rem;
+}
+
 .blue-text { color: var(--primary); }
+.highlight { color: #9333ea; }
 
 .features-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 30px;
 }
+.three-col { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.four-col { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+
 
 .feature-card {
   background: var(--card-bg);
@@ -163,26 +181,42 @@ body.dark-mode, [data-theme="dark"] {
   border-color: var(--primary);
 }
 
-.icon-box {
-  width: 56px;
-  height: 56px;
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.6rem;
-  margin-bottom: 24px;
+.feature-card.small-card {
+  padding: 24px;
 }
 
-.icon-box.blue { background: var(--bg-blue); color: var(--text-blue); }
-.icon-box.red { background: var(--bg-red); color: var(--text-red); }
-.icon-box.orange { background: var(--bg-orange); color: var(--text-orange); }
-.icon-box.purple { background: var(--bg-purple); color: var(--text-purple); }
+/* Büyük İkonlar */
+.icon-box {
+  width: 56px; height: 56px;
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.6rem; margin-bottom: 24px;
+}
+
+/* Küçük İkonlar */
+.icon-box-sm {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; margin-bottom: 16px;
+}
+
+.icon-box.blue, .icon-box-sm.blue { background: var(--bg-blue); color: var(--text-blue); }
+.icon-box.red, .icon-box-sm.red { background: var(--bg-red); color: var(--text-red); }
+.icon-box.green, .icon-box-sm.green { background: var(--bg-green); color: var(--text-green); }
+.icon-box.orange, .icon-box-sm.orange { background: var(--bg-orange); color: var(--text-orange); }
+.icon-box.purple, .icon-box-sm.purple { background: var(--bg-purple); color: var(--text-purple); }
 
 .feature-card h3 {
   font-size: 1.25rem;
   font-weight: 700;
   margin: 0 0 12px 0;
+  color: var(--text-main);
+}
+.feature-card h4 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 8px 0;
   color: var(--text-main);
 }
 
