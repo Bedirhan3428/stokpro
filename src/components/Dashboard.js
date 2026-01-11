@@ -1,10 +1,17 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Doughnut } from "react-chartjs-2";
 import { Link } from "react-router-dom";
+import { Doughnut } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend
+} from 'chart.js';
 import { 
   FiTrendingUp, FiTrendingDown, FiDollarSign, FiUsers, 
-  FiAlertCircle, FiArrowUpRight, FiArrowDownLeft, FiActivity 
+  FiAlertCircle, FiArrowUpRight, FiArrowDownLeft 
 } from "react-icons/fi";
+
 import {
   listSales,
   listLedger,
@@ -14,11 +21,13 @@ import {
   listLegacyExpenses
 } from "../utils/firebaseHelpers";
 import { listProductsForCurrentUser } from "../utils/artifactUserProducts"; 
-import "../utils/chartSetup";
 import AdvancedReport from "./AdvancedReport";
 import useSubscription from "../hooks/useSubscription";
 import { bildirimIzniIste, bildirimGonder } from "../utils/notificationHelper";
 import "../styles/Dashboard.css";
+
+// --- GRAFİK MODÜLLERİNİ KAYDET (Beyaz ekranı çözer) ---
+ChartJS.register(ArcElement, Tooltip, Legend);
 
 // --- YARDIMCI FONKSİYONLAR ---
 function parseTimestamp(createdAt) {
@@ -28,91 +37,90 @@ function parseTimestamp(createdAt) {
   const d = new Date(createdAt);
   return isNaN(d.getTime()) ? null : d;
 }
+
 function parseNumber(v) {
   const n = Number(v);
   return Number.isFinite(n) ? n : 0;
-}
-function labelForLedgerEntry(l) {
-  const desc = (l.description || "").toString();
-  const lines = Array.isArray(l.lines) ? l.lines : [];
-  const isCredit = lines.some((ln) => String(ln.account || "").startsWith("AR:"));
-  if (desc.toLowerCase().startsWith("satış") || desc.toLowerCase().startsWith("sale")) {
-    return isCredit ? "Satış (Veresiye)" : "Satış (Nakit)";
-  }
-  return desc || `İşlem ${l.type || ""}`;
 }
 
 export default function Dashboard() {
   const [sales, setSales] = useState([]);
   const [products, setProducts] = useState([]); 
-  const [ledger, setLedger] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [customerPaymentsMap, setCustomerPaymentsMap] = useState({});
   const [legacyIncomes, setLegacyIncomes] = useState([]);
   const [legacyExpenses, setLegacyExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { loading: subLoading, active: subActive } = useSubscription();
 
-  // --- VERİ ÇEKME & BİLDİRİM ---
+  // Abonelik kancasını güvenli hale getirelim
+  let subLoading = false;
+  let subActive = true;
+  try {
+    const sub = useSubscription();
+    subLoading = sub.loading;
+    subActive = sub.active;
+  } catch (e) {
+    console.warn("Abonelik hook hatası:", e);
+  }
+
+  // --- VERİ ÇEKME ---
   useEffect(() => {
     let mounted = true;
     async function load() {
       setLoading(true);
-      setError(null);
       try {
         const [salesData, ledgerData, customersData, legacyInc, legacyExp, productsData] = await Promise.all([
-          listSales(),
-          listLedger(),
-          listCustomers(),
-          listLegacyIncomes(),
-          listLegacyExpenses(),
-          listProductsForCurrentUser()
+          listSales().catch(() => []),
+          listLedger().catch(() => []),
+          listCustomers().catch(() => []),
+          listLegacyIncomes().catch(() => []),
+          listLegacyExpenses().catch(() => []),
+          listProductsForCurrentUser().catch(() => [])
         ]);
 
         if (!mounted) return;
+
         setSales(Array.isArray(salesData) ? salesData : []);
-        setLedger(Array.isArray(ledgerData) ? ledgerData : []);
         setCustomers(Array.isArray(customersData) ? customersData : []);
         setLegacyIncomes(Array.isArray(legacyInc) ? legacyInc : []);
         setLegacyExpenses(Array.isArray(legacyExp) ? legacyExp : []);
         setProducts(Array.isArray(productsData) ? productsData : []);
 
-        // Stok Bildirim Kontrolü
-        await bildirimIzniIste();
-        const kritikUrunler = (productsData || []).filter(p => Number(p.stock) < 10);
-        if (kritikUrunler.length > 0) {
-          const sonBildirimZamani = localStorage.getItem("sonStokBildirimi");
-          const suAn = Date.now();
-          const beklemeSuresi = 12 * 60 * 60 * 1000; 
-
-          if (!sonBildirimZamani || (suAn - sonBildirimZamani > beklemeSuresi)) {
-            const ornekUrun = kritikUrunler[0].name;
-            const kalanSayi = kritikUrunler.length - 1;
-            let mesaj = kalanSayi > 0 
-              ? `⚠️ ${ornekUrun} ve ${kalanSayi} diğer ürün kritik seviyede!`
-              : `⚠️ ${ornekUrun} tükeniyor!`;
-            
-            bildirimGonder("Kritik Stok", mesaj);
-            localStorage.setItem("sonStokBildirimi", suAn);
-          }
+        // Stok Bildirim Mantığı
+        try {
+            await bildirimIzniIste();
+            const kritikUrunler = (productsData || []).filter(p => Number(p.stock) < 10);
+            if (kritikUrunler.length > 0) {
+              const sonBildirim = localStorage.getItem("sonStokBildirimi");
+              const suAn = Date.now();
+              // 12 saatte bir bildirim
+              if (!sonBildirim || (suAn - sonBildirim > 43200000)) {
+                 bildirimGonder("Stok Uyarısı", `${kritikUrunler.length} ürünün stoğu kritik seviyede.`);
+                 localStorage.setItem("sonStokBildirimi", suAn);
+              }
+            }
+        } catch (err) {
+            console.log("Bildirim hatası:", err);
         }
 
+        // Ödemeleri Çek
         const paymentsMap = {};
-        await Promise.all(
-          (Array.isArray(customersData) ? customersData : []).map(async (c) => {
-            try {
-              const payments = await listCustomerPayments(c.id);
-              paymentsMap[c.id] = Array.isArray(payments) ? payments : [];
-            } catch {
-              paymentsMap[c.id] = [];
+        if (Array.isArray(customersData)) {
+            for (const c of customersData) {
+                try {
+                    const pays = await listCustomerPayments(c.id);
+                    paymentsMap[c.id] = Array.isArray(pays) ? pays : [];
+                } catch {
+                    paymentsMap[c.id] = [];
+                }
             }
-          })
-        );
-        if (!mounted) return;
-        setCustomerPaymentsMap(paymentsMap);
+        }
+        if (mounted) setCustomerPaymentsMap(paymentsMap);
+
       } catch (err) {
-        if (mounted) setError(String(err?.message || err));
+        console.error("Dashboard yükleme hatası:", err);
+        if (mounted) setError("Veriler yüklenirken bir sorun oluştu.");
       } finally {
         if (mounted) setLoading(false);
       }
@@ -124,97 +132,58 @@ export default function Dashboard() {
   // --- HESAPLAMALAR ---
   const last30 = useMemo(() => new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), []);
 
-  function sumSalesInRange(salesArray, since, includeCredit = false) {
-    let total = 0;
-    for (const s of salesArray || []) {
-      const d = parseTimestamp(s.createdAt ?? s.date ?? s.created_at);
-      if (!d || d < since) continue;
-      const saleType = (s.saleType ?? s.type ?? "").toString().toLowerCase();
-      if (!includeCredit && (saleType === "credit" || saleType === "veresiye")) continue;
-      total += parseNumber(s.totals?.total ?? s.total ?? s.totalPrice ?? 0);
-    }
-    return total;
-  }
-
-  function sumLegacyData(dataArray, since) {
-    let total = 0;
-    for (const item of dataArray || []) {
-      const d = parseTimestamp(item.createdAt ?? item.date ?? item.created_at ?? item.createdOn);
-      if (!d || d < since) continue;
-      total += parseNumber(item.amount ?? item.value ?? item.total ?? 0);
-    }
-    return total;
-  }
-
-  function sumPayments(since) {
-    let total = 0;
-    for (const custId of Object.keys(customerPaymentsMap || {})) {
-      const payments = customerPaymentsMap[custId] || [];
-      for (const p of payments) {
-        const d = parseTimestamp(p.createdAt ?? p.date ?? p.created_at);
-        if (!d || d < since) continue;
-        total += parseNumber(p.amount ?? p.value ?? p.total ?? 0);
-      }
-    }
-    return total;
-  }
-
-  // Aylık Veriler
   const stats = useMemo(() => {
-    const cashSales = sumSalesInRange(sales, last30, false);
-    const legacyInc = sumLegacyData(legacyIncomes, last30);
-    const payments = sumPayments(last30);
-    const legacyExp = sumLegacyData(legacyExpenses, last30);
+    let cashSales = 0;
+    (sales || []).forEach(s => {
+       const d = parseTimestamp(s.createdAt || s.date);
+       if(d && d >= last30 && (s.saleType !== 'credit' && s.saleType !== 'veresiye')) {
+           cashSales += parseNumber(s.totals?.total || s.total || 0);
+       }
+    });
+
+    let legacyInc = 0;
+    (legacyIncomes || []).forEach(i => {
+        const d = parseTimestamp(i.createdAt || i.date);
+        if(d && d >= last30) legacyInc += parseNumber(i.amount || 0);
+    });
+
+    let legacyExp = 0;
+    (legacyExpenses || []).forEach(e => {
+        const d = parseTimestamp(e.createdAt || e.date);
+        if(d && d >= last30) legacyExp += parseNumber(e.amount || 0);
+    });
+
+    let payments = 0;
+    Object.values(customerPaymentsMap).forEach(list => {
+        (list || []).forEach(p => {
+            const d = parseTimestamp(p.createdAt || p.date);
+            if(d && d >= last30) payments += parseNumber(p.amount || 0);
+        });
+    });
 
     const totalRevenue = cashSales + legacyInc + payments;
-    const totalExpense = legacyExp;
-    const netProfit = totalRevenue - totalExpense;
+    const totalReceivable = (customers || []).reduce((acc, c) => acc + parseNumber(c.balance || c.debt || 0), 0);
+    const netProfit = totalRevenue - legacyExp;
 
-    const totalReceivable = (customers || []).reduce((acc, c) => acc + parseNumber(c.balance ?? c.debt ?? 0), 0);
-
-    return { totalRevenue, totalExpense, netProfit, totalReceivable, cashSales, legacyInc, payments };
+    return { totalRevenue, totalExpense: legacyExp, netProfit, totalReceivable, cashSales, legacyInc, payments };
   }, [sales, legacyIncomes, legacyExpenses, customerPaymentsMap, customers, last30]);
-
-  // Kategori Dağılımı
-  const categoryStats = useMemo(() => {
-    const tempStats = {};
-    if (!sales.length || !products.length) return [];
-    sales.forEach(sale => {
-      (sale.items || []).forEach(item => {
-        const product = products.find(p => p.id === item.productId);
-        const cat = product?.category || "Diğer";
-        tempStats[cat] = (tempStats[cat] || 0) + ((Number(item.price) || 0) * (Number(item.qty) || 0));
-      });
-    });
-    const sorted = Object.entries(tempStats).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
-    const total = sorted.reduce((a, b) => a + b.value, 0);
-    return sorted.map(s => ({ ...s, percent: total > 0 ? ((s.value / total) * 100).toFixed(1) : 0 }));
-  }, [sales, products]);
 
   // Son İşlemler
   const recentTransactions = useMemo(() => {
     const list = [];
-    sales.forEach(s => list.push({
-      id: s.id, type: "sale", date: parseTimestamp(s.createdAt), 
-      amount: parseNumber(s.totals?.total), label: "Satış", sub: (s.saleType === "credit" ? "Veresiye" : "Nakit")
+    (sales || []).forEach(s => list.push({
+      id: s.id, type: 'sale', date: parseTimestamp(s.createdAt), 
+      amount: parseNumber(s.totals?.total || s.total), label: "Satış", sub: s.saleType === 'credit' ? 'Veresiye' : 'Nakit'
     }));
-    legacyExpenses.forEach(e => list.push({
-      id: e.id, type: "expense", date: parseTimestamp(e.createdAt), 
-      amount: parseNumber(e.amount), label: e.description || "Gider", sub: "Manuel Gider"
+    (legacyExpenses || []).forEach(e => list.push({
+      id: e.id, type: 'expense', date: parseTimestamp(e.createdAt), 
+      amount: parseNumber(e.amount), label: e.description || "Gider", sub: "Manuel"
     }));
-    Object.keys(customerPaymentsMap).forEach(cid => {
-      customerPaymentsMap[cid].forEach(p => {
-        const cName = customers.find(c => String(c.id) === String(cid))?.name || "Müşteri";
-        list.push({
-          id: p.id, type: "payment", date: parseTimestamp(p.createdAt), 
-          amount: parseNumber(p.amount), label: "Tahsilat", sub: cName
-        });
-      });
-    });
     return list.filter(i => i.date).sort((a, b) => b.date - a.date).slice(0, 8);
-  }, [sales, legacyExpenses, customerPaymentsMap, customers]);
+  }, [sales, legacyExpenses]);
 
-  if (loading) return <div className="loading-screen"><div className="spinner"></div></div>;
+  if (loading) return <div className="loading-screen"><div className="spinner"></div><p>Yükleniyor...</p></div>;
+  if (error) return <div className="error-screen">{error}</div>;
 
   const donutData = {
     labels: ["Nakit Satış", "Tahsilat", "Ek Gelir"],
@@ -228,126 +197,120 @@ export default function Dashboard() {
   return (
     <div className="dashboard-container">
       
-      {/* ABONELİK UYARISI */}
+      <div className="dashboard-header">
+        <h2>Genel Bakış</h2>
+        <span className="date-badge">Son 30 Gün</span>
+      </div>
+
       {!subLoading && !subActive && (
         <div className="alert-banner">
-          <div className="alert-content">
-            <FiAlertCircle className="alert-icon" />
-            <span>Hesabınız kısıtlı modda. Tüm özellikleri kullanmak için aboneliği aktifleştirin.</span>
-          </div>
-          <a href="https://www.stokpro.shop/product-key" className="alert-btn">Ücretsiz Etkinleştir</a>
+          <FiAlertCircle size={20} />
+          <span>Hesabınız kısıtlı. Tüm özellikleri açmak için:</span>
+          <a href="https://www.stokpro.shop/product-key" className="alert-link">Ücretsiz Etkinleştir</a>
         </div>
       )}
 
-      {/* ÜST BÖLÜM: KPI KARTLARI */}
+      {/* KPI KARTLARI (Başlıklı) */}
       <section className="kpi-grid">
+        
         <div className="kpi-card">
-          <div className="icon-wrapper blue"><FiTrendingUp /></div>
-          <div className="kpi-info">
-            <span className="kpi-label">Aylık Toplam Gelir</span>
-            <h3 className="kpi-value">{stats.totalRevenue.toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</h3>
+          <div className="kpi-header">
+            <div className="icon-box blue"><FiTrendingUp /></div>
+            <span className="kpi-title">Toplam Gelir</span>
+          </div>
+          <div className="kpi-body">
+            <h3>{stats.totalRevenue.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺</h3>
+            <p className="kpi-sub">Satış + Tahsilat</p>
           </div>
         </div>
 
         <div className="kpi-card">
-          <div className="icon-wrapper red"><FiTrendingDown /></div>
-          <div className="kpi-info">
-            <span className="kpi-label">Aylık Toplam Gider</span>
-            <h3 className="kpi-value">{stats.totalExpense.toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</h3>
+          <div className="kpi-header">
+            <div className="icon-box red"><FiTrendingDown /></div>
+            <span className="kpi-title">Toplam Gider</span>
+          </div>
+          <div className="kpi-body">
+            <h3>{stats.totalExpense.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺</h3>
+            <p className="kpi-sub">Manuel Giderler</p>
           </div>
         </div>
 
         <div className="kpi-card">
-          <div className="icon-wrapper green"><FiDollarSign /></div>
-          <div className="kpi-info">
-            <span className="kpi-label">Net Kar (Ay)</span>
-            <h3 className="kpi-value">{stats.netProfit.toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</h3>
+          <div className="kpi-header">
+            <div className="icon-box green"><FiDollarSign /></div>
+            <span className="kpi-title">Net Kazanç</span>
+          </div>
+          <div className="kpi-body">
+            <h3>{stats.netProfit.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺</h3>
+            <p className="kpi-sub">Gelir - Gider</p>
           </div>
         </div>
 
         <div className="kpi-card">
-          <div className="icon-wrapper purple"><FiUsers /></div>
-          <div className="kpi-info">
-            <span className="kpi-label">Toplam Alacak (Veresiye)</span>
-            <h3 className="kpi-value">{stats.totalReceivable.toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</h3>
+          <div className="kpi-header">
+            <div className="icon-box purple"><FiUsers /></div>
+            <span className="kpi-title">Alacaklar</span>
+          </div>
+          <div className="kpi-body">
+            <h3>{stats.totalReceivable.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺</h3>
+            <p className="kpi-sub">Müşteri Bakiyeleri</p>
           </div>
         </div>
+
       </section>
 
-      {/* ORTA BÖLÜM: GRAFİK VE DETAYLAR */}
-      <section className="main-grid">
-        
-        {/* SOL: GELİR DAĞILIMI */}
-        <div className="content-card chart-card">
-          <div className="card-header">
-            <h4>Gelir Dağılımı</h4>
+      {/* GRAFİK VE LİSTE */}
+      <section className="main-content">
+        <div className="chart-section card">
+          <div className="card-head">
+            <h4>Gelir Kaynakları</h4>
           </div>
           <div className="chart-wrapper">
-             <Doughnut 
-               data={donutData} 
-               options={{ 
-                 responsive: true, 
-                 maintainAspectRatio: false, 
-                 plugins: { legend: { position: 'bottom', labels: { usePointStyle: true } } },
-                 cutout: '70%'
-               }} 
-             />
+             {/* Veri yoksa grafik yerine mesaj göster */}
+             {stats.totalRevenue > 0 ? (
+                <Doughnut 
+                  data={donutData} 
+                  options={{ 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { legend: { position: 'bottom' } } 
+                  }} 
+                />
+             ) : (
+               <p className="no-data">Görüntülenecek gelir verisi yok.</p>
+             )}
           </div>
         </div>
 
-        {/* SAĞ: KATEGORİLER */}
-        <div className="content-card">
-          <div className="card-header">
-            <h4>Kategori Satışları</h4>
+        <div className="transactions-section card">
+          <div className="card-head">
+            <h4>Son İşlemler</h4>
+            <Link to="/reports" className="see-all">Tümü</Link>
           </div>
-          <div className="category-list">
-            {categoryStats.length === 0 && <p className="empty-text">Veri yok.</p>}
-            {categoryStats.slice(0, 5).map((cat, idx) => (
-              <div key={idx} className="category-item">
-                <div className="cat-info">
-                  <span className="cat-name">{cat.name}</span>
-                  <span className="cat-amount">{cat.value.toLocaleString("tr-TR", { minimumFractionDigits: 0 })} ₺</span>
+          <div className="trans-list">
+            {recentTransactions.map(t => (
+              <div key={t.id} className="trans-item">
+                <div className={`trans-icon ${t.type === 'expense' ? 'bg-red' : 'bg-green'}`}>
+                  {t.type === 'expense' ? <FiArrowDownLeft /> : <FiArrowUpRight />}
                 </div>
-                <div className="progress-bg">
-                  <div className="progress-fill" style={{ width: `${cat.percent}%` }}></div>
+                <div className="trans-info">
+                  <span className="trans-name">{t.label}</span>
+                  <span className="trans-date">{t.sub} • {t.date?.toLocaleDateString()}</span>
+                </div>
+                <div className={`trans-amount ${t.type === 'expense' ? 'txt-red' : 'txt-green'}`}>
+                  {t.type === 'expense' ? '-' : '+'}{t.amount.toLocaleString("tr-TR")} ₺
                 </div>
               </div>
             ))}
+            {recentTransactions.length === 0 && <p className="no-data">Henüz işlem yok.</p>}
           </div>
         </div>
       </section>
 
-      {/* ALT BÖLÜM: SON İŞLEMLER */}
-      <section className="content-card full-width">
-        <div className="card-header">
-          <h4>Son İşlemler</h4>
-          <Link to="/reports" className="view-all">Tümünü Gör</Link>
-        </div>
-        <div className="transaction-list">
-          {recentTransactions.length === 0 && <p className="empty-text">Henüz işlem yok.</p>}
-          {recentTransactions.map((t) => (
-            <div key={t.id} className="transaction-item">
-              <div className={`trans-icon ${t.type === 'expense' ? 'red' : 'green'}`}>
-                {t.type === 'expense' ? <FiArrowDownLeft /> : <FiArrowUpRight />}
-              </div>
-              <div className="trans-details">
-                <span className="trans-title">{t.label}</span>
-                <span className="trans-sub">{t.sub} • {t.date.toLocaleDateString()}</span>
-              </div>
-              <div className={`trans-amount ${t.type === 'expense' ? 'negative' : 'positive'}`}>
-                {t.type === 'expense' ? '-' : '+'}{t.amount.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* DETAYLI RAPOR COMPONENTI */}
-      <div className="advanced-report-section">
+      <div className="report-wrapper">
         <AdvancedReport />
       </div>
 
     </div>
   );
 }
-
