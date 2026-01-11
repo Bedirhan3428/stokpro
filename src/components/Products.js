@@ -188,7 +188,7 @@ export default function Products() {
           <div className="form-group full">
             <label>Ürün Adı</label>
             <input 
-              placeholder="Örn: A4 Kağıt" 
+              placeholder="Ürün Adı" 
               value={name} 
               onChange={e => setName(e.target.value)} 
               className="modern-input" 
@@ -198,7 +198,7 @@ export default function Products() {
           <div className="form-group full">
             <label>Barkod (İsteğe Bağlı)</label>
             <input 
-              placeholder="Barkod okutun veya yazın" 
+              placeholder="Barkod girin" 
               value={barcode} 
               onChange={e => setBarcode(e.target.value)} 
               className="modern-input" 
