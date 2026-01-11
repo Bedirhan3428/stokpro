@@ -1,7 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { FiArrowRight, FiBox, FiPieChart, FiUsers, FiCheckCircle } from "react-icons/fi"; // Modern Feather İkonları
+import { 
+  FiArrowRight, 
+  FiSearch, 
+  FiAlertTriangle, 
+  FiTrendingDown, 
+  FiAward, 
+  FiCheckCircle 
+} from "react-icons/fi"; // Modern İkonlar
 import Info from "./info";
 import "../styles/Home.css";
 
@@ -19,18 +26,19 @@ export default function Home() {
 
   return (
     <div className="home-container">
-      {/* HERO BÖLÜMÜ (ANA GİRİŞ) */}
+      
+      {/* 1. HERO BÖLÜMÜ (Giriş) */}
       <section className="hero-section">
-        {!user && <div className="badge">🚀 Ücretsiz ve Kurulumsuz</div>}
+        {!user && <div className="badge">✨ Küçük İşletmeler İçin Ücretsiz</div>}
         
         <h1 className="hero-title">
-          Karmaşık Defterlere Son <br />
-          <span className="highlight">Stok ve Veresiyeni Dijitalde Yönet</span>
+          Karmaşık Defterlere Son. <br />
+          <span className="highlight">Mağaza Zekası ile Tanışın.</span>
         </h1>
         
         <p className="hero-description">
-          Küçük işletmeler için en pratik çözüm. Ürünlerini saniyeler içinde ekle, 
-          müşteri borçlarını takip et ve günün sonunda kazancını gör.
+          StokPro sadece bir defter değil, işletmenizin akıl hocasıdır. 
+          Stoklarını, veresiyelerini ve karlılığını tek ekrandan yönet.
         </p>
 
         <div className="cta-group">
@@ -43,40 +51,58 @@ export default function Home() {
           
           {!user && (
             <p className="sub-note">
-              <FiCheckCircle style={{ marginRight: 5 }} /> Kredi kartı gerekmez
+              <FiCheckCircle style={{ marginRight: 5 }} /> Kredi kartı gerekmez, kurulum yok.
             </p>
           )}
         </div>
       </section>
 
-      {/* ÖZELLİKLER GRID YAPISI */}
-      <section className="features-grid">
-        <div className="feature-card">
-          <div className="icon-box blue">
-            <FiBox />
+      {/* 2. ÖZELLİKLER (Zeka Vurgusu) */}
+      <section className="features-section">
+        <h2 className="section-title">Stok Pro: Sadece Stok Değil, <span className="blue-text">Mağaza Zekası!</span></h2>
+        
+        <div className="features-grid">
+          
+          {/* Özellik 1 */}
+          <div className="feature-card">
+            <div className="icon-box blue">
+              <FiSearch />
+            </div>
+            <h3>Işık Hızında Arama</h3>
+            <p>Ürünlerini saniyeler içinde bul, müşterini asla bekletme. Barkod veya isimle anında erişim.</p>
           </div>
-          <h3>Hızlı Stok Girişi</h3>
-          <p>Barkodla veya manuel olarak ürünlerini saniyeler içinde sisteme tanımla.</p>
-        </div>
 
-        <div className="feature-card">
-          <div className="icon-box green">
-            <FiUsers />
+          {/* Özellik 2 */}
+          <div className="feature-card">
+            <div className="icon-box red">
+              <FiAlertTriangle />
+            </div>
+            <h3>Kritik Stok Radarı</h3>
+            <p>Stoğu 7 günden az kalacak ürünleri önceden haber al. Satış kaçırma, müşterini geri çevirme.</p>
           </div>
-          <h3>Veresiye Takibi</h3>
-          <p>Kimin ne kadar borcu var asla unutma. Müşteri bazlı detaylı döküm al.</p>
-        </div>
 
-        <div className="feature-card">
-          <div className="icon-box purple">
-            <FiPieChart />
+          {/* Özellik 3 */}
+          <div className="feature-card">
+            <div className="icon-box orange">
+              <FiTrendingDown />
+            </div>
+            <h3>Ölü Stok Analizi</h3>
+            <p>30 gündür satılmayan ürünleri tespit et. Rafa bağladığın parayı kurtar ve nakite çevir.</p>
           </div>
-          <h3>Anlık Raporlar</h3>
-          <p>Ay sonunu bekleme. Kazancını, stoğunu ve alacaklarını tek tıkla gör.</p>
+
+          {/* Özellik 4 */}
+          <div className="feature-card">
+            <div className="icon-box purple">
+              <FiAward />
+            </div>
+            <h3>Şampiyon Ürünler</h3>
+            <p>En çok ne sattığını ve sana neyin kazandırdığını bil. Dükkanın rotasını verilerle çiz.</p>
+          </div>
+
         </div>
       </section>
 
-      {/* FOOTER / YASAL */}
+      {/* 3. FOOTER */}
       <footer className="home-footer">
         <div className="legal-links">
           Uygulamayı kullanarak <Link to="/terms-of-service">Hizmet Şartları</Link> ve <Link to="/privacy-policy">Gizlilik Politikası</Link>'nı kabul etmiş sayılırsınız.
@@ -88,4 +114,5 @@ export default function Home() {
     </div>
   );
 }
+
 
