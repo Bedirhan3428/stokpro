@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import "../styles/AdminDashboard.css"; temasının CSS dosyası
+import "../styles/AdminDashboard.css"; 
 import { auth, db } from './firebase'; 
 import { 
   doc, 
