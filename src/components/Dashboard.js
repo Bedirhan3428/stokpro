@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom"; // useNavigate eklendi
 import { Doughnut } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -9,7 +9,7 @@ import {
 } from 'chart.js';
 import { 
   FiTrendingUp, FiTrendingDown, FiDollarSign, FiUsers, 
-  FiAlertCircle, FiArrowUpRight, FiArrowDownLeft 
+  FiAlertCircle, FiArrowUpRight, FiArrowDownLeft, FiPlusCircle, FiPackage
 } from "react-icons/fi";
 
 import {
@@ -26,7 +26,7 @@ import useSubscription from "../hooks/useSubscription";
 import { bildirimIzniIste, bildirimGonder } from "../utils/notificationHelper";
 import "../styles/Dashboard.css";
 
-// --- GRAFİK MODÜLLERİNİ KAYDET (Beyaz ekranı çözer) ---
+// --- GRAFİK MODÜLLERİNİ KAYDET ---
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 // --- YARDIMCI FONKSİYONLAR ---
@@ -44,6 +44,7 @@ function parseNumber(v) {
 }
 
 export default function Dashboard() {
+  const navigate = useNavigate(); // Yönlendirme için
   const [sales, setSales] = useState([]);
   const [products, setProducts] = useState([]); 
   const [customers, setCustomers] = useState([]);
@@ -53,16 +54,14 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Abonelik kancasını güvenli hale getirelim
+  // Abonelik Kontrolü
   let subLoading = false;
   let subActive = true;
   try {
     const sub = useSubscription();
     subLoading = sub.loading;
     subActive = sub.active;
-  } catch (e) {
-    console.warn("Abonelik hook hatası:", e);
-  }
+  } catch (e) { console.warn(e); }
 
   // --- VERİ ÇEKME ---
   useEffect(() => {
@@ -87,40 +86,34 @@ export default function Dashboard() {
         setLegacyExpenses(Array.isArray(legacyExp) ? legacyExp : []);
         setProducts(Array.isArray(productsData) ? productsData : []);
 
-        // Stok Bildirim Mantığı
+        // Stok Bildirim
         try {
             await bildirimIzniIste();
             const kritikUrunler = (productsData || []).filter(p => Number(p.stock) < 10);
             if (kritikUrunler.length > 0) {
               const sonBildirim = localStorage.getItem("sonStokBildirimi");
               const suAn = Date.now();
-              // 12 saatte bir bildirim
               if (!sonBildirim || (suAn - sonBildirim > 43200000)) {
                  bildirimGonder("Stok Uyarısı", `${kritikUrunler.length} ürünün stoğu kritik seviyede.`);
                  localStorage.setItem("sonStokBildirimi", suAn);
               }
             }
-        } catch (err) {
-            console.log("Bildirim hatası:", err);
-        }
+        } catch (err) { console.log(err); }
 
-        // Ödemeleri Çek
+        // Ödemeler
         const paymentsMap = {};
         if (Array.isArray(customersData)) {
             for (const c of customersData) {
                 try {
                     const pays = await listCustomerPayments(c.id);
                     paymentsMap[c.id] = Array.isArray(pays) ? pays : [];
-                } catch {
-                    paymentsMap[c.id] = [];
-                }
+                } catch { paymentsMap[c.id] = []; }
             }
         }
         if (mounted) setCustomerPaymentsMap(paymentsMap);
 
       } catch (err) {
-        console.error("Dashboard yükleme hatası:", err);
-        if (mounted) setError("Veriler yüklenirken bir sorun oluştu.");
+        if (mounted) setError("Veri yüklenirken hata oluştu.");
       } finally {
         if (mounted) setLoading(false);
       }
@@ -196,12 +189,31 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard-container">
-      
+
       <div className="dashboard-header">
         <h2>Genel Bakış</h2>
         <span className="date-badge">Son 30 Gün</span>
       </div>
 
+      {/* --- YENİ KULLANICI KARŞILAMA KARTI (SADECE ÜRÜN YOKSA GÖZÜKÜR) --- */}
+      {!loading && products.length === 0 && (
+        <div className="welcome-card">
+          <div className="welcome-content">
+             <div className="welcome-icon-box">
+                <FiPackage />
+             </div>
+             <div className="welcome-text">
+                <h3>Hadi Başlayalım! 🚀</h3>
+                <p>Henüz envanterin boş görünüyor. İstatistiklerini görebilmek için ilk ürününü ekleyerek işe koyulalım.</p>
+             </div>
+          </div>
+          <button className="welcome-btn" onClick={() => navigate('/products')}>
+             <FiPlusCircle /> İlk Ürünü Ekle
+          </button>
+        </div>
+      )}
+
+      {/* ABONELİK UYARISI */}
       {!subLoading && !subActive && (
         <div className="alert-banner">
           <FiAlertCircle size={20} />
@@ -210,9 +222,8 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* KPI KARTLARI (Başlıklı) */}
+      {/* KPI KARTLARI */}
       <section className="kpi-grid">
-        
         <div className="kpi-card">
           <div className="kpi-header">
             <div className="icon-box blue"><FiTrendingUp /></div>
@@ -256,7 +267,6 @@ export default function Dashboard() {
             <p className="kpi-sub">Müşteri Bakiyeleri</p>
           </div>
         </div>
-
       </section>
 
       {/* GRAFİK VE LİSTE */}
@@ -266,7 +276,6 @@ export default function Dashboard() {
             <h4>Gelir Kaynakları</h4>
           </div>
           <div className="chart-wrapper">
-             {/* Veri yoksa grafik yerine mesaj göster */}
              {stats.totalRevenue > 0 ? (
                 <Doughnut 
                   data={donutData} 
@@ -314,5 +323,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
-
