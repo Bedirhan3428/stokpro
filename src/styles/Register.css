@@ -1,4 +1,200 @@
+/* --- REGISTER STİLLERİ (DÜZELTİLMİŞ) --- */
 :root {
+  --reg-primary: #3b82f6;
+  --reg-primary-hover: #2563eb;
+  
+  /* Varsayılan (Aydınlık) */
+  --reg-bg: #f8fafc;
+  --reg-surface: #ffffff;
+  --reg-text-main: #1e293b;
+  --reg-text-sub: #64748b;
+  --reg-border: #e2e8f0;
+  --reg-error: #ef4444;
+  --reg-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+/* KARANLIK MOD (Hem class hem data-theme desteği) */
+body.dark-mode,
+[data-theme="dark"] {
+  --reg-bg: #0f172a;       /* Sayfa Arkaplanı */
+  --reg-surface: #1e293b;  /* Kart Arkaplanı */
+  --reg-text-main: #f1f5f9;
+  --reg-text-sub: #94a3b8;
+  --reg-border: #334155;
+  --reg-shadow: 0 20px 30px rgba(0,0,0,0.5);
+}
+
+body {
+  background-color: var(--reg-bg);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  transition: background-color 0.3s ease;
+}
+
+* { box-sizing: border-box; }
+
+.reg-kapsul {
+  max-width: 480px;
+  width: 90%;
+  margin: 6vh auto;
+  background-color: var(--reg-surface); /* color değil background-color */
+  border-radius: 24px;
+  padding: 40px;
+  box-shadow: var(--reg-shadow);
+  border: 1px solid var(--reg-border);
+  animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.reg-baslik {
+  margin: 0;
+  color: var(--reg-text-main);
+  font-weight: 800;
+  font-size: 28px;
+  letter-spacing: -0.5px;
+  text-align: center;
+}
+
+.reg-alt {
+  color: var(--reg-text-sub);
+  margin: 8px 0 32px;
+  text-align: center;
+  font-size: 15px;
+}
+
+.reg-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Floating Label Yapısı */
+.reg-input-grup {
+  position: relative;
+}
+
+.reg-input {
+  width: 100%;
+  padding: 16px 16px;
+  border-radius: 12px;
+  border: 2px solid var(--reg-border);
+  background: transparent; /* Arkaplanı şeffaf yapıp kart rengini alsın */
+  outline: none;
+  font-size: 15px;
+  color: var(--reg-text-main);
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.reg-input:focus {
+  border-color: var(--reg-primary);
+  /* Gölgelendirmeyi kaldırdım, border çakışmasını önlemek için */
+  box-shadow: none; 
+}
+
+.reg-etiket {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: var(--reg-surface); /* Kart rengiyle aynı olmalı */
+  padding: 0 6px;
+  color: var(--reg-text-sub);
+  font-size: 15px;
+  transition: all 0.2s ease;
+  pointer-events: none;
+  font-weight: 500;
+  border-radius: 4px;
+}
+
+.reg-input:focus ~ .reg-etiket,
+.reg-input:not(:placeholder-shown) ~ .reg-etiket {
+  top: 0;
+  font-size: 13px;
+  color: var(--reg-primary);
+  font-weight: 600;
+}
+
+.reg-input:not(:focus):not(:placeholder-shown) ~ .reg-etiket {
+  color: var(--reg-text-sub);
+}
+
+.reg-hata {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid var(--reg-error);
+  color: var(--reg-error);
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+  animation: shake 0.4s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+.reg-aks {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.reg-btn {
+  width: 100%;
+  border: none;
+  border-radius: 12px;
+  padding: 14px;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex; justify-content: center; align-items: center; gap: 8px;
+}
+
+.reg-btn:active { transform: scale(0.98); }
+
+.reg-btn.mavi {
+  background: var(--reg-primary);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.reg-btn.mavi:hover {
+  background: var(--reg-primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(59, 130, 246, 0.4);
+}
+
+.reg-btn.google {
+  background: var(--reg-surface);
+  color: var(--reg-text-main);
+  border: 2px solid var(--reg-border);
+}
+
+.reg-btn.google:hover {
+  border-color: var(--reg-text-sub);
+  background-color: var(--reg-bg); /* Hafif ton farkı */
+}
+
+.reg-link {
+  color: var(--reg-text-sub);
+  text-decoration: none;
+  text-align: center;
+  margin-top: 16px;
+  font-size: 14px;
+  display: block;
+}
+.reg-link strong { color: var(--reg-primary); font-weight: 600; }
+.reg-link:hover strong { text-decoration: underline; }:root {
   --reg-primary: #3b82f6;
   --reg-primary-hover: #2563eb;
   --reg-bg: #f8fafc;
