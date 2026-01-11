@@ -19,13 +19,11 @@ const Navbar = React.lazy(() => import("./components/Navbar"));
 const Login = React.lazy(() => import("./components/Login"));
 const Register = React.lazy(() => import("./components/Register"));
 const Settings = React.lazy(() => import("./components/Settings"));
-const Info = React.lazy(() => import("./components/info")); // Import edilmişti, rotaya eklendi
 const ForgotPassword = React.lazy(() => import("./components/ForgotPassword"));
 const VerifyEmail = React.lazy(() => import("./components/VerifyEmail"));
 const ResetPassword = React.lazy(() => import("./components/ResetPassword"));
 
 // --- YENİ EKLENEN BİLEŞENLER ---
-const Biyoloji = React.lazy(() => import("./components/Biyoloji"));
 // Hacker Temalı Admin Paneli
 const AdminDashboard = React.lazy(() => import("./components/AdminDashboard"));
 
@@ -65,23 +63,17 @@ function App() {
               <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/product-key" element={<ProductKey />} />
-              
-              {/* Info Sayfası (Import edilmişti ama rotası yoktu) */}
-              <Route path="/info" element={<Info />} />
 
               {/* Yasal Sayfalar */}
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/terms-of-service" element={<TermsOfService />} />
 
-              {/* Özel Sayfalar */}
-              <Route path="/biyoloji" element={<Biyoloji />} />
-
               {/* --- Korumalı Sayfalar (Giriş Gerekli) --- */}
               <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
-              
+
               {/* Güvenli Ürünler Sayfası (Kendi iç güvenlik kontrolü de var) */}
               <Route path="/products" element={<RequireAuth><Products /></RequireAuth>} />
-              
+
               <Route path="/sales" element={<RequireAuth><Sales /></RequireAuth>} />
               <Route path="/customers" element={<RequireAuth><Customers /></RequireAuth>} />
               <Route path="/accounting" element={<RequireAuth><Accounting /></RequireAuth>} />
