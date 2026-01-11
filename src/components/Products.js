@@ -8,10 +8,10 @@ import {
 } from "../utils/artifactUserProducts";
 import useSubscription from "../hooks/useSubscription";
 import { 
-  FiTrash2, FiEdit2, FiSearch, FiPlus, FiAlertCircle, FiFilter, FiCheck 
+  FiTrash2, FiEdit2, FiSearch, FiPlus, FiAlertCircle, FiFilter 
 } from "react-icons/fi";
 
-// Basit Bildirim Bileşeni
+// Bildirim Bileşeni
 function Bildirim({ note }) {
   if (!note) return null;
   const tipClass = note.type === "error" ? "hata" : note.type === "success" ? "basari" : "bilgi";
@@ -23,7 +23,6 @@ function Bildirim({ note }) {
   );
 }
 
-// Varsayılan Kategoriler
 const DEFAULT_CATEGORIES = ["Genel", "Gıda", "Elektronik", "Giyim", "Kırtasiye", "Temizlik", "Hırdavat"];
 
 export default function Products() {
@@ -36,7 +35,6 @@ export default function Products() {
   const [price, setPrice] = useState("");
   const [stock, setStock] = useState("");
   
-  // Kategori Yönetimi
   const [category, setCategory] = useState("");
   const [showCatSuggestions, setShowCatSuggestions] = useState(false);
 
@@ -48,20 +46,18 @@ export default function Products() {
   const { loading: subLoading, active: subActive } = useSubscription();
   const catWrapperRef = useRef(null);
 
-  // Bildirim Yardımcısı
   function bildir(n) {
     setNote(n);
     setTimeout(() => setNote(null), 3500);
   }
 
-  // Veri Yükleme
   async function yukle() {
     setLoading(true);
     try {
       const list = await listProductsForCurrentUser();
       setProducts(Array.isArray(list) ? list : []);
     } catch (err) {
-      bildir({ type: "error", title: "Hata", message: "Ürünler yüklenemedi." });
+      bildir({ type: "error", title: "Hata", message: "Veri çekilemedi." });
     } finally {
       setLoading(false);
     }
@@ -69,8 +65,6 @@ export default function Products() {
 
   useEffect(() => {
     yukle();
-    
-    // Kategori menüsü dışına tıklanırsa kapat
     function handleClickOutside(event) {
       if (catWrapperRef.current && !catWrapperRef.current.contains(event.target)) {
         setShowCatSuggestions(false);
@@ -80,27 +74,21 @@ export default function Products() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Dinamik Kategori Listesi
   const categoryOptions = useMemo(() => {
     const existing = products.map(p => p.category).filter(c => c && c.trim() !== "");
     const allCats = [...new Set([...DEFAULT_CATEGORIES, ...existing])];
-    // Kullanıcının yazdığına göre filtrele
     if (!category) return allCats.sort();
     return allCats.filter(c => c.toLowerCase().includes(category.toLowerCase())).sort();
   }, [products, category]);
 
-  // Ürün Ekleme
   async function urunEkle() {
-    if (!subActive) return bildir({ type: "error", title: "Kısıtlı Mod", message: "Ücretsiz etkinleştirme gerekli." });
+    if (!subActive) return bildir({ type: "error", title: "Kısıtlı", message: "Özellik kilitli." });
 
     const tName = name.trim();
-    if (!tName) return bildir({ type: "error", title: "Eksik Bilgi", message: "Ürün adı girmelisiniz." });
+    if (!tName) return bildir({ type: "error", title: "Eksik", message: "Ürün adı şart." });
 
-    const isDuplicate = products.some(p => 
-      p.name.toLowerCase() === tName.toLowerCase() || 
-      (barcode && p.barcode === barcode)
-    );
-    if (isDuplicate) return bildir({ type: "error", title: "Dikkat", message: "Bu ürün veya barkod zaten kayıtlı." });
+    const isDuplicate = products.some(p => p.name.toLowerCase() === tName.toLowerCase() || (barcode && p.barcode === barcode));
+    if (isDuplicate) return bildir({ type: "error", title: "Mevcut", message: "Bu ürün zaten var." });
 
     try {
       await addProduct({
@@ -110,17 +98,14 @@ export default function Products() {
         stock: parseInt(stock, 10) || 0,
         category: category.trim() || "Genel"
       });
-
-      // Temizle
       setName(""); setBarcode(""); setPrice(""); setStock(""); setCategory("");
       await yukle();
-      bildir({ type: "success", title: "Başarılı", message: "Ürün envantere eklendi." });
+      bildir({ type: "success", title: "Eklendi", message: "Ürün kaydedildi." });
     } catch (err) {
       bildir({ type: "error", title: "Hata", message: err.message });
     }
   }
 
-  // Düzenleme
   function duzenlemeAc(p) {
     setEditing({ ...p, price: p.price || 0, stock: p.stock || 0, category: p.category || "" });
   }
@@ -128,8 +113,7 @@ export default function Products() {
   async function duzenlemeKaydet() {
     if (!subActive) return;
     const { id, name: n, barcode: b, price: pr, stock: st, category: cat } = editing;
-
-    if (!n.trim()) return bildir({ type: "error", title: "Eksik", message: "Ürün adı gerekli." });
+    if (!n.trim()) return bildir({ type: "error", title: "Eksik", message: "Ad boş olamaz." });
 
     try {
       await updateProduct(id, {
@@ -147,37 +131,32 @@ export default function Products() {
     }
   }
 
-  // Silme
   async function silGercek() {
     if (!subActive || !confirmDelete) return;
     try {
       await deleteProduct(confirmDelete.id);
       setConfirmDelete(null);
       await yukle();
-      bildir({ type: "success", title: "Silindi", message: "Ürün kaldırıldı." });
+      bildir({ type: "success", title: "Silindi", message: "Ürün silindi." });
     } catch (err) {
       bildir({ type: "error", title: "Hata", message: err.message });
     }
   }
 
-  // Hızlı Stok
   async function hizliStok(id, val) {
     if (!subActive) return;
     const newVal = Number(val);
     const oldProducts = [...products];
-
     setProducts(prev => prev.map(p => p.id === id ? { ...p, stock: newVal } : p));
-    
     try {
       await updateProduct(id, { stock: newVal });
-      bildir({ type: "success", title: "Stok Güncellendi", message: `Yeni miktar: ${newVal}` });
+      bildir({ type: "success", title: "Güncellendi", message: `Stok: ${newVal}` });
     } catch {
       setProducts(oldProducts);
       bildir({ type: "error", title: "Hata", message: "Güncelleme başarısız." });
     }
   }
 
-  // Filtreleme
   const filtered = products.filter(p => {
     const t = searchTerm.toLowerCase();
     return (
@@ -191,7 +170,6 @@ export default function Products() {
     <div className="prd-container">
       <Bildirim note={note} />
 
-      {/* ÜCRETSİZ ETKİNLEŞTİRME UYARISI */}
       {!subLoading && !subActive && (
         <div className="alert-banner">
           <FiAlertCircle size={20} />
@@ -207,7 +185,7 @@ export default function Products() {
         </div>
         
         <div className="form-grid">
-          <div className="form-group">
+          <div className="form-group full">
             <label>Ürün Adı</label>
             <input 
               placeholder="Örn: A4 Kağıt" 
@@ -217,7 +195,7 @@ export default function Products() {
             />
           </div>
 
-          <div className="form-group">
+          <div className="form-group full">
             <label>Barkod (İsteğe Bağlı)</label>
             <input 
               placeholder="Barkod okutun veya yazın" 
@@ -249,7 +227,6 @@ export default function Products() {
             />
           </div>
 
-          {/* AKILLI KATEGORİ SEÇİMİ */}
           <div className="form-group full" ref={catWrapperRef}>
             <label>Kategori</label>
             <div className="custom-select-wrapper">
@@ -266,7 +243,7 @@ export default function Products() {
               
               {showCatSuggestions && (
                 <ul className="suggestions-list">
-                  {categoryOptions.length === 0 && <li className="no-suggestion">"{category}" yenisi eklenecek.</li>}
+                  {categoryOptions.length === 0 && <li className="no-suggestion">"{category}" eklenecek.</li>}
                   {categoryOptions.map((c, i) => (
                     <li key={i} onClick={() => { setCategory(c); setShowCatSuggestions(false); }}>
                       {c}
@@ -292,7 +269,7 @@ export default function Products() {
           <div className="search-wrapper">
             <FiSearch className="search-icon" />
             <input 
-              placeholder="Ürün, barkod veya kategori ara..." 
+              placeholder="Ara..." 
               value={searchTerm} 
               onChange={e => setSearchTerm(e.target.value)} 
               className="search-input"
@@ -305,7 +282,7 @@ export default function Products() {
         ) : filtered.length === 0 ? (
           <div className="prd-empty">
              <FiSearch size={40} />
-             <p>Aradığınız kriterde ürün bulunamadı.</p>
+             <p>Ürün bulunamadı.</p>
           </div>
         ) : (
           <div className="product-list">
@@ -319,19 +296,21 @@ export default function Products() {
                   </div>
                 </div>
 
-                <div className="prod-price-box">
-                   {Number(p.price).toLocaleString("tr-TR", {style:"currency", currency:"TRY"})}
-                </div>
+                <div className="prod-values">
+                  <div className="prod-price-box">
+                    {Number(p.price).toLocaleString("tr-TR", {style:"currency", currency:"TRY"})}
+                  </div>
 
-                <div className="prod-stock-box">
-                  <input 
-                    type="number" 
-                    className="stock-input"
-                    defaultValue={p.stock}
-                    onBlur={e => hizliStok(p.id, e.target.value)}
-                    disabled={!subActive}
-                  />
-                  <span className="stock-label">Adet</span>
+                  <div className="prod-stock-box">
+                    <input 
+                      type="number" 
+                      className="stock-input"
+                      defaultValue={p.stock}
+                      onBlur={e => hizliStok(p.id, e.target.value)}
+                      disabled={!subActive}
+                    />
+                    <span className="stock-label">Adet</span>
+                  </div>
                 </div>
 
                 <div className="prod-actions">
@@ -357,25 +336,32 @@ export default function Products() {
               <button onClick={() => setEditing(null)} className="close-btn">×</button>
             </div>
             <div className="modal-body">
-              <label>Ürün Adı</label>
-              <input value={editing.name} onChange={e => setEditing(s => ({...s, name: e.target.value}))} className="modern-input" />
+              {/* Grup kullanarak boşluğu ayarladık */}
+              <div className="form-group">
+                <label>Ürün Adı</label>
+                <input value={editing.name} onChange={e => setEditing(s => ({...s, name: e.target.value}))} className="modern-input" />
+              </div>
               
               <div className="row-2">
-                 <div>
+                 <div className="form-group">
                     <label>Fiyat</label>
                     <input type="number" value={editing.price} onChange={e => setEditing(s => ({...s, price: e.target.value}))} className="modern-input" />
                  </div>
-                 <div>
+                 <div className="form-group">
                     <label>Stok</label>
                     <input type="number" value={editing.stock} onChange={e => setEditing(s => ({...s, stock: e.target.value}))} className="modern-input" />
                  </div>
               </div>
 
-              <label>Kategori</label>
-              <input value={editing.category} onChange={e => setEditing(s => ({...s, category: e.target.value}))} className="modern-input" />
+              <div className="form-group">
+                <label>Kategori</label>
+                <input value={editing.category} onChange={e => setEditing(s => ({...s, category: e.target.value}))} className="modern-input" />
+              </div>
 
-              <label>Barkod</label>
-              <input value={editing.barcode} onChange={e => setEditing(s => ({...s, barcode: e.target.value}))} className="modern-input" />
+              <div className="form-group">
+                <label>Barkod</label>
+                <input value={editing.barcode} onChange={e => setEditing(s => ({...s, barcode: e.target.value}))} className="modern-input" />
+              </div>
             </div>
             <div className="modal-footer">
               <button onClick={() => setEditing(null)} className="modern-btn ghost">Vazgeç</button>
@@ -385,15 +371,14 @@ export default function Products() {
         </div>
       )}
 
-      {/* --- SİLME ONAYI --- */}
       {confirmDelete && (
         <div className="modal-overlay">
           <div className="modal-card small">
              <div className="modal-icon danger"><FiTrash2 /></div>
              <h4>Siliniyor</h4>
-             <p><b>{confirmDelete.label}</b> adlı ürünü silmek istediğine emin misin?</p>
+             <p><b>{confirmDelete.label}</b> silinecek. Emin misin?</p>
              <div className="modal-footer center">
-               <button onClick={() => setConfirmDelete(null)} className="modern-btn ghost">İptal</button>
+               <button onClick={() => setConfirmDelete(null)} className="modern-btn ghost">Hayır</button>
                <button onClick={silGercek} className="modern-btn danger">Evet, Sil</button>
              </div>
           </div>
@@ -403,4 +388,5 @@ export default function Products() {
     </div>
   );
 }
+
 
