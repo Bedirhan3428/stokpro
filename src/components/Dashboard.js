@@ -8,8 +8,7 @@ import {
   Legend
 } from 'chart.js';
 import { 
-  FiTrendingUp, FiTrendingDown, FiDollarSign, FiUsers, 
-  FiAlertCircle, FiArrowUpRight, FiArrowDownLeft 
+  FiTrendingUp, FiTrendingDown, FiActivity, FiUsers, FiAlertCircle 
 } from "react-icons/fi";
 
 import {
@@ -26,10 +25,9 @@ import useSubscription from "../hooks/useSubscription";
 import { bildirimIzniIste, bildirimGonder } from "../utils/notificationHelper";
 import "../styles/Dashboard.css";
 
-// --- GRAFİK MODÜLLERİNİ KAYDET (Beyaz ekranı çözer) ---
+// --- GRAFİK MOTORUNU BAŞLAT (BEYAZ EKRAN ÇÖZÜMÜ) ---
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-// --- YARDIMCI FONKSİYONLAR ---
 function parseTimestamp(createdAt) {
   if (!createdAt) return null;
   if (typeof createdAt === "object" && typeof createdAt.toDate === "function") return createdAt.toDate();
@@ -53,18 +51,15 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Abonelik kancasını güvenli hale getirelim
+  // Abonelik kontrolü (Hata vermemesi için try-catch)
   let subLoading = false;
   let subActive = true;
   try {
     const sub = useSubscription();
     subLoading = sub.loading;
     subActive = sub.active;
-  } catch (e) {
-    console.warn("Abonelik hook hatası:", e);
-  }
+  } catch (e) { console.warn(e); }
 
-  // --- VERİ ÇEKME ---
   useEffect(() => {
     let mounted = true;
     async function load() {
@@ -87,40 +82,34 @@ export default function Dashboard() {
         setLegacyExpenses(Array.isArray(legacyExp) ? legacyExp : []);
         setProducts(Array.isArray(productsData) ? productsData : []);
 
-        // Stok Bildirim Mantığı
+        // Bildirim Sistemi
         try {
             await bildirimIzniIste();
-            const kritikUrunler = (productsData || []).filter(p => Number(p.stock) < 10);
-            if (kritikUrunler.length > 0) {
-              const sonBildirim = localStorage.getItem("sonStokBildirimi");
-              const suAn = Date.now();
-              // 12 saatte bir bildirim
-              if (!sonBildirim || (suAn - sonBildirim > 43200000)) {
-                 bildirimGonder("Stok Uyarısı", `${kritikUrunler.length} ürünün stoğu kritik seviyede.`);
-                 localStorage.setItem("sonStokBildirimi", suAn);
+            const kritik = (productsData || []).filter(p => Number(p.stock) < 10);
+            if (kritik.length > 0) {
+              const son = localStorage.getItem("sonStokBildirimi");
+              const simdi = Date.now();
+              if (!son || (simdi - son > 43200000)) { // 12 saat
+                 bildirimGonder("Stok Uyarısı", `${kritik.length} ürün azalıyor.`);
+                 localStorage.setItem("sonStokBildirimi", simdi);
               }
             }
-        } catch (err) {
-            console.log("Bildirim hatası:", err);
-        }
+        } catch (e) {}
 
-        // Ödemeleri Çek
-        const paymentsMap = {};
+        // Ödemeler
+        const pMap = {};
         if (Array.isArray(customersData)) {
             for (const c of customersData) {
                 try {
                     const pays = await listCustomerPayments(c.id);
-                    paymentsMap[c.id] = Array.isArray(pays) ? pays : [];
-                } catch {
-                    paymentsMap[c.id] = [];
-                }
+                    pMap[c.id] = Array.isArray(pays) ? pays : [];
+                } catch { pMap[c.id] = []; }
             }
         }
-        if (mounted) setCustomerPaymentsMap(paymentsMap);
+        if (mounted) setCustomerPaymentsMap(pMap);
 
       } catch (err) {
-        console.error("Dashboard yükleme hatası:", err);
-        if (mounted) setError("Veriler yüklenirken bir sorun oluştu.");
+        if (mounted) setError("Veri yükleme hatası.");
       } finally {
         if (mounted) setLoading(false);
       }
@@ -129,188 +118,238 @@ export default function Dashboard() {
     return () => { mounted = false; };
   }, []);
 
-  // --- HESAPLAMALAR ---
+  const last7 = useMemo(() => new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), []);
   const last30 = useMemo(() => new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), []);
 
-  const stats = useMemo(() => {
+  // --- HESAPLAMA FONKSİYONLARI ---
+  function calculateStats(sinceDate) {
     let cashSales = 0;
+    let creditSales = 0;
+    
     (sales || []).forEach(s => {
        const d = parseTimestamp(s.createdAt || s.date);
-       if(d && d >= last30 && (s.saleType !== 'credit' && s.saleType !== 'veresiye')) {
-           cashSales += parseNumber(s.totals?.total || s.total || 0);
+       if(d && d >= sinceDate) {
+           const total = parseNumber(s.totals?.total || s.total || 0);
+           if (s.saleType === 'credit' || s.saleType === 'veresiye') {
+               creditSales += total;
+           } else {
+               cashSales += total;
+           }
        }
     });
 
     let legacyInc = 0;
     (legacyIncomes || []).forEach(i => {
         const d = parseTimestamp(i.createdAt || i.date);
-        if(d && d >= last30) legacyInc += parseNumber(i.amount || 0);
+        if(d && d >= sinceDate) legacyInc += parseNumber(i.amount || 0);
     });
 
     let legacyExp = 0;
     (legacyExpenses || []).forEach(e => {
         const d = parseTimestamp(e.createdAt || e.date);
-        if(d && d >= last30) legacyExp += parseNumber(e.amount || 0);
+        if(d && d >= sinceDate) legacyExp += parseNumber(e.amount || 0);
     });
 
     let payments = 0;
     Object.values(customerPaymentsMap).forEach(list => {
         (list || []).forEach(p => {
             const d = parseTimestamp(p.createdAt || p.date);
-            if(d && d >= last30) payments += parseNumber(p.amount || 0);
+            if(d && d >= sinceDate) payments += parseNumber(p.amount || 0);
         });
     });
 
-    const totalRevenue = cashSales + legacyInc + payments;
-    const totalReceivable = (customers || []).reduce((acc, c) => acc + parseNumber(c.balance || c.debt || 0), 0);
-    const netProfit = totalRevenue - legacyExp;
+    // Gelir = Nakit Satış + Manuel Gelir (Tahsilat kasaya girer ama gelir sayılmaz muhasebede, ama nakit akışıdır)
+    // Burada basit kasa mantığı: Nakit Satış + Manuel Gelir + Tahsilat
+    const totalCashIn = cashSales + legacyInc + payments; 
+    
+    return { cashSales, creditSales, legacyInc, legacyExp, payments, totalCashIn };
+  }
 
-    return { totalRevenue, totalExpense: legacyExp, netProfit, totalReceivable, cashSales, legacyInc, payments };
-  }, [sales, legacyIncomes, legacyExpenses, customerPaymentsMap, customers, last30]);
+  const weekly = useMemo(() => calculateStats(last7), [sales, legacyIncomes, legacyExpenses, customerPaymentsMap, last7]);
+  const monthly = useMemo(() => calculateStats(last30), [sales, legacyIncomes, legacyExpenses, customerPaymentsMap, last30]);
+  
+  const totalDebt = useMemo(() => (customers || []).reduce((acc, c) => acc + parseNumber(c.balance || c.debt || 0), 0), [customers]);
 
-  // Son İşlemler
+  // Son İşlemler Listesi
   const recentTransactions = useMemo(() => {
     const list = [];
     (sales || []).forEach(s => list.push({
-      id: s.id, type: 'sale', date: parseTimestamp(s.createdAt), 
-      amount: parseNumber(s.totals?.total || s.total), label: "Satış", sub: s.saleType === 'credit' ? 'Veresiye' : 'Nakit'
+        id: s.id, 
+        type: 'sale', 
+        date: parseTimestamp(s.createdAt), 
+        amount: parseNumber(s.totals?.total || s.total), 
+        label: s.saleType === 'credit' ? "Veresiye Satış" : "Nakit Satış",
+        isNegative: false
     }));
     (legacyExpenses || []).forEach(e => list.push({
-      id: e.id, type: 'expense', date: parseTimestamp(e.createdAt), 
-      amount: parseNumber(e.amount), label: e.description || "Gider", sub: "Manuel"
+        id: e.id, 
+        type: 'expense', 
+        date: parseTimestamp(e.createdAt), 
+        amount: parseNumber(e.amount), 
+        label: e.description || "Gider",
+        isNegative: true
     }));
-    return list.filter(i => i.date).sort((a, b) => b.date - a.date).slice(0, 8);
-  }, [sales, legacyExpenses]);
+    Object.keys(customerPaymentsMap).forEach(cid => {
+        customerPaymentsMap[cid].forEach(p => {
+             list.push({
+                 id: p.id,
+                 type: 'payment',
+                 date: parseTimestamp(p.createdAt),
+                 amount: parseNumber(p.amount),
+                 label: "Tahsilat",
+                 isNegative: false
+             })
+        })
+    });
+    return list.filter(i => i.date).sort((a, b) => b.date - a.date).slice(0, 10);
+  }, [sales, legacyExpenses, customerPaymentsMap]);
 
-  if (loading) return <div className="loading-screen"><div className="spinner"></div><p>Yükleniyor...</p></div>;
-  if (error) return <div className="error-screen">{error}</div>;
+  if (loading) return <div className="dash-yukleme"><div className="dash-spinner"></div> Yükleniyor...</div>;
 
   const donutData = {
     labels: ["Nakit Satış", "Tahsilat", "Ek Gelir"],
     datasets: [{
-      data: [stats.cashSales, stats.payments, stats.legacyInc],
-      backgroundColor: ["#3b82f6", "#10b981", "#8b5cf6"],
+      data: [monthly.cashSales, monthly.payments, monthly.legacyInc],
+      backgroundColor: ["#2563eb", "#10b981", "#8b5cf6"],
       borderWidth: 0
     }]
   };
 
   return (
-    <div className="dashboard-container">
+    <div className="dash-sayfa">
       
-      <div className="dashboard-header">
-        <h2>Genel Bakış</h2>
-        <span className="date-badge">Son 30 Gün</span>
+      {/* BAŞLIK & ABONELİK */}
+      <div className="dash-ust-bilgi">
+        <h3 className="dash-baslik">Yönetim Paneli</h3>
+        {!subLoading && !subActive && (
+          <div className="dash-uyari-badge">
+            <FiAlertCircle /> Abonelik Gerekli - 
+            <a href="https://www.stokpro.shop/product-key">Etkinleştir</a>
+          </div>
+        )}
       </div>
 
-      {!subLoading && !subActive && (
-        <div className="alert-banner">
-          <FiAlertCircle size={20} />
-          <span>Hesabınız kısıtlı. Tüm özellikleri açmak için:</span>
-          <a href="https://www.stokpro.shop/product-key" className="alert-link">Ücretsiz Etkinleştir</a>
-        </div>
-      )}
-
-      {/* KPI KARTLARI (Başlıklı) */}
-      <section className="kpi-grid">
+      {/* --- HAFTALIK ÖZET KARTLARI --- */}
+      <h4 className="bolum-baslik">Haftalık Durum (Son 7 Gün)</h4>
+      <div className="dash-metrik-grid">
         
-        <div className="kpi-card">
-          <div className="kpi-header">
-            <div className="icon-box blue"><FiTrendingUp /></div>
-            <span className="kpi-title">Toplam Gelir</span>
-          </div>
-          <div className="kpi-body">
-            <h3>{stats.totalRevenue.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺</h3>
-            <p className="kpi-sub">Satış + Tahsilat</p>
-          </div>
-        </div>
-
-        <div className="kpi-card">
-          <div className="kpi-header">
-            <div className="icon-box red"><FiTrendingDown /></div>
-            <span className="kpi-title">Toplam Gider</span>
-          </div>
-          <div className="kpi-body">
-            <h3>{stats.totalExpense.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺</h3>
-            <p className="kpi-sub">Manuel Giderler</p>
+        <div className="dash-kart">
+          <div className="kart-ikon mavi"><FiTrendingUp /></div>
+          <div className="kart-icerik">
+            <div className="dash-etiket">Haftalık Nakit Girişi</div>
+            <div className="dash-deger">{weekly.totalCashIn.toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</div>
+            <div className="dash-alt">
+              Nakit Satış: {weekly.cashSales.toLocaleString("tr-TR")} ₺ <br/>
+              Tahsilat: {weekly.payments.toLocaleString("tr-TR")} ₺
+            </div>
           </div>
         </div>
 
-        <div className="kpi-card">
-          <div className="kpi-header">
-            <div className="icon-box green"><FiDollarSign /></div>
-            <span className="kpi-title">Net Kazanç</span>
-          </div>
-          <div className="kpi-body">
-            <h3>{stats.netProfit.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺</h3>
-            <p className="kpi-sub">Gelir - Gider</p>
+        <div className="dash-kart">
+          <div className="kart-ikon kirmizi"><FiTrendingDown /></div>
+          <div className="kart-icerik">
+            <div className="dash-etiket">Haftalık Gider</div>
+            <div className="dash-deger">{weekly.legacyExp.toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</div>
+            <div className="dash-alt">Manuel Giderler</div>
           </div>
         </div>
 
-        <div className="kpi-card">
-          <div className="kpi-header">
-            <div className="icon-box purple"><FiUsers /></div>
-            <span className="kpi-title">Alacaklar</span>
-          </div>
-          <div className="kpi-body">
-            <h3>{stats.totalReceivable.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺</h3>
-            <p className="kpi-sub">Müşteri Bakiyeleri</p>
+        <div className="dash-kart">
+          <div className="kart-ikon mor"><FiActivity /></div>
+          <div className="kart-icerik">
+             <div className="dash-etiket">Haftalık Veresiye</div>
+             <div className="dash-deger">{weekly.creditSales.toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</div>
+             <div className="dash-alt">Borç defterine eklendi</div>
           </div>
         </div>
 
-      </section>
-
-      {/* GRAFİK VE LİSTE */}
-      <section className="main-content">
-        <div className="chart-section card">
-          <div className="card-head">
-            <h4>Gelir Kaynakları</h4>
-          </div>
-          <div className="chart-wrapper">
-             {/* Veri yoksa grafik yerine mesaj göster */}
-             {stats.totalRevenue > 0 ? (
-                <Doughnut 
-                  data={donutData} 
-                  options={{ 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    plugins: { legend: { position: 'bottom' } } 
-                  }} 
-                />
-             ) : (
-               <p className="no-data">Görüntülenecek gelir verisi yok.</p>
-             )}
+        <div className="dash-kart">
+          <div className="kart-ikon sari"><FiUsers /></div>
+          <div className="kart-icerik">
+             <div className="dash-etiket">Toplam Müşteri Alacağı</div>
+             <div className="dash-deger">{totalDebt.toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</div>
+             <div className="dash-alt">{customers.length} kayıtlı müşteri</div>
           </div>
         </div>
 
-        <div className="transactions-section card">
-          <div className="card-head">
-            <h4>Son İşlemler</h4>
-            <Link to="/reports" className="see-all">Tümü</Link>
-          </div>
-          <div className="trans-list">
-            {recentTransactions.map(t => (
-              <div key={t.id} className="trans-item">
-                <div className={`trans-icon ${t.type === 'expense' ? 'bg-red' : 'bg-green'}`}>
-                  {t.type === 'expense' ? <FiArrowDownLeft /> : <FiArrowUpRight />}
-                </div>
-                <div className="trans-info">
-                  <span className="trans-name">{t.label}</span>
-                  <span className="trans-date">{t.sub} • {t.date?.toLocaleDateString()}</span>
-                </div>
-                <div className={`trans-amount ${t.type === 'expense' ? 'txt-red' : 'txt-green'}`}>
-                  {t.type === 'expense' ? '-' : '+'}{t.amount.toLocaleString("tr-TR")} ₺
-                </div>
-              </div>
-            ))}
-            {recentTransactions.length === 0 && <p className="no-data">Henüz işlem yok.</p>}
-          </div>
-        </div>
-      </section>
-
-      <div className="report-wrapper">
-        <AdvancedReport />
       </div>
+
+      {/* --- AYLIK DETAYLAR & GRAFİK --- */}
+      <h4 className="bolum-baslik" style={{marginTop: '30px'}}>Aylık Özet (Son 30 Gün)</h4>
+      <div className="dash-aylik-grid">
+        
+        {/* SOL TARAF: RAKAMSAL DETAYLAR */}
+        <div className="dash-kart sol-detay">
+           <div className="detay-satir">
+              <span>Aylık Nakit Satış</span>
+              <strong>{monthly.cashSales.toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</strong>
+           </div>
+           <div className="detay-satir">
+              <span>Aylık Manuel Gelir</span>
+              <strong>{monthly.legacyInc.toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</strong>
+           </div>
+           <div className="detay-satir">
+              <span>Aylık Tahsilat</span>
+              <strong>{monthly.payments.toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</strong>
+           </div>
+           <hr className="ayirac" />
+           <div className="detay-satir buyuk">
+              <span>Toplam Kasa Girişi</span>
+              <strong style={{color: '#2563eb'}}>{monthly.totalCashIn.toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</strong>
+           </div>
+           <div className="detay-satir buyuk">
+              <span>Toplam Gider</span>
+              <strong style={{color: '#ef4444'}}>{monthly.legacyExp.toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</strong>
+           </div>
+           <div className="detay-satir sonuc">
+              <span>NET KASA (Kar/Zarar)</span>
+              <strong>{(monthly.totalCashIn - monthly.legacyExp).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</strong>
+           </div>
+        </div>
+
+        {/* SAĞ TARAF: GRAFİK */}
+        <div className="dash-kart sag-grafik">
+            <h5 className="grafik-baslik">Gelir Dağılımı</h5>
+            <div className="chart-kapsul">
+                {monthly.totalCashIn > 0 ? (
+                    <Doughnut 
+                        data={donutData} 
+                        options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom" } } }} 
+                    />
+                ) : (
+                    <p className="veri-yok">Bu ay henüz veri yok.</p>
+                )}
+            </div>
+        </div>
+      </div>
+
+      {/* --- SON İŞLEMLER --- */}
+      <div className="dash-kart" style={{marginTop: '20px'}}>
+         <div className="kart-baslik-satir">
+            <h4 className="dash-etiket-buyuk">Son İşlemler</h4>
+            <Link to="/reports" style={{fontSize:'0.9rem', color:'#2563eb'}}>Tümü</Link>
+         </div>
+         <div className="dash-recent-list">
+            {recentTransactions.map((t) => (
+               <div key={t.id} className="dash-recent-item">
+                  <div className="recent-info">
+                     <span className="recent-label">{t.label}</span>
+                     <span className="recent-date">{t.date?.toLocaleString()}</span>
+                  </div>
+                  <div className={`recent-amount ${t.isNegative ? 'neg' : 'poz'}`}>
+                     {t.isNegative ? '-' : '+'}{t.amount.toLocaleString("tr-TR")} ₺
+                  </div>
+               </div>
+            ))}
+            {recentTransactions.length === 0 && <p className="veri-yok">İşlem bulunamadı.</p>}
+         </div>
+      </div>
+
+      {/* RAPOR MODÜLÜ */}
+      <AdvancedReport />
 
     </div>
   );
 }
+
+
