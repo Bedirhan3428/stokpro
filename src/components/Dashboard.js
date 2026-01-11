@@ -203,7 +203,7 @@ export default function Dashboard() {
                 <FiPackage />
              </div>
              <div className="welcome-text">
-                <h3>Hadi Başlayalım! 🚀</h3>
+                <h3>Hadi Başlayalım!</h3>
                 <p>Henüz envanterin boş görünüyor. İstatistiklerini görebilmek için ilk ürününü ekleyerek işe koyulalım.</p>
              </div>
           </div>
