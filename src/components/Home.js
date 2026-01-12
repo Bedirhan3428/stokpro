@@ -10,8 +10,10 @@ import {
   FiCheckCircle,
   FiBox,
   FiUsers,
-  FiPieChart
-} from "react-icons/fi"; // Modern İkonlar
+  FiPieChart,
+  FiDownload, // Yeni eklenen ikon
+  FiX         // Yeni eklenen ikon
+} from "react-icons/fi";
 import Info from "./info";
 import "../styles/Home.css";
 
@@ -20,25 +22,101 @@ export default function Home() {
   const [user, setUser] = useState(null);
   const auth = getAuth();
 
+  // --- PWA Yükleme State'leri ---
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [isInstallVisible, setIsInstallVisible] = useState(false);
+
   useEffect(() => {
+    // Auth Dinleyicisi
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       setUser(u);
     });
-    return () => unsubscribe();
+
+    // --- PWA Event Listener ---
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault(); // Varsayılan tarayıcı barını engelle
+      setDeferredPrompt(e);
+      setIsInstallVisible(true); // Bizim butonumuzu göster
+    };
+
+    const handleAppInstalled = () => {
+      setIsInstallVisible(false);
+      setDeferredPrompt(null);
+      console.log('PWA başarıyla yüklendi!');
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
   }, [auth]);
 
+  // --- PWA Yükleme Fonksiyonu ---
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    
+    deferredPrompt.prompt();
+    
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setIsInstallVisible(false);
+    }
+    setDeferredPrompt(null);
+  };
+
   return (
-    <div className="home-container">
+    <div className="home-container relative">
       
-      {/* 1. HERO BÖLÜMÜ (ANA GİRİŞ) */}
+      {/* --- PWA YÜKLEME BUTONU (Floating) --- */}
+      {isInstallVisible && (
+        <div className="fixed bottom-4 left-4 right-4 z-50 md:bottom-6 md:right-6 md:left-auto md:w-auto animate-fade-in-up">
+          <div className="relative group">
+            {/* Glow Efekti */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-green-400 to-emerald-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+            
+            <div className="relative flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-green-100 dark:border-slate-700">
+              
+              {/* Sol Taraf: İkon ve Metin */}
+              <div className="flex items-center gap-4 cursor-pointer" onClick={handleInstallClick}>
+                <div className="flex items-center justify-center w-12 h-12 bg-green-100 text-green-600 rounded-full dark:bg-green-900/30 dark:text-green-400 shrink-0">
+                  <FiDownload size={24} className="animate-bounce" />
+                </div>
+                <div>
+                  <h4 className="text-base font-bold text-slate-800 dark:text-white">
+                    Uygulamayı Yükle
+                  </h4>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    Hızlı erişim için ana ekrana ekle.
+                  </p>
+                </div>
+              </div>
+
+              {/* Kapat Butonu */}
+              <button 
+                onClick={() => setIsInstallVisible(false)}
+                className="ml-4 p-2 text-slate-400 hover:text-red-500 transition-colors"
+                aria-label="Kapat"
+              >
+                <FiX size={20} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 1. HERO BÖLÜMÜ */}
       <section className="hero-section">
         {!user && <div className="badge"> Küçük İşletmeler İçin Ücretsiz</div>}
-        
+
         <h1 className="hero-title">
           Karmaşık Defterlere Son <br />
           <span className="highlight">Stok ve Veresiyeni Dijitalde Yönet</span>
         </h1>
-        
+
         <p className="hero-description">
           StokPro sadece bir kayıt defteri değil, işletmenizin akıl hocasıdır. 
           Stoklarını saniyeler içinde gir, veresiyelerini takip et ve mağaza zekasıyla işini büyüt.
@@ -51,7 +129,7 @@ export default function Home() {
           >
             {user ? "Panele Git" : "Hemen Başla"} <FiArrowRight />
           </button>
-          
+
           {!user && (
             <p className="sub-note">
               <FiCheckCircle style={{ marginRight: 5 }} /> Kredi kartı gerekmez, kurulum yok.
@@ -60,15 +138,14 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 2. TEMEL ÖZELLİKLER (ESKİ İSTEDİKLERİN) */}
+      {/* 2. TEMEL ÖZELLİKLER */}
       <section className="features-section">
         <div className="section-header">
           <h2 className="section-title">İhtiyacın Olan <span className="blue-text">Temel Çözümler</span></h2>
           <p className="section-subtitle">İşletmeni yönetmek için gereken her şey elinin altında.</p>
         </div>
-        
+
         <div className="features-grid three-col">
-          {/* Eski Özellik 1 */}
           <div className="feature-card">
             <div className="icon-box blue">
               <FiBox />
@@ -77,7 +154,6 @@ export default function Home() {
             <p>Ürünlerini barkodla veya elle saniyeler içinde ekle. Karmaşık menülerle uğraşma.</p>
           </div>
 
-          {/* Eski Özellik 2 */}
           <div className="feature-card">
             <div className="icon-box green">
               <FiUsers />
@@ -86,7 +162,6 @@ export default function Home() {
             <p>Kimin ne kadar borcu var asla unutma. Müşteri bazlı detaylı döküm al.</p>
           </div>
 
-          {/* Eski Özellik 3 */}
           <div className="feature-card">
             <div className="icon-box purple">
               <FiPieChart />
@@ -97,16 +172,14 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 3. MAĞAZA ZEKASI (YENİ İSTEDİKLERİN) */}
+      {/* 3. MAĞAZA ZEKASI */}
       <section className="features-section alt-bg">
         <div className="section-header">
           <h2 className="section-title">Sadece Stok Değil, <span className="highlight">Mağaza Zekası!</span></h2>
           <p className="section-subtitle">Verilerinizi işleyerek size para kazandıran içgörüler sunuyoruz.</p>
         </div>
-        
+
         <div className="features-grid four-col">
-          
-          {/* Yeni Özellik 1 */}
           <div className="feature-card small-card">
             <div className="icon-box-sm blue">
               <FiSearch />
@@ -115,7 +188,6 @@ export default function Home() {
             <p>Müşterini bekletme, aradığını anında bul.</p>
           </div>
 
-          {/* Yeni Özellik 2 */}
           <div className="feature-card small-card">
             <div className="icon-box-sm red">
               <FiAlertTriangle />
@@ -124,7 +196,6 @@ export default function Home() {
             <p>Biten ürünleri önceden haber al, satışı kaçırma.</p>
           </div>
 
-          {/* Yeni Özellik 3 */}
           <div className="feature-card small-card">
             <div className="icon-box-sm orange">
               <FiTrendingDown />
@@ -133,7 +204,6 @@ export default function Home() {
             <p>Satılmayan ürünleri tespit et, nakite çevir.</p>
           </div>
 
-          {/* Yeni Özellik 4 */}
           <div className="feature-card small-card">
             <div className="icon-box-sm purple">
               <FiAward />
@@ -141,7 +211,6 @@ export default function Home() {
             <h4>Şampiyon Ürünler</h4>
             <p>En çok kazandıran ürünlerini keşfet.</p>
           </div>
-
         </div>
       </section>
 
