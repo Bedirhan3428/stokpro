@@ -11,8 +11,8 @@ import {
   FiBox,
   FiUsers,
   FiPieChart,
-  FiDownload, // Yeni eklenen ikon
-  FiX         // Yeni eklenen ikon
+  FiDownload, 
+  FiX
 } from "react-icons/fi";
 import Info from "./info";
 import "../styles/Home.css";
@@ -36,7 +36,8 @@ export default function Home() {
     const handleBeforeInstallPrompt = (e) => {
       e.preventDefault(); // Varsayılan tarayıcı barını engelle
       setDeferredPrompt(e);
-      setIsInstallVisible(true); // Bizim butonumuzu göster
+      setIsInstallVisible(true); // Şartlar sağlanınca butonu göster
+      console.log("PWA yükleme fırsatı yakalandı!");
     };
 
     const handleAppInstalled = () => {
@@ -48,16 +49,31 @@ export default function Home() {
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
 
+    // 👇 TEST İÇİN GEÇİCİ KOD (Tasarımı görmen için)
+    // Gerçek yayına alırken bu setTimeout bloğunu silebilirsin.
+    const testTimer = setTimeout(() => {
+      if (!isInstallVisible) {
+        console.log("Test modu: Buton zorla gösteriliyor.");
+        setIsInstallVisible(true);
+      }
+    }, 2000);
+
     return () => {
       unsubscribe();
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
+      clearTimeout(testTimer);
     };
-  }, [auth]);
+  }, [auth, isInstallVisible]);
 
   // --- PWA Yükleme Fonksiyonu ---
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
+    // Eğer tarayıcı desteği yoksa (Test modundaysak) sadece uyarı verelim
+    if (!deferredPrompt) {
+      alert("Bu bir test görünümüdür. Gerçek yükleme için tarayıcının PWA şartlarını sağlaması gerekir (HTTPS + Manifest + ServiceWorker).");
+      setIsInstallVisible(false);
+      return;
+    }
     
     deferredPrompt.prompt();
     
@@ -72,24 +88,28 @@ export default function Home() {
     <div className="home-container relative">
       
       {/* --- PWA YÜKLEME BUTONU (Floating) --- */}
+      {/* Not: 'animate-fade-in-up' Tailwind config'inde yoksa çalışmaz. 
+         Garanti olması için standart 'transition' ve 'duration' sınıflarını ekledim.
+      */}
       {isInstallVisible && (
-        <div className="fixed bottom-4 left-4 right-4 z-50 md:bottom-6 md:right-6 md:left-auto md:w-auto animate-fade-in-up">
+        <div className="fixed bottom-4 left-4 right-4 z-[9999] md:bottom-6 md:right-6 md:left-auto md:w-auto transition-all duration-500 ease-in-out transform translate-y-0 opacity-100">
           <div className="relative group">
-            {/* Glow Efekti */}
-            <div className="absolute -inset-1 bg-gradient-to-r from-green-400 to-emerald-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+            {/* Glow Efekti - Yeşil tonlarda parlama */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-green-400 to-emerald-600 rounded-2xl blur opacity-30 group-hover:opacity-60 transition duration-1000 group-hover:duration-200"></div>
             
             <div className="relative flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-green-100 dark:border-slate-700">
               
               {/* Sol Taraf: İkon ve Metin */}
-              <div className="flex items-center gap-4 cursor-pointer" onClick={handleInstallClick}>
-                <div className="flex items-center justify-center w-12 h-12 bg-green-100 text-green-600 rounded-full dark:bg-green-900/30 dark:text-green-400 shrink-0">
+              <div className="flex items-center gap-4 cursor-pointer select-none" onClick={handleInstallClick}>
+                <div className="flex items-center justify-center w-12 h-12 bg-green-100 text-green-600 rounded-full dark:bg-green-900/30 dark:text-green-400 shrink-0 shadow-sm">
+                  {/* animate-bounce ile sürekli hafif zıplama efekti */}
                   <FiDownload size={24} className="animate-bounce" />
                 </div>
-                <div>
-                  <h4 className="text-base font-bold text-slate-800 dark:text-white">
+                <div className="flex flex-col">
+                  <h4 className="text-base font-bold text-slate-800 dark:text-white leading-tight">
                     Uygulamayı Yükle
                   </h4>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                     Hızlı erişim için ana ekrana ekle.
                   </p>
                 </div>
@@ -97,8 +117,11 @@ export default function Home() {
 
               {/* Kapat Butonu */}
               <button 
-                onClick={() => setIsInstallVisible(false)}
-                className="ml-4 p-2 text-slate-400 hover:text-red-500 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsInstallVisible(false);
+                }}
+                className="ml-4 p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                 aria-label="Kapat"
               >
                 <FiX size={20} />
@@ -226,5 +249,3 @@ export default function Home() {
     </div>
   );
 }
-
-
