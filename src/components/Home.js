@@ -2,43 +2,40 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { 
-  FiArrowRight, 
-  FiSearch, 
-  FiAlertTriangle, 
-  FiTrendingDown, 
-  FiAward, 
-  FiCheckCircle,
-  FiBox,
-  FiUsers,
-  FiPieChart,
-  FiDownload,
-  FiShare
+  FiArrowRight, FiSearch, FiAlertTriangle, FiTrendingDown, 
+  FiAward, FiCheckCircle, FiBox, FiUsers, FiPieChart, FiDownload, FiShare
 } from "react-icons/fi";
 import "../styles/Home.css";
 
 export default function Home() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  
+  // PWA Durumları
   const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [isStandalone, setIsStandalone] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
+  
   const auth = getAuth();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
 
-    // 1. Cihaz ve Mod Kontrolü
+    // 1. Cihaz IOS mu?
     const isIosDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
     setIsIOS(isIosDevice);
 
+    // 2. Uygulama Zaten Yüklü mü? (Standalone mod kontrolü)
     const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
     setIsStandalone(isInStandaloneMode);
 
-    // 2. Yükleme Sinyalini Yakala (Chrome/Android)
+    // 3. Chrome/Android "Yükle" Sinyalini Yakala
     const handleBeforeInstallPrompt = (e) => {
-      e.preventDefault(); // Otomatik banner'ı durdur
-      setDeferredPrompt(e); // Olayı sakla
-      console.log("Yükleme sinyali yakalandı!");
+      // Tarayıcının kendi otomatik banner'ını engelle
+      e.preventDefault();
+      // Olayı (Event) sakla, butona basınca bunu kullanacağız
+      setDeferredPrompt(e);
+      console.log("✅ PWA Yükleme sinyali yakalandı ve saklandı.");
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -49,23 +46,21 @@ export default function Home() {
     };
   }, []);
 
-  // Yükleme Butonu Tıklanınca
   const handleInstallClick = async () => {
-    if (deferredPrompt) {
-      // Sinyal varsa direkt çalıştır
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setDeferredPrompt(null);
-      }
-    } else {
-      // Sinyal yoksa (Manuel Yükleme Rehberi)
-      if (isIOS) {
-        alert("iOS cihazlarda yüklemek için: Paylaş butonuna basıp 'Ana Ekrana Ekle' seçeneğini kullanın.");
-      } else {
-        alert("Otomatik yükleme başlatılamadı.\n\nLütfen tarayıcınızın sağ üst köşesindeki menüye (üç nokta) tıklayıp 'Uygulamayı Yükle' veya 'Ana Ekrana Ekle' seçeneğini seçin.");
-      }
+    if (!deferredPrompt) {
+      console.log("Hata: Yükleme sinyali (prompt) kayıp.");
+      return;
     }
+
+    // Yükleme penceresini tetikle
+    deferredPrompt.prompt();
+
+    // Kullanıcının ne seçtiğini bekle
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`Kullanıcı tercihi: ${outcome}`);
+
+    // Eğer yüklediyse veya iptal ettiyse, prompt'u sıfırla (tek kullanımlıktır)
+    setDeferredPrompt(null);
   };
 
   return (
@@ -93,20 +88,20 @@ export default function Home() {
             {user ? "Panele Git" : "Hemen Başla"} <FiArrowRight />
           </button>
 
-          {/* --- UYGULAMA YÜKLEME BUTONU (Yüklü değilse her zaman göster) --- */}
-          {!isStandalone && (
-            <>
-              <button className="install-btn" onClick={handleInstallClick}>
-                <FiDownload /> Uygulamayı İndir
-              </button>
-              
-              {/* iOS için küçük ipucu (Opsiyonel) */}
-              {isIOS && (
-                <div className="ios-hint">
-                  <small><FiShare /> ile Ana Ekrana Ekle</small>
-                </div>
-              )}
-            </>
+          {/* --- PWA BUTON MANTIĞI --- */}
+          {/* 1. Uygulama yüklü değilse (!isStandalone) */}
+          {/* 2. SADECE tarayıcı sinyal gönderdiyse (deferredPrompt varsa) butonu göster */}
+          {!isStandalone && deferredPrompt && (
+            <button className="install-btn" onClick={handleInstallClick}>
+              <FiDownload /> Uygulamayı İndir
+            </button>
+          )}
+
+          {/* iOS Kullanıcıları İçin Bilgilendirme */}
+          {!isStandalone && isIOS && (
+            <div className="ios-hint">
+              <small><FiShare /> butonuna basıp "Ana Ekrana Ekle" diyerek yükle.</small>
+            </div>
           )}
           
           {!user && (
