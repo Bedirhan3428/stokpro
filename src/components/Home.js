@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { 
   FiArrowRight, 
@@ -11,31 +11,34 @@ import {
   FiBox,
   FiUsers,
   FiPieChart,
-  FiDownload
-} from "react-icons/fi"; // FiDownload eklendi
+  FiDownload,
+  FiShare
+} from "react-icons/fi";
 import "../styles/Home.css";
 
 export default function Home() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [deferredPrompt, setDeferredPrompt] = useState(null); // PWA yükleme olayı
-  const [isAppInstalled, setIsAppInstalled] = useState(false); // Zaten yüklü mü?
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [isStandalone, setIsStandalone] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
   const auth = getAuth();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-    });
+    const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
 
-    // 1. Uygulama zaten yüklü mü kontrol et (Standalone mod)
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setIsAppInstalled(true);
-    }
+    // 1. Cihaz ve Mod Kontrolü
+    const isIosDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    setIsIOS(isIosDevice);
 
-    // 2. Tarayıcının yükleme olayını yakala
+    const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+    setIsStandalone(isInStandaloneMode);
+
+    // 2. Yükleme Sinyalini Yakala (Chrome/Android)
     const handleBeforeInstallPrompt = (e) => {
-      e.preventDefault(); // Otomatik banner'ı engelle
-      setDeferredPrompt(e); // Olayı sakla, butona basınca kullanacağız
+      e.preventDefault(); // Otomatik banner'ı durdur
+      setDeferredPrompt(e); // Olayı sakla
+      console.log("Yükleme sinyali yakalandı!");
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -46,22 +49,29 @@ export default function Home() {
     };
   }, []);
 
-  // Yükleme Butonuna Tıklanınca
+  // Yükleme Butonu Tıklanınca
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-
-    deferredPrompt.prompt(); // Chrome'un yükleme penceresini aç
-    const { outcome } = await deferredPrompt.userChoice; // Kullanıcı ne seçti?
-    
-    if (outcome === 'accepted') {
-      setDeferredPrompt(null); // Kabul ettiyse butonu kaldır
+    if (deferredPrompt) {
+      // Sinyal varsa direkt çalıştır
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+      }
+    } else {
+      // Sinyal yoksa (Manuel Yükleme Rehberi)
+      if (isIOS) {
+        alert("iOS cihazlarda yüklemek için: Paylaş butonuna basıp 'Ana Ekrana Ekle' seçeneğini kullanın.");
+      } else {
+        alert("Otomatik yükleme başlatılamadı.\n\nLütfen tarayıcınızın sağ üst köşesindeki menüye (üç nokta) tıklayıp 'Uygulamayı Yükle' veya 'Ana Ekrana Ekle' seçeneğini seçin.");
+      }
     }
   };
 
   return (
     <div className="home-container">
       
-      {/* 1. HERO BÖLÜMÜ */}
+      {/* HERO BÖLÜMÜ */}
       <section className="hero-section">
         {!user && <div className="badge">✨ Küçük İşletmeler İçin Ücretsiz</div>}
         
@@ -83,11 +93,20 @@ export default function Home() {
             {user ? "Panele Git" : "Hemen Başla"} <FiArrowRight />
           </button>
 
-          {/* --- PWA YÜKLEME BUTONU (Sadece şartlar sağlanırsa görünür) --- */}
-          {!isAppInstalled && deferredPrompt && (
-            <button className="install-btn" onClick={handleInstallClick}>
-              <FiDownload /> Uygulamayı İndir
-            </button>
+          {/* --- UYGULAMA YÜKLEME BUTONU (Yüklü değilse her zaman göster) --- */}
+          {!isStandalone && (
+            <>
+              <button className="install-btn" onClick={handleInstallClick}>
+                <FiDownload /> Uygulamayı İndir
+              </button>
+              
+              {/* iOS için küçük ipucu (Opsiyonel) */}
+              {isIOS && (
+                <div className="ios-hint">
+                  <small><FiShare /> ile Ana Ekrana Ekle</small>
+                </div>
+              )}
+            </>
           )}
           
           {!user && (
@@ -98,7 +117,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 2. TEMEL ÖZELLİKLER */}
+      {/* TEMEL ÖZELLİKLER */}
       <section className="features-section">
         <div className="section-header">
           <h2 className="section-title">İhtiyacın Olan <span className="blue-text">Temel Çözümler</span></h2>
@@ -111,13 +130,11 @@ export default function Home() {
             <h3>Hızlı Stok Girişi</h3>
             <p>Ürünlerini barkodla veya elle saniyeler içinde ekle. Karmaşık menülerle uğraşma.</p>
           </div>
-
           <div className="feature-card">
             <div className="icon-box green"><FiUsers /></div>
             <h3>Veresiye Takibi</h3>
             <p>Kimin ne kadar borcu var asla unutma. Müşteri bazlı detaylı döküm al.</p>
           </div>
-
           <div className="feature-card">
             <div className="icon-box purple"><FiPieChart /></div>
             <h3>Anlık Raporlar</h3>
@@ -126,7 +143,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 3. MAĞAZA ZEKASI */}
+      {/* MAĞAZA ZEKASI */}
       <section className="features-section alt-bg">
         <div className="section-header">
           <h2 className="section-title">Sadece Stok Değil, <span className="highlight">Mağaza Zekası!</span></h2>
@@ -139,19 +156,16 @@ export default function Home() {
             <h4>Işık Hızında Arama</h4>
             <p>Müşterini bekletme, aradığını anında bul.</p>
           </div>
-
           <div className="feature-card small-card">
             <div className="icon-box-sm red"><FiAlertTriangle /></div>
             <h4>Kritik Stok Radarı</h4>
             <p>Biten ürünleri önceden haber al, satışı kaçırma.</p>
           </div>
-
           <div className="feature-card small-card">
             <div className="icon-box-sm orange"><FiTrendingDown /></div>
             <h4>Ölü Stok Analizi</h4>
             <p>Satılmayan ürünleri tespit et, nakite çevir.</p>
           </div>
-
           <div className="feature-card small-card">
             <div className="icon-box-sm purple"><FiAward /></div>
             <h4>Şampiyon Ürünler</h4>
@@ -160,7 +174,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 4. FOOTER */}
+      {/* FOOTER */}
       <footer className="home-footer">
         <div className="simple-copyright">
           © {new Date().getFullYear()} StokPro. Tüm hakları saklıdır.
@@ -169,4 +183,5 @@ export default function Home() {
     </div>
   );
 }
+
 
