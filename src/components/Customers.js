@@ -41,6 +41,7 @@ export default function Customers() {
   const [detailCustomer, setDetailCustomer] = useState(null);
   const [custSales, setCustSales] = useState([]);
   const [custPayments, setCustPayments] = useState([]);
+  // eslint-disable-next-line no-unused-vars
   const [detailLoading, setDetailLoading] = useState(false);
   const [tab, setTab] = useState("payment"); // payment, edit, balance
 

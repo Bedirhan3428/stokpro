@@ -69,7 +69,7 @@ export default function Dashboard() {
     async function load() {
       setLoading(true);
       try {
-        const [salesData, ledgerData, customersData, legacyInc, legacyExp, productsData] = await Promise.all([
+        const [salesData, , customersData, legacyInc, legacyExp, productsData] = await Promise.all([
           listSales().catch(() => []),
           listLedger().catch(() => []),
           listCustomers().catch(() => []),

@@ -55,6 +55,7 @@ export default function Sales() {
   const [search, setSearch] = useState("");
 
   const [salesList, setSalesList] = useState([]);
+  // eslint-disable-next-line no-unused-vars
   const [loading, setLoading] = useState(true);
   const [note, setNote] = useState(null);
 
