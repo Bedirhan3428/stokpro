@@ -7,60 +7,53 @@ export default function PrivacyPolicy() {
     <div className="legal-kapsul">
       <div className="legal-icerik">
         <Link to="/" className="legal-geri-btn">← Ana Sayfaya Dön</Link>
-        
-        <h1 className="legal-baslik">Gizlilik Politikası</h1>
-        <span className="legal-tarih">Son Güncelleme: 29 Aralık 2025</span>
+
+        <h1 className="legal-baslik">Gizlilik ve Veri Güvenliği</h1>
+        <span className="legal-tarih">Son Güncelleme: 16 Ocak 2026</span>
 
         <div className="legal-bolum">
-          <h2 className="legal-altbaslik">1. Giriş</h2>
+          <h2 className="legal-altbaslik">1. Veri Gizliliği Taahhüdü</h2>
           <p className="legal-metin">
-            StokPro ("biz", "bizim" veya "uygulama") olarak gizliliğinize önem veriyoruz. 
-            Bu Gizlilik Politikası, StokPro uygulamasını kullandığınızda bilgilerinizin nasıl toplandığını, 
-            kullanıldığını ve paylaşıldığını açıklar.
+            StokPro olarak, işletme verilerinizin sizin en değerli varlığınız olduğunun bilincindeyiz. 
+            Verileriniz asla üçüncü şahıslara satılmaz, reklam amaçlı paylaşılmaz ve sadece sizin erişiminize açık tutulur.
           </p>
         </div>
 
         <div className="legal-bolum">
-          <h2 className="legal-altbaslik">2. Toplanan Bilgiler</h2>
-          <p className="legal-metin">Uygulamayı kullanırken aşağıdaki bilgileri toplayabiliriz:</p>
+          <h2 className="legal-altbaslik">2. İşlenen Veri Kategorileri</h2>
           <ul className="legal-liste">
-            <li><strong>Hesap Bilgileri:</strong> Kayıt olurken sağladığınız e-posta adresi ve şifre (şifrelenmiş olarak).</li>
-            <li><strong>Kullanıcı İçeriği:</strong> Stok yönetimi için girdiğiniz ürün bilgileri, satış kayıtları, müşteri verileri ve finansal kayıtlar.</li>
-            <li><strong>Kullanım Verileri:</strong> Uygulama performansını iyileştirmek için anonimleştirilmiş kullanım istatistikleri.</li>
+            <li><strong>Kurumsal Kimlik:</strong> Kayıt aşamasında alınan e-posta adresi (Güvenli kimlik doğrulama için).</li>
+            <li><strong>Operasyonel Veriler:</strong> Girdiğiniz ürün listeleri, stok miktarları ve satış trendleri (Senkronizasyon için).</li>
+            <li><strong>Müşteri Kayıtları:</strong> Müşteri bakiye ve işlem geçmişleri (Muhasebe döngüsü için).</li>
           </ul>
         </div>
 
         <div className="legal-bolum">
-          <h2 className="legal-altbaslik">3. Bilgilerin Kullanımı</h2>
+          <h2 className="legal-altbaslik">3. Veri Güvenliği Altyapısı</h2>
           <p className="legal-metin">
-            Topladığımız bilgileri şu amaçlarla kullanırız:
-          </p>
-          <ul className="legal-liste">
-            <li>Hizmetlerimizi sağlamak ve sürdürmek.</li>
-            <li>Stok ve satış verilerinizi güvenli bir şekilde saklamak ve senkronize etmek.</li>
-            <li>Hesabınızla ilgili önemli bildirimleri göndermek.</li>
-            <li>Hataları tespit etmek ve teknik sorunları gidermek.</li>
-          </ul>
-        </div>
-
-        <div className="legal-bolum">
-          <h2 className="legal-altbaslik">4. Üçüncü Taraf Hizmetler</h2>
-          <p className="legal-metin">
-            Uygulamamız altyapı ve kimlik doğrulama hizmetleri için <strong>Google Firebase</strong> kullanmaktadır. 
-            Verileriniz Firebase sunucularında güvenli bir şekilde saklanmaktadır.
+            StokPro, dünya standartlarında güvenlik sunan <strong>Google Firebase</strong> altyapısını kullanır. 
+            Verileriniz, endüstri standardı olan AES-256 şifreleme yöntemleri ile korunmakta ve Google'ın yüksek güvenlikli 
+            veri merkezlerinde saklanmaktadır.
           </p>
         </div>
 
         <div className="legal-bolum">
-          <h2 className="legal-altbaslik">5. İletişim</h2>
+          <h2 className="legal-altbaslik">4. Kullanıcı Hakları</h2>
           <p className="legal-metin">
-            Bu Gizlilik Politikası hakkında sorularınız varsa, lütfen bizimle iletişime geçin:
+            Kullanıcılar, sistem üzerindeki tüm verilerini diledikleri zaman güncelleme veya silme hakkına sahiptir. 
+            Hesabınızı silmeniz durumunda, tüm ticari verileriniz kalıcı olarak imha edilir.
+          </p>
+        </div>
+
+        <div className="legal-bolum">
+          <h2 className="legal-altbaslik">5. İletişim Kanalları</h2>
+          <p className="legal-metin">
+            Veri gizliliği ile ilgili talepleriniz için uzman ekibimize ulaşın:
             <br />
-            <a href="mailto:stokproresmi@gmail.com" className="legal-link">destek@stokpro.shop</a>
+            <a href="mailto:destek@stokpro.shop" className="legal-link">destek@stokpro.shop</a>
           </p>
         </div>
       </div>
     </div>
   );
 }
-
