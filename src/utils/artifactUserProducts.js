@@ -83,10 +83,11 @@ export async function deleteProduct(productId) {
 }
 
 /* default export for convenience */
-export default {
+// Eski hali: export default { ... }
+const productExports = {
   listProductsForCurrentUser,
-  getProduct,
   addProduct,
   updateProduct,
   deleteProduct
 };
+export default productExports;
