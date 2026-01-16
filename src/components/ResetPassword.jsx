@@ -15,7 +15,7 @@ export default function ResetPassword() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const code = searchParams. get("oobCode");
+    const code = searchParams.get("oobCode");
 
     if (! code) {
       setStatus({ type:  "error", msg:  "Geçersiz bağlantı." });
@@ -70,7 +70,7 @@ export default function ResetPassword() {
     );
   }
 
-  if (status?. type === "error" && ! email) {
+  if (status?.type === "error" && ! email) {
     return (
       <div className="fp-kapsul">
         <h3 className="fp-baslik">Şifre Sıfırlama</h3>
@@ -93,7 +93,7 @@ export default function ResetPassword() {
           className="fp-input"
           type="password"
           value={password}
-          onChange={(e) => setPassword(e.target. value)}
+          onChange={(e) => setPassword(e.target.value)}
           placeholder="En az 6 karakter"
           required
           minLength={6}

@@ -61,7 +61,7 @@ export default function Accounting() {
   async function yukle() {
     setLoading(true);
     try {
-      const [sRaw, l, exp, inc, custs] = await Promise.all([
+      const [sRaw, , exp, inc, custs] = await Promise.all([
         listRecentSales(100), 
         listLedger(),
         listLegacyExpenses(),

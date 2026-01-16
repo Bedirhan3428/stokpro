@@ -11,7 +11,7 @@ import {
   orderBy, 
   limit 
 } from "firebase/firestore";
-import { MdSecurity, MdLockOutline, MdPersonSearch, MdHistory } from "react-icons/md";
+import { MdSecurity, MdLockOutline, MdPersonSearch } from "react-icons/md";
 
 // SENİN UID'N
 const MASTER_ADMIN_UID = "p4h4hZYTtaPBk6kp1UUfRA7z2px2";
