@@ -8,64 +8,61 @@ export default function TermsOfService() {
       <div className="legal-icerik">
         <Link to="/" className="legal-geri-btn">← Ana Sayfaya Dön</Link>
 
-        <h1 className="legal-baslik">Hizmet Şartları</h1>
-        <span className="legal-tarih">Son Güncelleme: 29 Aralık 2025</span>
+        <h1 className="legal-baslik">Kullanım ve Hizmet Şartları</h1>
+        <span className="legal-tarih">Son Güncelleme: 16 Ocak 2026</span>
 
         <div className="legal-bolum">
-          <h2 className="legal-altbaslik">1. Kabul</h2>
+          <h2 className="legal-altbaslik">1. Genel Bakış</h2>
           <p className="legal-metin">
-            StokPro uygulamasını indirerek, kurarak veya kullanarak bu Hizmet Şartlarını ("Şartlar") kabul etmiş olursunuz. 
-            Eğer bu şartları kabul etmiyorsanız, lütfen uygulamayı kullanmayın.
+            StokPro, işletmenizin dijital dönüşümünü hızlandırmak için tasarlanmış profesyonel bir envanter yönetim aracıdır. 
+            Uygulamaya erişim sağlayarak veya kullanarak, bu şartların sizin için bağlayıcı olduğunu kabul etmiş sayılırsınız.
           </p>
         </div>
 
         <div className="legal-bolum">
-          <h2 className="legal-altbaslik">2. Kullanım Lisansı</h2>
+          <h2 className="legal-altbaslik">2. Profesyonel Kullanım Lisansı</h2>
           <p className="legal-metin">
-            StokPro, size uygulamayı kişisel veya ticari işletmeniz için kullanmanız üzere, devredilemez ve münhasır olmayan bir lisans verir.
-            Ancak şunları yapamazsınız:
-          </p>
-          <ul className="legal-liste">
-            <li>Uygulamanın kaynak kodunu değiştirmek, kopyalamak veya tersine mühendislik yapmak.</li>
-            <li>Uygulamayı yasa dışı amaçlar için kullanmak.</li>
-            <li>Sistemin güvenliğini veya bütünlüğünü tehlikeye atacak girişimlerde bulunmak.</li>
-          </ul>
-        </div>
-
-        <div className="legal-bolum">
-          <h2 className="legal-altbaslik">3. Hesap Güvenliği</h2>
-          <p className="legal-metin">
-            Hesabınızın güvenliğinden siz sorumlusunuz. Şifrenizi kimseyle paylaşmamalısınız. 
-            Hesabınızla yapılan tüm işlemlerden siz sorumlu tutulursunuz.
+            StokPro, size ticari operasyonlarınızı optimize etmeniz amacıyla sınırlı ve devredilemez bir kullanım hakkı sunar. 
+            Sistemin bütünlüğünü korumak adına; yazılım mimarisini kopyalamak, tersine mühendislik uygulamak veya platformu 
+            etik dışı/yasa dışı faaliyetler için kullanmak kesinlikle yasaktır.
           </p>
         </div>
 
         <div className="legal-bolum">
-          <h2 className="legal-altbaslik">4. Sorumluluk Reddi</h2>
+          <h2 className="legal-altbaslik">3. Hesap Güvenliği ve Mesuliyet</h2>
           <p className="legal-metin">
-            StokPro, "olduğu gibi" sunulmaktadır. Yazılımın hatasız olacağını veya kesintisiz çalışacağını garanti etmeyiz. 
-            Veri kaybı veya ticari kayıplar konusunda StokPro sorumlu tutulamaz. Verilerinizi düzenli yedeklemeniz önerilir.
+            Verilerinizin gizliliği bizim önceliğimiz olsa da, giriş bilgilerinizin (e-posta/şifre) muhafazası tamamen 
+            kullanıcı sorumluluğundadır. Hesabınız üzerinden gerçekleştirilen tüm finansal kayıtlar ve işlemler, 
+            hesap sahibi tarafından yapılmış kabul edilir.
           </p>
         </div>
 
         <div className="legal-bolum">
-          <h2 className="legal-altbaslik">5. Değişiklikler</h2>
+          <h2 className="legal-altbaslik">4. Hizmet Sürekliliği ve Sorumluluk Sınırı</h2>
           <p className="legal-metin">
-            Bu şartları zaman zaman güncelleyebiliriz. Önemli değişiklikler olduğunda sizi bilgilendirmeye çalışacağız. 
-            Değişikliklerden sonra uygulamayı kullanmaya devam etmeniz, yeni şartları kabul ettiğiniz anlamına gelir.
+            StokPro, %99.9 erişilebilirlik hedefiyle çalışmaktadır. Ancak; teknik güncellemeler, mücbir sebepler veya 
+            altyapı kaynaklı kesintilerden doğabilecek veri gecikmelerinden StokPro doğrudan sorumlu tutulamaz. 
+            Yazılım "mevcut haliyle" sunulmakta olup, ticari kar/zarar durumları tamamen kullanıcının yönetim stratejisine bağlıdır.
           </p>
         </div>
 
         <div className="legal-bolum">
-          <h2 className="legal-altbaslik">6. İletişim</h2>
+          <h2 className="legal-altbaslik">5. Güncelleme ve Bildirimler</h2>
           <p className="legal-metin">
-            Hizmet şartları hakkında sorularınız için:
+            İşletme ihtiyaçlarına göre şartlarımızı modernize edebiliriz. Platformu kullanmaya devam etmeniz, 
+            güncel şartları onayladığınız anlamına gelir.
+          </p>
+        </div>
+
+        <div className="legal-bolum">
+          <h2 className="legal-altbaslik">6. Profesyonel Destek</h2>
+          <p className="legal-metin">
+            Kurumsal sorularınız ve hukuki danışma için:
             <br />
-            <a href="mailto:stokproresmi@gmail.com" className="legal-link">iletisim@stokpro.shop</a>
+            <a href="mailto:iletisim@stokpro.shop" className="legal-link">iletisim@stokpro.shop</a>
           </p>
         </div>
       </div>
     </div>
   );
 }
-
