@@ -7,15 +7,15 @@ import {
 } from "react-icons/fi";
 import "../styles/Home.css";
 
-export default function Home() {
+function Home() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  
+
   // PWA Durumları
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
-  
+
   const auth = getAuth();
 
   useEffect(() => {
@@ -31,11 +31,9 @@ export default function Home() {
 
     // 3. Chrome/Android "Yükle" Sinyalini Yakala
     const handleBeforeInstallPrompt = (e) => {
-      // Tarayıcının kendi otomatik banner'ını engelle
       e.preventDefault();
-      // Olayı (Event) sakla, butona basınca bunu kullanacağız
       setDeferredPrompt(e);
-      console.log("✅ PWA Yükleme sinyali yakalandı ve saklandı.");
+      console.log("✅ PWA Yükleme sinyali yakalandı.");
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -44,37 +42,27 @@ export default function Home() {
       unsubscribe();
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     };
-  }, []);
+  }, [auth]);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) {
-      console.log("Hata: Yükleme sinyali (prompt) kayıp.");
-      return;
-    }
-
-    // Yükleme penceresini tetikle
+    if (!deferredPrompt) return;
     deferredPrompt.prompt();
-
-    // Kullanıcının ne seçtiğini bekle
     const { outcome } = await deferredPrompt.userChoice;
     console.log(`Kullanıcı tercihi: ${outcome}`);
-
-    // Eğer yüklediyse veya iptal ettiyse, prompt'u sıfırla (tek kullanımlıktır)
     setDeferredPrompt(null);
   };
 
   return (
     <div className="home-container">
-      
       {/* HERO BÖLÜMÜ */}
       <section className="hero-section">
         {!user && <div className="badge">✨ Küçük İşletmeler İçin Ücretsiz</div>}
-        
+
         <h1 className="hero-title">
           Karmaşık Defterlere Son. <br />
           <span className="highlight">Stok ve Veresiyeni Dijitalde Yönet.</span>
         </h1>
-        
+
         <p className="hero-description">
           StokPro sadece bir kayıt defteri değil, işletmenizin akıl hocasıdır. 
           Stoklarını saniyeler içinde gir, veresiyelerini takip et ve mağaza zekasıyla işini büyüt.
@@ -88,22 +76,18 @@ export default function Home() {
             {user ? "Panele Git" : "Hemen Başla"} <FiArrowRight />
           </button>
 
-          {/* --- PWA BUTON MANTIĞI --- */}
-          {/* 1. Uygulama yüklü değilse (!isStandalone) */}
-          {/* 2. SADECE tarayıcı sinyal gönderdiyse (deferredPrompt varsa) butonu göster */}
           {!isStandalone && deferredPrompt && (
             <button className="install-btn" onClick={handleInstallClick}>
               <FiDownload /> Uygulamayı İndir
             </button>
           )}
 
-          {/* iOS Kullanıcıları İçin Bilgilendirme */}
           {!isStandalone && isIOS && (
             <div className="ios-hint">
               <small><FiShare /> butonuna basıp "Ana Ekrana Ekle" diyerek yükle.</small>
             </div>
           )}
-          
+
           {!user && (
             <p className="sub-note">
               <FiCheckCircle style={{ marginRight: 5 }} /> Kredi kartı gerekmez, kurulum yok.
@@ -118,7 +102,7 @@ export default function Home() {
           <h2 className="section-title">İhtiyacın Olan <span className="blue-text">Temel Çözümler</span></h2>
           <p className="section-subtitle">İşletmeni yönetmek için gereken her şey elinin altında.</p>
         </div>
-        
+
         <div className="features-grid three-col">
           <div className="feature-card">
             <div className="icon-box blue"><FiBox /></div>
@@ -144,7 +128,7 @@ export default function Home() {
           <h2 className="section-title">Sadece Stok Değil, <span className="highlight">Mağaza Zekası!</span></h2>
           <p className="section-subtitle">Verilerinizi işleyerek size para kazandıran içgörüler sunuyoruz.</p>
         </div>
-        
+
         <div className="features-grid four-col">
           <div className="feature-card small-card">
             <div className="icon-box-sm blue"><FiSearch /></div>
@@ -179,4 +163,4 @@ export default function Home() {
   );
 }
 
-
+export default Home;
