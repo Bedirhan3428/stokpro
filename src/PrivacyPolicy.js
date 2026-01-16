@@ -2,7 +2,7 @@ import "./styles/Legal.css";
 import React from "react";
 import { Link } from "react-router-dom";
 
-export default function PrivacyPolicy() {
+function PrivacyPolicy() {
   return (
     <div className="legal-kapsul">
       <div className="legal-icerik">
@@ -57,3 +57,5 @@ export default function PrivacyPolicy() {
     </div>
   );
 }
+
+export default PrivacyPolicy;
