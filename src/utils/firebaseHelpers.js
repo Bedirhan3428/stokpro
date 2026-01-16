@@ -10,10 +10,10 @@ import {
   writeBatch,
   deleteDoc,
   where,
-  setDoc,
-  limit,
-  orderBy
+  setDoc
+  // limit ve orderBy buradan silindi
 } from "firebase/firestore";
+
 import { db, firebaseEnabled, auth } from "../firebase";
 
 const ARTIFACT_DOC_ID = process.env.REACT_APP_FIREBASE_ARTIFACTS_COLLECTION || "";
