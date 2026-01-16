@@ -595,8 +595,7 @@ export async function getUserProfile(targetUid = null) {
   return snap.exists() ? { id: snap.id || "user_doc", ...snap.data() } : null;
 }
 
-/* ------------------ DEFAULT EXPORT ------------------ */
-export default {
+const firebaseHelpers = {
   listCustomers,
   addCustomer,
   getCustomer,
@@ -625,3 +624,5 @@ export default {
   updateLegacyDocument,
   deleteLegacyDocument
 };
+
+export default firebaseHelpers;
