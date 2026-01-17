@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { getAuth } from "firebase/auth";
-import { getUserProfile, updateUserProfile } from "../utils/firebaseHelpers"; // Dosya yolunu kendine göre ayarla
-import { FiCheckCircle, FiFileText, FiLock } from "react-icons/fi";
-import "../styles/TermsModal.css"; // CSS dosyasını aşağıda vereceğim
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { getUserProfile, updateUserProfile } from "../utils/firebaseHelpers";
+import { FiCheckCircle, FiLock } from "react-icons/fi"; // FiFileText kaldırıldı kullanılmıyor diye
+import "../styles/TermsModal.css";
 
 const TermsModal = () => {
   const [showModal, setShowModal] = useState(false);
@@ -14,30 +14,43 @@ const TermsModal = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const auth = getAuth();
-  const user = auth.currentUser;
 
   useEffect(() => {
-    const checkUserTerms = async () => {
-      if (!user) return;
+    // Firebase Auth durumunu dinliyoruz (Düzeltme burada yapıldı)
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (!currentUser) {
+        console.log("TermsModal: Kullanıcı giriş yapmamış, modal gösterilmiyor.");
+        setLoading(false);
+        return;
+      }
+
+      console.log("TermsModal: Kullanıcı algılandı:", currentUser.uid);
 
       try {
-        const profile = await getUserProfile(user.uid);
+        const profile = await getUserProfile(currentUser.uid);
+        console.log("TermsModal: Profil verisi çekildi:", profile);
         
-        // Eğer profil yoksa veya termsAccepted true değilse modalı göster
-        if (!profile || !profile.termsAccepted) {
+        // Eğer profil hiç yoksa (yeni kullanıcı) VEYA termsAccepted true değilse
+        if (!profile || profile.termsAccepted !== true) {
+          console.log("TermsModal: Onay eksik, modal açılıyor...");
           setShowModal(true);
+        } else {
+          console.log("TermsModal: Kullanıcı daha önce onaylamış.");
         }
       } catch (error) {
-        console.error("Profil kontrol hatası:", error);
+        console.error("TermsModal Hatası:", error);
+        // Hata durumunda güvenlik için modalı açabilirsin veya loglayabilirsin
       } finally {
         setLoading(false);
       }
-    };
+    });
 
-    checkUserTerms();
-  }, [user]);
+    // Component unmount olduğunda dinleyiciyi kapat
+    return () => unsubscribe();
+  }, [auth]);
 
   const handleConfirm = async () => {
+    const user = auth.currentUser;
     if (!user) return;
     setIsSubmitting(true);
 
@@ -49,18 +62,21 @@ const TermsModal = () => {
         privacyAccepted: true
       });
 
+      console.log("TermsModal: Onay veritabanına işlendi.");
+
       // Modalı kapat
       setShowModal(false);
-      alert("Teşekkürler, onayın başarıyla alındı.");
+      // Opsiyonel: Sayfayı yenilemeye gerek yok ama state güncellendiği için modal kapanır.
     } catch (error) {
-      console.error("Onay hatası:", error);
-      alert("Bir hata oluştu, lütfen tekrar dene.");
+      console.error("TermsModal Kayıt Hatası:", error);
+      alert("Bir hata oluştu: " + error.message);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (!showModal || !user) return null;
+  // Eğer yükleniyorsa veya modal kapalıysa hiçbir şey gösterme
+  if (loading || !showModal) return null;
 
   return (
     <div className="terms-overlay">
