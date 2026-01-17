@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { useLocation } from "react-router-dom"; // <-- YENİ: Konum kontrolü için
 import { getUserProfile, updateUserProfile } from "../utils/firebaseHelpers";
-import { FiCheckCircle, FiLock } from "react-icons/fi"; // FiFileText kaldırıldı kullanılmıyor diye
+import { FiCheckCircle, FiLock } from "react-icons/fi";
 import "../styles/TermsModal.css";
 
 const TermsModal = () => {
@@ -14,40 +15,40 @@ const TermsModal = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const auth = getAuth();
+  const location = useLocation(); // <-- YENİ: Şu anki sayfayı al
+
+  // Modalın görünmemesi gereken sayfalar (Kullanıcı bunları okumaya çalışıyor olabilir)
+  const EXCLUDED_PATHS = ["/privacy-policy", "/terms-of-service"];
 
   useEffect(() => {
-    // Firebase Auth durumunu dinliyoruz (Düzeltme burada yapıldı)
+    // Eğer kullanıcı yasal sayfalardaysa modalı hiç tetikleme
+    if (EXCLUDED_PATHS.includes(location.pathname)) {
+      setShowModal(false);
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (!currentUser) {
-        console.log("TermsModal: Kullanıcı giriş yapmamış, modal gösterilmiyor.");
         setLoading(false);
         return;
       }
 
-      console.log("TermsModal: Kullanıcı algılandı:", currentUser.uid);
-
       try {
         const profile = await getUserProfile(currentUser.uid);
-        console.log("TermsModal: Profil verisi çekildi:", profile);
         
-        // Eğer profil hiç yoksa (yeni kullanıcı) VEYA termsAccepted true değilse
+        // Onaylanmamışsa göster
         if (!profile || profile.termsAccepted !== true) {
-          console.log("TermsModal: Onay eksik, modal açılıyor...");
           setShowModal(true);
-        } else {
-          console.log("TermsModal: Kullanıcı daha önce onaylamış.");
         }
       } catch (error) {
         console.error("TermsModal Hatası:", error);
-        // Hata durumunda güvenlik için modalı açabilirsin veya loglayabilirsin
       } finally {
         setLoading(false);
       }
     });
 
-    // Component unmount olduğunda dinleyiciyi kapat
     return () => unsubscribe();
-  }, [auth]);
+  }, [auth, location.pathname]); // location.pathname değiştiğinde tekrar kontrol et
 
   const handleConfirm = async () => {
     const user = auth.currentUser;
@@ -55,28 +56,24 @@ const TermsModal = () => {
     setIsSubmitting(true);
 
     try {
-      // DB'ye kaydet
       await updateUserProfile(user.uid, {
         termsAccepted: true,
         termsAcceptedAt: new Date().toISOString(),
         privacyAccepted: true
       });
 
-      console.log("TermsModal: Onay veritabanına işlendi.");
-
-      // Modalı kapat
       setShowModal(false);
-      // Opsiyonel: Sayfayı yenilemeye gerek yok ama state güncellendiği için modal kapanır.
+      setTermsAccepted(true);
     } catch (error) {
-      console.error("TermsModal Kayıt Hatası:", error);
-      alert("Bir hata oluştu: " + error.message);
+      console.error("Kayıt Hatası:", error);
+      alert("Hata: " + error.message);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Eğer yükleniyorsa veya modal kapalıysa hiçbir şey gösterme
-  if (loading || !showModal) return null;
+  // Yasal sayfalardaysak veya yükleniyorsa gösterme
+  if (loading || !showModal || EXCLUDED_PATHS.includes(location.pathname)) return null;
 
   return (
     <div className="terms-overlay">
@@ -92,7 +89,6 @@ const TermsModal = () => {
         </div>
 
         <div className="terms-body">
-          {/* Checkbox 1: Hizmet Şartları */}
           <label className={`terms-option ${termsAccepted ? "active" : ""}`}>
             <input 
               type="checkbox" 
@@ -103,11 +99,11 @@ const TermsModal = () => {
               {termsAccepted && <FiCheckCircle />}
             </span>
             <span className="text">
+              {/* target="_blank" ile yeni sekmede açıyoruz ama garanti olsun diye location kontrolü de koyduk */}
               <a href="/terms-of-service" target="_blank" rel="noreferrer">Hizmet Şartları</a>'nı okudum ve kabul ediyorum.
             </span>
           </label>
 
-          {/* Checkbox 2: Gizlilik Politikası */}
           <label className={`terms-option ${privacyAccepted ? "active" : ""}`}>
             <input 
               type="checkbox" 
