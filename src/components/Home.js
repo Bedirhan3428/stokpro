@@ -59,8 +59,8 @@ function Home() {
         {!user && <div className="badge">✨ Küçük İşletmeler İçin Ücretsiz</div>}
 
         <h1 className="hero-title">
-          Karmaşık Defterlere Son. <br />
-          <span className="highlight">Stok ve Veresiyeni Dijitalde Yönet.</span>
+          Karmaşık Defterlere Son <br />
+          <span className="highlight">Stok ve Veresiyeni Dijitalde Yönet</span>
         </h1>
 
         <p className="hero-description">
