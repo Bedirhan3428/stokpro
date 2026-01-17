@@ -247,21 +247,21 @@ export async function listRecentSales(limitCount = 100) {
   ensureDb();
   const uid = getUidOrThrow();
   const salesCol = collection(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "sales");
-  
+
   // Eğer tarih alanı "createdAt" string ISO ise orderBy string çalışır.
   // Ancak en sağlıklısı memoryde sıralamaktır eğer index sorunu varsa.
   // Index oluşturduysan: query(salesCol, orderBy("createdAt", "desc"), limit(limitCount));
   // Şimdilik index hatası vermemesi için düz çekip sort ediyoruz ama limit koyamıyoruz (Firestore limitations without index)
   // Eğer index varsa aşağıdakini açabilirsin.
   // const q = query(salesCol, orderBy("createdAt", "desc"), limit(limitCount));
-  
+
   // Güvenli yöntem (Index gerektirmez ama tüm docs okur, o yüzden manuel limitliyoruz):
   const q = query(salesCol); // Index varsa buraya orderBy eklenebilir.
   const snap = await getDocs(q);
-  
+
   let results = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
   results.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-  
+
   return results.slice(0, Number(limitCount || 100));
 }
 
@@ -595,6 +595,22 @@ export async function getUserProfile(targetUid = null) {
   return snap.exists() ? { id: snap.id || "user_doc", ...snap.data() } : null;
 }
 
+/* ------------------ PROFİL GÜNCELLEME (YENİ) ------------------ */
+export async function updateUserProfile(uid, data = {}) {
+  ensureDb();
+  if (!uid) throw new Error("Kullanıcı ID (uid) gerekli.");
+
+  const ref = doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "profile", "user_doc");
+  
+  // setDoc ile merge: true kullanarak yoksa oluşturur, varsa günceller
+  await setDoc(ref, { 
+    ...data, 
+    updatedAt: new Date().toISOString() 
+  }, { merge: true });
+  
+  return true;
+}
+
 const firebaseHelpers = {
   listCustomers,
   addCustomer,
@@ -621,6 +637,7 @@ const firebaseHelpers = {
   addLegacyExpense,
   createUserProfile,
   getUserProfile,
+  updateUserProfile, // <-- YENİ EKLENEN
   updateLegacyDocument,
   deleteLegacyDocument
 };
