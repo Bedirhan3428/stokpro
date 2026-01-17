@@ -15,10 +15,11 @@ export default function ResetPassword() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const code = searchParams. get("oobCode");
+    // Düzeltme: .get öncesindeki boşluk silindi
+    const code = searchParams.get("oobCode");
 
-    if (! code) {
-      setStatus({ type:  "error", msg:  "Geçersiz bağlantı." });
+    if (!code) {
+      setStatus({ type: "error", msg: "Geçersiz bağlantı." });
       setLoading(false);
       return;
     }
@@ -40,7 +41,7 @@ export default function ResetPassword() {
     e.preventDefault();
     
     if (password.length < 6) {
-      setStatus({ type:  "error", msg:  "Parola en az 6 karakter olmalı." });
+      setStatus({ type: "error", msg: "Parola en az 6 karakter olmalı." });
       return;
     }
 
@@ -49,13 +50,13 @@ export default function ResetPassword() {
     
     try {
       await confirmPasswordReset(auth, oobCode, password);
-      setStatus({ type: "success", msg: "Parola güncellendi!  Yönlendiriliyorsunuz..." });
+      setStatus({ type: "success", msg: "Parola güncellendi! Yönlendiriliyorsunuz..." });
       setTimeout(() => nav("/login", { replace: true }), 1500);
     } catch (err) {
-      let message = "Parola güncellenemedi. ";
-      if (err.code === "auth/weak-password") message = "Parola çok zayıf. ";
+      let message = "Parola güncellenemedi.";
+      if (err.code === "auth/weak-password") message = "Parola çok zayıf.";
       if (err.code === "auth/expired-action-code") message = "Bağlantı süresi dolmuş.";
-      if (err.code === "auth/invalid-action-code") message = "Geçersiz bağlantı. ";
+      if (err.code === "auth/invalid-action-code") message = "Geçersiz bağlantı.";
       setStatus({ type: "error", msg: message });
       setLoading(false);
     }
@@ -70,7 +71,8 @@ export default function ResetPassword() {
     );
   }
 
-  if (status?. type === "error" && ! email) {
+  // Düzeltme: ?.type arasındaki boşluk silindi
+  if (status?.type === "error" && !email) {
     return (
       <div className="fp-kapsul">
         <h3 className="fp-baslik">Şifre Sıfırlama</h3>
@@ -93,7 +95,8 @@ export default function ResetPassword() {
           className="fp-input"
           type="password"
           value={password}
-          onChange={(e) => setPassword(e.target. value)}
+          // Düzeltme: .value arasındaki boşluk silindi
+          onChange={(e) => setPassword(e.target.value)}
           placeholder="En az 6 karakter"
           required
           minLength={6}
@@ -106,7 +109,7 @@ export default function ResetPassword() {
         </div>
 
         {status && (
-          <div className={`fp-durum ${status.type === "error" ?  "fp-hata" : "fp-basarili"}`}>
+          <div className={`fp-durum ${status.type === "error" ? "fp-hata" : "fp-basarili"}`}>
             {status.msg}
           </div>
         )}
