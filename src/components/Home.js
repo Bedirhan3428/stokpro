@@ -155,6 +155,27 @@ function Home() {
 
       {/* FOOTER */}
       <footer className="home-footer">
+        {/* YASAL UYARI VE LİNKLER */}
+        <div className="legal-section" style={{ marginBottom: "1rem", fontSize: "0.85rem", opacity: 0.8 }}>
+          <p>
+            Uygulamayı kullanmaya başlayarak{" "}
+            <span 
+              onClick={() => navigate("/privacy-policy")} 
+              style={{ cursor: "pointer", textDecoration: "underline" }}
+            >
+              Gizlilik Politikası
+            </span>
+            {" ve "}
+            <span 
+              onClick={() => navigate("/terms-of-service")} 
+              style={{ cursor: "pointer", textDecoration: "underline" }}
+            >
+              Hizmet Şartları
+            </span>
+            'nı kabul etmiş sayılırsınız.
+          </p>
+        </div>
+
         <div className="simple-copyright">
           © {new Date().getFullYear()} StokPro. Tüm hakları saklıdır.
         </div>
