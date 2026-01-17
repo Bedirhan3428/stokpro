@@ -5,6 +5,7 @@ import "./App.css";
 import { AuthProvider } from "./contexts/AuthContext";
 
 import RequireAuth from "./components/RequireAuth";
+import TermsModal from "./components/TermsModal"; // <-- YENİ: Modal import edildi
 
 // Mevcut Bileşenler (Lazy Load)
 const Home = React.lazy(() => import("./components/Home"));
@@ -50,6 +51,9 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        {/* Modal'ı buraya ekledik. AuthContext içinde olduğu için kullanıcıyı tanır */}
+        <TermsModal />
+        
         <Suspense fallback={<div className="app-loading"><div className="spinner" /><p>Yükleniyor...</p></div>}>
           <ActionRedirector />
           <Navbar />
@@ -94,4 +98,3 @@ function App() {
 }
 
 export default App;
-
