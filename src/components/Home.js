@@ -56,7 +56,7 @@ function Home() {
     <div className="home-container">
       {/* HERO BÖLÜMÜ */}
       <section className="hero-section">
-        {!user && <div className="badge">✨ Küçük İşletmeler İçin Ücretsiz</div>}
+        {!user && <div className="badge">Ömür Boyu Ücretsiz</div>}
 
         <h1 className="hero-title">
           Karmaşık Defterlere Son <br />
