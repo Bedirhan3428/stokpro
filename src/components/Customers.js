@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { 
   FiUserPlus, FiSearch, FiTrash2, FiPhone, FiDollarSign, 
-  FiClock, FiX, FiArrowRight, FiTrendingUp, FiTrendingDown 
+  FiX, FiArrowRight, FiTrendingUp, FiTrendingDown, FiEdit3, FiActivity 
 } from "react-icons/fi";
 import { 
   listCustomers, 
@@ -11,105 +11,121 @@ import {
   listCustomerSales, 
   listCustomerPayments 
 } from "../utils/firebaseHelpers";
-import "../styles/Customers.css";
+import "../styles/Customers.css"; // Senin gönderdiğin CSS dosyası varsayılıyor
 
 const Customers = () => {
+  // --- STATE ---
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // Bildirim State'i
+  const [notification, setNotification] = useState(null); // { message, type: 'basari' | 'hata' }
 
   // Modallar
   const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState(null); // Detaylar için
-  const [showPaymentInput, setShowPaymentInput] = useState(false); // Detay içindeki ödeme alanı
-
-  // Yeni Müşteri Formu
-  const [newCustomer, setNewCustomer] = useState({ name: "", phone: "" });
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
   
-  // Ödeme Formu
+  // Detay Modalı Sekmeleri
+  const [activeTab, setActiveTab] = useState("payment"); // 'payment' veya 'info'
+
+  // Form Verileri
+  const [newCustomer, setNewCustomer] = useState({ name: "", phone: "" });
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentNote, setPaymentNote] = useState("");
 
-  // Detay Verileri
+  // Geçmiş Verileri
   const [customerHistory, setCustomerHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
+  // --- EFFECT ---
   useEffect(() => {
     loadCustomers();
   }, []);
 
+  // Bildirim Gösterme Yardımcısı
+  const showNotify = (msg, type = "basari") => {
+    setNotification({ message: msg, type });
+    setTimeout(() => setNotification(null), 3000);
+  };
+
+  // --- VERİ ÇEKME ---
   const loadCustomers = async () => {
     setLoading(true);
     try {
       const data = await listCustomers();
-      // Bakiyeye göre sırala (Borçlu en üstte)
+      // Borçlu olanlar (bakiye > 0) üstte olsun
       data.sort((a, b) => (b.balance || 0) - (a.balance || 0));
       setCustomers(data);
     } catch (error) {
-      console.error("Müşteriler yüklenemedi:", error);
+      showNotify("Müşteriler yüklenemedi", "hata");
     } finally {
       setLoading(false);
     }
   };
 
-  // Müşteri Ekleme
+  // --- CRUD İŞLEMLERİ ---
   const handleAddCustomer = async (e) => {
     e.preventDefault();
-    if (!newCustomer.name) return alert("İsim gerekli!");
+    if (!newCustomer.name) return;
     
     try {
       await addCustomer(newCustomer);
       setShowAddModal(false);
       setNewCustomer({ name: "", phone: "" });
-      loadCustomers(); // Listeyi yenile
+      loadCustomers();
+      showNotify("Müşteri başarıyla eklendi.");
     } catch (error) {
-      alert("Hata: " + error.message);
+      showNotify(error.message, "hata");
     }
   };
 
-  // Müşteri Silme
   const handleDelete = async (id, e) => {
-    e.stopPropagation(); // Kartın detayını açmayı engelle
-    if (window.confirm("Bu müşteriyi ve tüm kayıtlarını silmek istediğine emin misin?")) {
+    e.stopPropagation();
+    if (window.confirm("Bu müşteriyi silmek istediğine emin misin?")) {
       try {
         await deleteCustomer(id);
         setCustomers(prev => prev.filter(c => c.id !== id));
+        showNotify("Müşteri silindi.");
+        if (selectedCustomer?.id === id) setSelectedCustomer(null);
       } catch (error) {
-        alert("Silinemedi: " + error.message);
+        showNotify(error.message, "hata");
       }
     }
   };
 
-  // Detayları Getirme (Satışlar + Ödemeler)
+  // --- DETAY & GEÇMİŞ ---
   const openCustomerDetail = async (customer) => {
     setSelectedCustomer(customer);
+    setActiveTab("payment"); // Varsayılan sekme
     setHistoryLoading(true);
-    setShowPaymentInput(false);
     
     try {
-      const sales = await listCustomerSales(customer.id);
-      const payments = await listCustomerPayments(customer.id);
+      // Paralel istek at
+      const [sales, payments] = await Promise.all([
+        listCustomerSales(customer.id),
+        listCustomerPayments(customer.id)
+      ]);
 
-      // Verileri birleştir ve formatla
+      // Verileri birleştir ve etiketle
       const combined = [
         ...sales.map(s => ({ ...s, type: 'sale', date: s.createdAt })),
         ...payments.map(p => ({ ...p, type: 'payment', date: p.createdAt }))
       ];
 
-      // Tarihe göre yeniden eskiye sırala
+      // Tarihe göre sırala (Yeniden eskiye)
       combined.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       setCustomerHistory(combined);
     } catch (error) {
-      console.error("Detay hatası:", error);
+      console.error(error);
     } finally {
       setHistoryLoading(false);
     }
   };
 
-  // Tahsilat Ekleme
   const handlePaymentSubmit = async (e) => {
     e.preventDefault();
-    if (!paymentAmount || Number(paymentAmount) <= 0) return alert("Geçerli tutar girin.");
+    if (!paymentAmount || Number(paymentAmount) <= 0) return;
 
     try {
       const { newBalance } = await addCustomerPayment(selectedCustomer.id, {
@@ -117,13 +133,11 @@ const Customers = () => {
         note: paymentNote
       });
 
-      // UI Güncelleme (Sayfa yenilemeden)
+      // UI Güncelleme (Local)
       setSelectedCustomer(prev => ({ ...prev, balance: newBalance }));
-      
-      // Ana listeyi de güncelle
       setCustomers(prev => prev.map(c => c.id === selectedCustomer.id ? { ...c, balance: newBalance } : c));
-
-      // Geçmişe ekle (Fake ekleme yapıyoruz tekrar çekmemek için)
+      
+      // Geçmişe sahte ekleme (Tekrar fetch etmemek için)
       setCustomerHistory(prev => [{
         type: 'payment',
         amount: Number(paymentAmount),
@@ -134,10 +148,9 @@ const Customers = () => {
 
       setPaymentAmount("");
       setPaymentNote("");
-      setShowPaymentInput(false);
-      alert("Tahsilat başarıyla eklendi.");
+      showNotify(`Tahsilat alındı. Yeni Bakiye: ${newBalance} ₺`);
     } catch (error) {
-      alert("Ödeme hatası: " + error.message);
+      showNotify(error.message, "hata");
     }
   };
 
@@ -147,180 +160,250 @@ const Customers = () => {
     (c.phone && c.phone.includes(searchTerm))
   );
 
+  // Para formatı
+  const fmt = (num) => num?.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₺';
+
   return (
-    <div className="customers-container">
-      {/* ÜST BAR */}
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Müşteriler & Veresiye</h1>
-          <p className="page-subtitle">Toplam {customers.length} kayıtlı müşteri</p>
-        </div>
-        <button className="primary-btn" onClick={() => setShowAddModal(true)}>
-          <FiUserPlus /> Yeni Müşteri
-        </button>
-      </div>
-
-      {/* ARAMA */}
-      <div className="search-bar-wrapper">
-        <FiSearch className="search-icon" />
-        <input 
-          type="text" 
-          placeholder="Müşteri adı veya telefon ara..." 
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </div>
-
-      {/* LİSTE */}
-      {loading ? (
-        <div className="loading-state">Yükleniyor...</div>
-      ) : (
-        <div className="customers-grid">
-          {filteredCustomers.length === 0 ? (
-            <div className="empty-state">Kayıt bulunamadı.</div>
-          ) : (
-            filteredCustomers.map(customer => (
-              <div 
-                key={customer.id} 
-                className="customer-card"
-                onClick={() => openCustomerDetail(customer)}
-              >
-                <div className="card-header">
-                  <div className="avatar">
-                    {customer.name.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="info">
-                    <h3>{customer.name}</h3>
-                    {customer.phone && <small><FiPhone /> {customer.phone}</small>}
-                  </div>
-                </div>
-                
-                <div className="card-balance">
-                  <span>Bakiye:</span>
-                  <span className={`amount ${customer.balance > 0 ? 'debt' : 'clean'}`}>
-                    {customer.balance?.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}
-                  </span>
-                </div>
-              </div>
-            ))
-          )}
+    <div className="cst-sayfa">
+      
+      {/* --- BİLDİRİM BAR --- */}
+      {notification && (
+        <div className="cst-bildirim-bar">
+          <div className={`cst-bildirim ${notification.type}`}>
+            {notification.message}
+          </div>
         </div>
       )}
 
-      {/* --- MÜŞTERİ EKLEME MODALI --- */}
-      {showAddModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2>Yeni Müşteri Ekle</h2>
-              <button className="close-btn" onClick={() => setShowAddModal(false)}><FiX /></button>
+      {/* --- ÜST KISIM --- */}
+      <div className="cst-kart">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+          <div>
+            <h2 className="cst-baslik">Müşteriler</h2>
+            <div style={{ fontSize: '0.9rem', color: 'var(--text-sub)' }}>
+              Toplam {customers.length} kayıt
             </div>
-            <form onSubmit={handleAddCustomer}>
-              <div className="form-group">
+          </div>
+          <button className="cst-btn primary" onClick={() => setShowAddModal(true)}>
+            <FiUserPlus style={{ marginRight: 6 }} /> Yeni Müşteri
+          </button>
+        </div>
+
+        <div className="cst-form-grid">
+          <input 
+            type="text" 
+            className="cst-input" 
+            placeholder="İsim veya telefon ile ara..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+      </div>
+
+      {/* --- LİSTE --- */}
+      <div className="cst-liste">
+        {loading ? (
+          <div className="cst-loading">
+            <div className="cst-spinner"></div>
+            Veriler yükleniyor...
+          </div>
+        ) : filteredCustomers.length === 0 ? (
+          <div className="cst-empty">Müşteri bulunamadı.</div>
+        ) : (
+          filteredCustomers.map(customer => (
+            <div key={customer.id} className="cst-item" onClick={() => openCustomerDetail(customer)} style={{ cursor: 'pointer' }}>
+              <div>
+                <div className="cst-name">{customer.name}</div>
+                {customer.phone && (
+                  <div className="cst-meta"><FiPhone style={{ marginBottom: -2 }} /> {customer.phone}</div>
+                )}
+              </div>
+              <div className="cst-actions">
+                <div className="cst-balance">
+                  <small>Bakiye</small>
+                  <span className={customer.balance > 0 ? "borclu" : "temiz"}>
+                    {fmt(customer.balance || 0)}
+                  </span>
+                </div>
+                <button 
+                  className="cst-btn ghost small" 
+                  onClick={(e) => handleDelete(customer.id, e)}
+                  title="Sil"
+                >
+                  <FiTrash2 />
+                </button>
+                <FiArrowRight style={{ color: 'var(--text-sub)' }} />
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* --- EKLEME MODALI --- */}
+      {showAddModal && (
+        <div className="cst-modal-overlay" onClick={() => setShowAddModal(false)}>
+          <div className="cst-modal" onClick={e => e.stopPropagation()}>
+            <div className="cst-modal-header">
+              <h4>Yeni Müşteri</h4>
+              <button className="cst-close" onClick={() => setShowAddModal(false)}><FiX /></button>
+            </div>
+            <form onSubmit={handleAddCustomer} className="cst-form-stack">
+              <div>
                 <label>Ad Soyad</label>
                 <input 
-                  type="text" 
-                  autoFocus
+                  className="cst-input" 
+                  autoFocus 
                   required 
                   value={newCustomer.name}
                   onChange={e => setNewCustomer({...newCustomer, name: e.target.value})}
                 />
               </div>
-              <div className="form-group">
-                <label>Telefon (İsteğe bağlı)</label>
+              <div>
+                <label>Telefon</label>
                 <input 
-                  type="tel" 
+                  className="cst-input"
+                  type="tel"
                   value={newCustomer.phone}
                   onChange={e => setNewCustomer({...newCustomer, phone: e.target.value})}
                 />
               </div>
-              <button type="submit" className="save-btn">Kaydet</button>
+              <div style={{ marginTop: 10 }}>
+                <button type="submit" className="cst-btn primary full">Kaydet</button>
+              </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* --- DETAY MODALI (SLIDE OVER GÖRÜNÜM) --- */}
+      {/* --- DETAY MODALI (SPLIT VIEW) --- */}
       {selectedCustomer && (
-        <div className="modal-overlay detail-overlay">
-          <div className="detail-modal">
-            <div className="detail-header">
-              <button className="back-btn" onClick={() => setSelectedCustomer(null)}>
-                <FiArrowRight /> Geri
-              </button>
-              <div className="customer-summ">
-                <h2>{selectedCustomer.name}</h2>
-                <span className={`status-badge ${selectedCustomer.balance > 0 ? 'red' : 'green'}`}>
-                  {selectedCustomer.balance > 0 ? 'Borçlu' : 'Borcu Yok'}
-                </span>
+        <div className="cst-modal-overlay" onClick={() => setSelectedCustomer(null)}>
+          <div className="cst-modal large" onClick={e => e.stopPropagation()}>
+            
+            <div className="cst-modal-header">
+              <div>
+                <h4>{selectedCustomer.name}</h4>
+                <span className="cst-modal-subtitle">{selectedCustomer.phone || "Telefon Yok"}</span>
               </div>
-              <button className="delete-icon-btn" onClick={(e) => handleDelete(selectedCustomer.id, e)}>
-                <FiTrash2 />
-              </button>
+              <button className="cst-close" onClick={() => setSelectedCustomer(null)}><FiX /></button>
             </div>
 
-            <div className="detail-balance-box">
-              <p>Güncel Bakiye</p>
-              <h1>{selectedCustomer.balance?.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' })}</h1>
-              <button 
-                className="pay-btn"
-                onClick={() => setShowPaymentInput(!showPaymentInput)}
-              >
-                <FiDollarSign /> Tahsilat Al
-              </button>
-            </div>
+            <div className="cst-modal-body split-view">
+              {/* SOL PANEL: İşlemler */}
+              <div className="cst-left-panel">
+                
+                {/* Bakiye Göstergesi */}
+                <div className="cst-balance-display">
+                  <small>Güncel Bakiye</small>
+                  <strong>{fmt(selectedCustomer.balance || 0)}</strong>
+                </div>
 
-            {/* Tahsilat Formu (Açılır/Kapanır) */}
-            {showPaymentInput && (
-              <form className="payment-form" onSubmit={handlePaymentSubmit}>
-                <input 
-                  type="number" 
-                  placeholder="Tutar (₺)" 
-                  required
-                  min="0"
-                  step="0.01"
-                  value={paymentAmount}
-                  onChange={e => setPaymentAmount(e.target.value)}
-                />
-                <input 
-                  type="text" 
-                  placeholder="Not (Opsiyonel)" 
-                  value={paymentNote}
-                  onChange={e => setPaymentNote(e.target.value)}
-                />
-                <button type="submit">Onayla</button>
-              </form>
-            )}
+                {/* Sekmeler */}
+                <div className="cst-tabs">
+                  <button 
+                    className={`cst-tab ${activeTab === 'payment' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('payment')}
+                  >
+                    Hızlı Tahsilat
+                  </button>
+                  <button 
+                    className={`cst-tab ${activeTab === 'info' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('info')}
+                  >
+                    Bilgiler
+                  </button>
+                </div>
 
-            <div className="history-list">
-              <h3>İşlem Geçmişi</h3>
-              {historyLoading ? <p>Yükleniyor...</p> : (
-                customerHistory.length === 0 ? <p className="no-data">İşlem kaydı yok.</p> : (
-                  <ul>
-                    {customerHistory.map((item, index) => (
-                      <li key={index} className={`history-item ${item.type}`}>
-                        <div className="icon">
-                          {item.type === 'sale' ? <FiTrendingUp /> : <FiTrendingDown />}
+                {/* Sekme İçerikleri */}
+                {activeTab === 'payment' && (
+                  <form onSubmit={handlePaymentSubmit} className="cst-form-stack">
+                    <div className="cst-info-box">
+                      Buradan sadece nakit tahsilat girin. Satış yapmak için "Satış" sayfasını kullanın.
+                    </div>
+                    <div>
+                      <label>Tutar (₺)</label>
+                      <input 
+                        type="number" 
+                        className="cst-input"
+                        placeholder="0.00"
+                        min="0" step="0.01"
+                        value={paymentAmount}
+                        onChange={e => setPaymentAmount(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label>Not (Opsiyonel)</label>
+                      <input 
+                        type="text" 
+                        className="cst-input"
+                        placeholder="Elden alındı vb."
+                        value={paymentNote}
+                        onChange={e => setPaymentNote(e.target.value)}
+                      />
+                    </div>
+                    <button type="submit" className="cst-btn success full">
+                      <FiDollarSign style={{ marginRight: 5 }} /> Tahsil Et
+                    </button>
+                  </form>
+                )}
+
+                {activeTab === 'info' && (
+                  <div className="cst-form-stack">
+                    <div className="cst-info-box">
+                      Müşteri düzenleme özelliği yakında eklenecek.
+                    </div>
+                    <div>
+                      <label>Kayıt Tarihi</label>
+                      <input className="cst-input" disabled value={new Date(selectedCustomer.createdAt).toLocaleDateString()} />
+                    </div>
+                    <button className="cst-btn danger ghost full" onClick={(e) => handleDelete(selectedCustomer.id, e)}>
+                      <FiTrash2 style={{ marginRight: 5 }} /> Müşteriyi Sil
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* SAĞ PANEL: Geçmiş */}
+              <div className="cst-right-panel">
+                <h5 className="cst-section-title">Hesap Hareketleri</h5>
+                
+                {historyLoading ? (
+                  <div className="cst-loading"><div className="cst-spinner"></div></div>
+                ) : customerHistory.length === 0 ? (
+                  <div className="cst-empty">Henüz işlem yok.</div>
+                ) : (
+                  <div className="cst-history-list">
+                    {customerHistory.map((item, idx) => (
+                      <div key={idx} className={`cst-history-item ${item.type}`}>
+                        <div className="cst-icon">
+                          {item.type === 'sale' ? <FiTrendingUp color="var(--danger)" /> : <FiTrendingDown color="var(--success)" />}
                         </div>
-                        <div className="details">
-                          <span className="title">
-                            {item.type === 'sale' ? 'Veresiye Satış' : 'Tahsilat'}
-                          </span>
-                          <span className="date">
-                            {new Date(item.date).toLocaleDateString('tr-TR')} {new Date(item.date).toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'})}
-                          </span>
-                          {item.note && <small className="note">Not: {item.note}</small>}
+                        <div className="cst-hist-info">
+                          <div className="cst-hist-top">
+                            <strong>{item.type === 'sale' ? 'Veresiye Satış' : 'Tahsilat'}</strong>
+                            <span className={`cst-amount ${item.type === 'sale' ? 'debt' : 'credit'}`}>
+                              {item.type === 'sale' ? '+' : '-'}{fmt(item.totals?.total || item.amount || 0)}
+                            </span>
+                          </div>
+                          <div className="cst-hist-date">
+                            {new Date(item.date).toLocaleDateString('tr-TR')} • {new Date(item.date).toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'})}
+                          </div>
+                          {/* Detay/Not */}
+                          {item.note && <div className="cst-hist-detail">{item.note}</div>}
+                          {item.items && (
+                             <div className="cst-hist-detail">
+                               {item.items.map(i => i.name).join(", ").slice(0, 30)}{item.items.length > 1 ? "..." : ""}
+                             </div>
+                          )}
                         </div>
-                        <div className="amount">
-                          {item.type === 'sale' ? '+' : '-'}
-                          {(item.totals?.total || item.amount || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
-                        </div>
-                      </li>
+                      </div>
                     ))}
-                  </ul>
-                )
-              )}
+                  </div>
+                )}
+              </div>
             </div>
+
           </div>
         </div>
       )}
