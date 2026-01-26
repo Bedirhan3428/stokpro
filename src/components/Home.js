@@ -215,7 +215,7 @@ function Home() {
         {/* Siyah Grafik ve Sayaç (Live Data: artifacts/{appId}/users) */}
         <TrustStats />
 
-        {!user && <div className="badge">Ömür Boyu Ücretsiz</div>}
+        {!user && <div className="badge">İlk 100 Gerçek Kullanıcıya Ömür Boyu Ücretsiz</div>}
 
         <h1 className="hero-title">
           Karmaşık Defterlere Son <br />
