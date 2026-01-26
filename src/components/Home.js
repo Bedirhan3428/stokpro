@@ -8,7 +8,7 @@ import {
 } from "react-icons/fi";
 import "../styles/Home.css";
 
-// Firebase App ID
+// Firebase App ID (Global değişken veya varsayılan)
 const appId = typeof window !== 'undefined' && window.__app_id ? window.__app_id : 'default-app-id';
 
 // --- Animasyonlu Sayaç ve Grafik Bileşeni ---
@@ -20,22 +20,20 @@ const TrustStats = () => {
     const countUsers = async () => {
       try {
         const db = getFirestore();
-        // Kullanıcılar koleksiyonunu referans al
+        // Doğrudan artifacts/{appId}/users koleksiyonunu sayıyoruz
         const usersRef = collection(db, "artifacts", appId, "users");
-        // Dökümanları çek
         const snapshot = await getDocs(usersRef);
         
-        // Koleksiyondaki döküman sayısı (kullanıcı sayısı)
+        // Koleksiyondaki döküman sayısı (Gerçek Kullanıcı/Esnaf Sayısı)
         const realCount = snapshot.size;
 
-        // Eğer hiç kullanıcı yoksa (ilk kurulum), göze hoş görünsün diye 1'den başlasın veya 0 kalsın.
-        // Ama "esnaf bize güveniyor" dediği için en azından 1 olması iyi durur.
-        setTargetCount(realCount > 0 ? realCount : 0);
+        // Eğer 0 ise (ilk kurulum), en azından 1 gösterelim (kendimiz).
+        setTargetCount(realCount > 0 ? realCount : 1);
         
       } catch (error) {
         console.error("Kullanıcı sayısı çekilemedi:", error);
-        // Hata durumunda varsayılan bir sayı gösterelim ki boş kalmasın
-        setTargetCount(10); 
+        // Hata durumunda varsayılan bir sayı
+        setTargetCount(1); 
       }
     };
 
@@ -47,9 +45,9 @@ const TrustStats = () => {
     if (targetCount === 0) return;
 
     let start = 0;
-    // Eğer sayı çok küçükse animasyon çok hızlı biter, o yüzden min duration ayarlayalım
-    const duration = 2000; 
-    const increment = targetCount / (duration / 16); 
+    const duration = 2000; // 2 saniye sürsün
+    // Eğer sayı çok küçükse (örn: 5), increment 1'den küçük olabilir, bu yüzden Math.max(1, ...) diyoruz
+    const increment = Math.max(1, targetCount / (duration / 16)); 
     
     const timer = setInterval(() => {
       start += increment;
@@ -75,7 +73,7 @@ const TrustStats = () => {
         <div className="bar bar-5"></div>
       </div>
       
-      {/* SAĞ: Kocaman Yazı */}
+      {/* SAĞ: İstatistik Metni */}
       <div className="stat-text-box">
         <div className="stat-number">
           {count.toLocaleString('tr-TR')}
@@ -86,10 +84,10 @@ const TrustStats = () => {
       <style>{`
         .trust-stats-wrapper {
           display: flex;
-          flex-direction: row; /* Yan yana */
-          align-items: flex-end; /* Alt hizalı */
+          flex-direction: row;
+          align-items: flex-end;
           justify-content: center;
-          gap: 20px; /* Grafik ve yazı arası boşluk */
+          gap: 20px;
           margin-bottom: 3rem;
           margin-top: 1rem;
           animation: fadeIn 1s ease-out;
@@ -99,13 +97,13 @@ const TrustStats = () => {
           display: flex;
           align-items: flex-end;
           gap: 6px;
-          height: 80px; /* Grafik biraz daha yüksek */
-          padding-bottom: 8px; /* Yazı tabanıyla hizalamak için */
+          height: 80px;
+          padding-bottom: 8px;
         }
 
         .bar {
           width: 16px;
-          background: #000; /* SİYAH */
+          background: #000;
           border-radius: 4px 4px 0 0;
           animation: growUp 1.5s ease-out forwards;
           box-shadow: 2px 2px 10px rgba(0,0,0,0.2);
@@ -124,12 +122,12 @@ const TrustStats = () => {
         .stat-text-box {
           display: flex;
           flex-direction: column;
-          align-items: flex-start; /* Sola yaslı */
+          align-items: flex-start;
           justify-content: flex-end;
         }
 
         .stat-number {
-          font-size: 4.5rem; /* KOCAMAN */
+          font-size: 4.5rem;
           font-weight: 900;
           color: #000;
           line-height: 0.9;
@@ -150,7 +148,7 @@ const TrustStats = () => {
             gap: 15px;
           }
           .stat-number {
-            font-size: 3rem; /* Mobilde biraz küçültelim ama hala büyük */
+            font-size: 3rem;
           }
           .bar { width: 10px; }
         }
@@ -343,5 +341,4 @@ function Home() {
 }
 
 export default Home;
-
 
