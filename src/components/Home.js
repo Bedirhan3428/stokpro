@@ -8,8 +8,10 @@ import {
 } from "react-icons/fi";
 import "../styles/Home.css";
 
-// Firebase App ID (Global değişken veya varsayılan)
-const appId = typeof window !== 'undefined' && window.__app_id ? window.__app_id : 'default-app-id';
+// Firebase App ID (Öncelik: window objesi -> env değişkeni -> varsayılan)
+const appId = (typeof window !== 'undefined' && window.__app_id) 
+  ? window.__app_id 
+  : (process.env.REACT_APP_FIREBASE_ARTIFACTS_COLLECTION || 'default-app-id');
 
 // --- Animasyonlu Sayaç ve Grafik Bileşeni ---
 const TrustStats = () => {
@@ -20,19 +22,21 @@ const TrustStats = () => {
     const countUsers = async () => {
       try {
         const db = getFirestore();
-        // Doğrudan artifacts/{appId}/users koleksiyonunu sayıyoruz
+        // Belirtilen yol: artifacts / {ENV_VAR} / users
         const usersRef = collection(db, "artifacts", appId, "users");
+        
         const snapshot = await getDocs(usersRef);
         
-        // Koleksiyondaki döküman sayısı (Gerçek Kullanıcı/Esnaf Sayısı)
+        // Koleksiyondaki döküman sayısı (Gerçek Kullanıcı Sayısı)
         const realCount = snapshot.size;
 
-        // Eğer 0 ise (ilk kurulum), en azından 1 gösterelim (kendimiz).
+        // Eğer 0 ise (ilk kurulum), 1 gösterelim.
         setTargetCount(realCount > 0 ? realCount : 1);
+        
+        console.log(`[TrustStats] Path: artifacts/${appId}/users | Count: ${realCount}`);
         
       } catch (error) {
         console.error("Kullanıcı sayısı çekilemedi:", error);
-        // Hata durumunda varsayılan bir sayı
         setTargetCount(1); 
       }
     };
@@ -45,8 +49,7 @@ const TrustStats = () => {
     if (targetCount === 0) return;
 
     let start = 0;
-    const duration = 2000; // 2 saniye sürsün
-    // Eğer sayı çok küçükse (örn: 5), increment 1'den küçük olabilir, bu yüzden Math.max(1, ...) diyoruz
+    const duration = 2000; 
     const increment = Math.max(1, targetCount / (duration / 16)); 
     
     const timer = setInterval(() => {
@@ -209,7 +212,7 @@ function Home() {
       {/* HERO BÖLÜMÜ */}
       <section className="hero-section">
         
-        {/* Siyah Grafik ve Sayaç (Live Data) */}
+        {/* Siyah Grafik ve Sayaç (Live Data: artifacts/{appId}/users) */}
         <TrustStats />
 
         {!user && <div className="badge">Ömür Boyu Ücretsiz</div>}
@@ -341,4 +344,5 @@ function Home() {
 }
 
 export default Home;
+
 
