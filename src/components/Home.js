@@ -1,52 +1,55 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { getFirestore, doc, getDoc } from "firebase/firestore"; // DB işlemleri için eklendi
+import { getFirestore, collection, getDocs } from "firebase/firestore"; 
 import { 
   FiArrowRight, FiSearch, FiAlertTriangle, FiTrendingDown, 
   FiAward, FiCheckCircle, FiBox, FiUsers, FiPieChart, FiDownload, FiShare
 } from "react-icons/fi";
 import "../styles/Home.css";
 
-// Firebase App ID'yi güvenli şekilde alalım
+// Firebase App ID
 const appId = typeof window !== 'undefined' && window.__app_id ? window.__app_id : 'default-app-id';
 
 // --- Animasyonlu Sayaç ve Grafik Bileşeni ---
 const TrustStats = () => {
   const [count, setCount] = useState(0);
-  const [targetCount, setTargetCount] = useState(1050); // Varsayılan başlangıç (DB boşsa)
+  const [targetCount, setTargetCount] = useState(0);
 
-  // DB'den Gerçek Sayıyı Çekme
   useEffect(() => {
-    const fetchUserCount = async () => {
+    const countUsers = async () => {
       try {
         const db = getFirestore();
-        // İstatistiklerin tutulduğu public döküman
-        const docRef = doc(db, "artifacts", appId, "public", "data", "stats");
-        const docSnap = await getDoc(docRef);
+        // Kullanıcılar koleksiyonunu referans al
+        const usersRef = collection(db, "artifacts", appId, "users");
+        // Dökümanları çek
+        const snapshot = await getDocs(usersRef);
+        
+        // Koleksiyondaki döküman sayısı (kullanıcı sayısı)
+        const realCount = snapshot.size;
 
-        if (docSnap.exists() && docSnap.data().userCount) {
-          setTargetCount(docSnap.data().userCount);
-        } else {
-          // Eğer döküman yoksa gerçekçi görünen varsayılan bir sayı
-          setTargetCount(12450); 
-        }
+        // Eğer hiç kullanıcı yoksa (ilk kurulum), göze hoş görünsün diye 1'den başlasın veya 0 kalsın.
+        // Ama "esnaf bize güveniyor" dediği için en azından 1 olması iyi durur.
+        setTargetCount(realCount > 0 ? realCount : 0);
+        
       } catch (error) {
-        console.log("Sayaç verisi çekilemedi, varsayılan kullanılıyor.");
-        setTargetCount(12450);
+        console.error("Kullanıcı sayısı çekilemedi:", error);
+        // Hata durumunda varsayılan bir sayı gösterelim ki boş kalmasın
+        setTargetCount(10); 
       }
     };
 
-    fetchUserCount();
+    countUsers();
   }, []);
 
-  // Sayaç Animasyonu (Hedef sayı belirlenince çalışır)
+  // Sayaç Animasyonu
   useEffect(() => {
     if (targetCount === 0) return;
 
     let start = 0;
-    const duration = 2000; // 2 saniye
-    const increment = targetCount / (duration / 16); // 60fps
+    // Eğer sayı çok küçükse animasyon çok hızlı biter, o yüzden min duration ayarlayalım
+    const duration = 2000; 
+    const increment = targetCount / (duration / 16); 
     
     const timer = setInterval(() => {
       start += increment;
@@ -54,7 +57,7 @@ const TrustStats = () => {
         setCount(targetCount);
         clearInterval(timer);
       } else {
-        setCount(Math.floor(start));
+        setCount(Math.ceil(start));
       }
     }, 16);
 
@@ -63,7 +66,7 @@ const TrustStats = () => {
 
   return (
     <div className="trust-stats-wrapper">
-      {/* Animasyonlu Sütun Grafik */}
+      {/* SOL: Siyah Grafik */}
       <div className="animated-chart">
         <div className="bar bar-1"></div>
         <div className="bar bar-2"></div>
@@ -72,43 +75,45 @@ const TrustStats = () => {
         <div className="bar bar-5"></div>
       </div>
       
-      {/* Sayaç Metni */}
+      {/* SAĞ: Kocaman Yazı */}
       <div className="stat-text-box">
         <div className="stat-number">
-          {count.toLocaleString('tr-TR')}+
+          {count.toLocaleString('tr-TR')}
         </div>
         <div className="stat-label">Esnaf Bize Güveniyor</div>
       </div>
 
-      {/* Inline Style */}
       <style>{`
         .trust-stats-wrapper {
           display: flex;
-          flex-direction: column;
-          align-items: center;
+          flex-direction: row; /* Yan yana */
+          align-items: flex-end; /* Alt hizalı */
           justify-content: center;
-          margin-bottom: 2.5rem;
+          gap: 20px; /* Grafik ve yazı arası boşluk */
+          margin-bottom: 3rem;
+          margin-top: 1rem;
           animation: fadeIn 1s ease-out;
         }
+
         .animated-chart {
           display: flex;
           align-items: flex-end;
-          gap: 8px; /* Çubuklar arası boşluk */
-          height: 70px; /* Grafik yüksekliği */
-          margin-bottom: 12px;
+          gap: 6px;
+          height: 80px; /* Grafik biraz daha yüksek */
+          padding-bottom: 8px; /* Yazı tabanıyla hizalamak için */
         }
+
         .bar {
-          width: 14px;
-          background: #000000; /* SİYAH RENK */
+          width: 16px;
+          background: #000; /* SİYAH */
           border-radius: 4px 4px 0 0;
           animation: growUp 1.5s ease-out forwards;
-          opacity: 0.9;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+          box-shadow: 2px 2px 10px rgba(0,0,0,0.2);
         }
-        .bar-1 { height: 0; animation-delay: 0.1s; --target-h: 35%; }
-        .bar-2 { height: 0; animation-delay: 0.2s; --target-h: 65%; }
-        .bar-3 { height: 0; animation-delay: 0.3s; --target-h: 45%; }
-        .bar-4 { height: 0; animation-delay: 0.4s; --target-h: 85%; }
+        .bar-1 { height: 0; animation-delay: 0.1s; --target-h: 30%; }
+        .bar-2 { height: 0; animation-delay: 0.2s; --target-h: 60%; }
+        .bar-3 { height: 0; animation-delay: 0.3s; --target-h: 40%; }
+        .bar-4 { height: 0; animation-delay: 0.4s; --target-h: 80%; }
         .bar-5 { height: 0; animation-delay: 0.5s; --target-h: 100%; }
 
         @keyframes growUp {
@@ -117,21 +122,39 @@ const TrustStats = () => {
         }
 
         .stat-text-box {
-          text-align: center;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start; /* Sola yaslı */
+          justify-content: flex-end;
         }
+
         .stat-number {
-          font-size: 2.2rem;
+          font-size: 4.5rem; /* KOCAMAN */
           font-weight: 900;
-          color: #000000; /* Yazı da siyah */
-          line-height: 1;
-          letter-spacing: -1px;
+          color: #000;
+          line-height: 0.9;
+          letter-spacing: -2px;
         }
+
         .stat-label {
-          font-size: 0.95rem;
-          color: #4b5563;
+          font-size: 1.1rem;
+          color: #555;
           font-weight: 600;
+          margin-left: 4px;
           margin-top: 5px;
         }
+
+        @media (max-width: 600px) {
+          .trust-stats-wrapper {
+            flex-direction: row;
+            gap: 15px;
+          }
+          .stat-number {
+            font-size: 3rem; /* Mobilde biraz küçültelim ama hala büyük */
+          }
+          .bar { width: 10px; }
+        }
+
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(-10px); }
           to { opacity: 1; transform: translateY(0); }
@@ -188,7 +211,7 @@ function Home() {
       {/* HERO BÖLÜMÜ */}
       <section className="hero-section">
         
-        {/* Siyah Grafik ve Sayaç */}
+        {/* Siyah Grafik ve Sayaç (Live Data) */}
         <TrustStats />
 
         {!user && <div className="badge">Ömür Boyu Ücretsiz</div>}
