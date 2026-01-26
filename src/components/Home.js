@@ -8,7 +8,7 @@ import {
 } from "react-icons/fi";
 import "../styles/Home.css";
 
-// Firebase App ID (Öncelik: window objesi -> env değişkeni -> varsayılan)
+// Firebase App ID
 const appId = (typeof window !== 'undefined' && window.__app_id) 
   ? window.__app_id 
   : (process.env.REACT_APP_FIREBASE_ARTIFACTS_COLLECTION || 'default-app-id');
@@ -19,29 +19,41 @@ const TrustStats = () => {
   const [targetCount, setTargetCount] = useState(0);
 
   useEffect(() => {
-    const countUsers = async () => {
+    const fetchUserCount = async () => {
+      // 1. ÖNCEKİ KAYITLI VERİYİ KONTROL ET (Offline Desteği)
+      const cachedCount = localStorage.getItem('cached_user_count');
+      
+      // Eğer hafızada varsa, hemen onu hedef olarak belirle (İnternet yoksa bile bu görünecek)
+      if (cachedCount) {
+        setTargetCount(Number(cachedCount));
+      } else {
+        // Hafızada hiç yoksa 10 gibi makul bir sayıyla başla ki 0 görünmesin
+        setTargetCount(10);
+      }
+
       try {
         const db = getFirestore();
-        // Belirtilen yol: artifacts / {ENV_VAR} / users
         const usersRef = collection(db, "artifacts", appId, "users");
         
+        // İnternetten güncel veriyi çekmeyi dene
         const snapshot = await getDocs(usersRef);
-        
-        // Koleksiyondaki döküman sayısı (Gerçek Kullanıcı Sayısı)
         const realCount = snapshot.size;
 
-        // Eğer 0 ise (ilk kurulum), 1 gösterelim.
-        setTargetCount(realCount > 0 ? realCount : 1);
-        
-        console.log(`[TrustStats] Path: artifacts/${appId}/users | Count: ${realCount}`);
+        if (realCount > 0) {
+          // 2. YENİ VERİYİ GÜNCELLE VE KAYDET
+          setTargetCount(realCount);
+          localStorage.setItem('cached_user_count', realCount.toString());
+          console.log(`[TrustStats] Online: ${realCount} kullanıcı bulundu.`);
+        }
         
       } catch (error) {
-        console.error("Kullanıcı sayısı çekilemedi:", error);
-        setTargetCount(1); 
+        console.warn("İnternet yok veya veri çekilemedi, önbellekteki veri kullanılıyor:", error);
+        // Hata olursa (internet yoksa) hiçbir şey yapmamıza gerek yok, 
+        // çünkü yukarıda zaten cachedCount'u set etmiştik.
       }
     };
 
-    countUsers();
+    fetchUserCount();
   }, []);
 
   // Sayaç Animasyonu
@@ -49,6 +61,7 @@ const TrustStats = () => {
     if (targetCount === 0) return;
 
     let start = 0;
+    // Eğer cached veri varsa animasyon anında hedefe daha yakın başlasın (daha pürüzsüz geçiş)
     const duration = 2000; 
     const increment = Math.max(1, targetCount / (duration / 16)); 
     
@@ -67,7 +80,6 @@ const TrustStats = () => {
 
   return (
     <div className="trust-stats-wrapper">
-      {/* SOL: Siyah Grafik */}
       <div className="animated-chart">
         <div className="bar bar-1"></div>
         <div className="bar bar-2"></div>
@@ -76,7 +88,6 @@ const TrustStats = () => {
         <div className="bar bar-5"></div>
       </div>
       
-      {/* SAĞ: İstatistik Metni */}
       <div className="stat-text-box">
         <div className="stat-number">
           {count.toLocaleString('tr-TR')}
@@ -212,10 +223,10 @@ function Home() {
       {/* HERO BÖLÜMÜ */}
       <section className="hero-section">
         
-        {/* Siyah Grafik ve Sayaç (Live Data: artifacts/{appId}/users) */}
+        {/* Siyah Grafik ve Sayaç (Offline Korumalı) */}
         <TrustStats />
 
-        {!user && <div className="badge">İlk 100 Gerçek Kullanıcıya Ömür Boyu Ücretsiz</div>}
+        {!user && <div className="badge">Ömür Boyu Ücretsiz</div>}
 
         <h1 className="hero-title">
           Karmaşık Defterlere Son <br />
