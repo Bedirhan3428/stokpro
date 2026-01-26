@@ -7,6 +7,106 @@ import {
 } from "react-icons/fi";
 import "../styles/Home.css";
 
+// --- Animasyonlu Sayaç ve Grafik Bileşeni ---
+const TrustStats = () => {
+  const [count, setCount] = useState(0);
+  const targetCount = 12450; // Hedef esnaf sayısı (Örnek)
+
+  useEffect(() => {
+    let start = 0;
+    const duration = 2000; // 2 saniyede tamamlansın
+    const increment = targetCount / (duration / 16); // 60fps
+    
+    const timer = setInterval(() => {
+      start += increment;
+      if (start >= targetCount) {
+        setCount(targetCount);
+        clearInterval(timer);
+      } else {
+        setCount(Math.floor(start));
+      }
+    }, 16);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="trust-stats-wrapper">
+      {/* Animasyonlu Sütun Grafik */}
+      <div className="animated-chart">
+        <div className="bar bar-1"></div>
+        <div className="bar bar-2"></div>
+        <div className="bar bar-3"></div>
+        <div className="bar bar-4"></div>
+        <div className="bar bar-5"></div>
+      </div>
+      
+      {/* Sayaç Metni */}
+      <div className="stat-text-box">
+        <div className="stat-number">
+          {count.toLocaleString('tr-TR')}+
+        </div>
+        <div className="stat-label">Esnaf Bize Güveniyor</div>
+      </div>
+
+      {/* Inline Style - Sadece bu bileşen için stiller */}
+      <style>{`
+        .trust-stats-wrapper {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 2rem;
+          animation: fadeIn 1s ease-out;
+        }
+        .animated-chart {
+          display: flex;
+          align-items: flex-end;
+          gap: 6px;
+          height: 60px;
+          margin-bottom: 10px;
+        }
+        .bar {
+          width: 12px;
+          background: linear-gradient(to top, #4f46e5, #818cf8);
+          border-radius: 4px 4px 0 0;
+          animation: growUp 1.5s ease-out forwards;
+          opacity: 0.8;
+        }
+        .bar-1 { height: 0; animation-delay: 0.1s; --target-h: 40%; }
+        .bar-2 { height: 0; animation-delay: 0.2s; --target-h: 70%; }
+        .bar-3 { height: 0; animation-delay: 0.3s; --target-h: 50%; }
+        .bar-4 { height: 0; animation-delay: 0.4s; --target-h: 90%; }
+        .bar-5 { height: 0; animation-delay: 0.5s; --target-h: 100%; }
+
+        @keyframes growUp {
+          from { height: 0; }
+          to { height: var(--target-h); }
+        }
+
+        .stat-text-box {
+          text-align: center;
+        }
+        .stat-number {
+          font-size: 2rem;
+          font-weight: 800;
+          color: #1e293b;
+          line-height: 1;
+        }
+        .stat-label {
+          font-size: 0.9rem;
+          color: #64748b;
+          font-weight: 500;
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+    </div>
+  );
+};
+
 function Home() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
@@ -56,6 +156,9 @@ function Home() {
     <div className="home-container">
       {/* HERO BÖLÜMÜ */}
       <section className="hero-section">
+        {/* YENİ EKLENEN GÜVEN İSTATİSTİKLERİ */}
+        <TrustStats />
+
         {!user && <div className="badge">Ömür Boyu Ücretsiz</div>}
 
         <h1 className="hero-title">
@@ -185,3 +288,4 @@ function Home() {
 }
 
 export default Home;
+
