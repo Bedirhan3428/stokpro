@@ -11,7 +11,6 @@ import {
   deleteDoc,
   where,
   setDoc
-  // limit ve orderBy buradan silindi
 } from "firebase/firestore";
 
 import { db, firebaseEnabled, auth } from "../firebase";
@@ -141,7 +140,6 @@ export async function finalizeSaleTransaction({ items = [], paymentType = "cash"
   return runTransaction(db, async (tx) => {
     const productRefs = items.map((it) => doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "products", it.productId));
     const productSnaps = [];
-    // Promise.all kullanarak paralel okuma yapıyoruz, bu kısım iyi.
     for (const pref of productRefs) productSnaps.push(await tx.get(pref));
 
     let custRef = null;
@@ -235,28 +233,21 @@ export async function finalizeSaleTransaction({ items = [], paymentType = "cash"
 export async function listSales() {
   ensureDb();
   const uid = getUidOrThrow();
-  // DİKKAT: Bu fonksiyon tüm satışları çeker. Çok veri varsa yavaşlar.
-  // Mümkünse listRecentSales kullanın.
   const q = query(collection(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "sales"));
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
-// Performans için limitli satış çekme
+// Performans için limitli satış çekme (Memory sort)
 export async function listRecentSales(limitCount = 100) {
   ensureDb();
   const uid = getUidOrThrow();
   const salesCol = collection(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "sales");
 
-  // Eğer tarih alanı "createdAt" string ISO ise orderBy string çalışır.
-  // Ancak en sağlıklısı memoryde sıralamaktır eğer index sorunu varsa.
-  // Index oluşturduysan: query(salesCol, orderBy("createdAt", "desc"), limit(limitCount));
-  // Şimdilik index hatası vermemesi için düz çekip sort ediyoruz ama limit koyamıyoruz (Firestore limitations without index)
-  // Eğer index varsa aşağıdakini açabilirsin.
-  // const q = query(salesCol, orderBy("createdAt", "desc"), limit(limitCount));
-
-  // Güvenli yöntem (Index gerektirmez ama tüm docs okur, o yüzden manuel limitliyoruz):
-  const q = query(salesCol); // Index varsa buraya orderBy eklenebilir.
+  // NOT: Karmaşık query (orderBy + limit) index gerektireceğinden 
+  // tüm datayı çekip memory'de sıralıyoruz. 
+  // Çok büyük verilerde index oluşturup query değiştirmek gerekir.
+  const q = query(salesCol); 
   const snap = await getDocs(q);
 
   let results = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -601,13 +592,13 @@ export async function updateUserProfile(uid, data = {}) {
   if (!uid) throw new Error("Kullanıcı ID (uid) gerekli.");
 
   const ref = doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "profile", "user_doc");
-  
+
   // setDoc ile merge: true kullanarak yoksa oluşturur, varsa günceller
   await setDoc(ref, { 
     ...data, 
     updatedAt: new Date().toISOString() 
   }, { merge: true });
-  
+
   return true;
 }
 
@@ -637,7 +628,7 @@ const firebaseHelpers = {
   addLegacyExpense,
   createUserProfile,
   getUserProfile,
-  updateUserProfile, // <-- YENİ EKLENEN
+  updateUserProfile, 
   updateLegacyDocument,
   deleteLegacyDocument
 };
