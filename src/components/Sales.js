@@ -12,7 +12,7 @@ import {
   addLegacyExpense
 } from "../utils/firebaseHelpers";
 import useSubscription from "../hooks/useSubscription";
-import { MdEdit } from "react-icons/md";
+import { MdEdit, MdImageNotSupported } from "react-icons/md"; // İkon eklendi
 import { IoMdTrash } from "react-icons/io";
 
 // Basit Bildirim
@@ -65,7 +65,7 @@ export default function Sales() {
   const [showIncomeModal, setShowIncomeModal] = useState(false);
   const [incomeAmount, setIncomeAmount] = useState("");
   const [incomeDesc, setIncomeDesc] = useState("");
-  
+
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [expenseAmount, setExpenseAmount] = useState("");
   const [expenseDesc, setExpenseDesc] = useState("");
@@ -152,7 +152,7 @@ export default function Sales() {
     setCart((c) => {
       const idx = c.findIndex((it) => it.productId === p.id);
       const mevcut = idx >= 0 ? Number(c[idx].qty) : 0;
-      
+
       if (mevcut + qty > stok) {
         bildir({ type: "error", title: "Yetersiz Stok", message: `Mevcut stok: ${stok}` });
         return c;
@@ -207,14 +207,14 @@ export default function Sales() {
 
     try {
       await finalizeSaleTransaction(saleData);
-      
+
       // Veresiye ise yerel state güncelle
       if (paymentType === "credit" && selectedCustomer) {
         setCustomers(prev => prev.map(c => 
           c.id === selectedCustomer ? { ...c, balance: (c.balance || 0) + totals.total } : c
         ));
       }
-      
+
       await yenile(true);
     } catch (err) {
       setCart(cartBackup);
@@ -250,7 +250,7 @@ export default function Sales() {
     }
   }
 
-  // --- EKLENEN KISIM: Modal Açma Fonksiyonları ---
+  // --- Modal Açma Fonksiyonları ---
   function gelirModalAc() {
     if (!subActive) return bildir({ type: "error", title: "Abonelik", message: "İşlem için abonelik gerekli." });
     setIncomeAmount("");
@@ -297,6 +297,45 @@ export default function Sales() {
 
   return (
     <div className="sl-sayfa">
+      {/* Özel CSS - Resimler için */}
+      <style>{`
+        .sl-urun-medya {
+          width: 100%;
+          height: 100px;
+          background: #f4f6f8;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 6px;
+          margin-bottom: 8px;
+          overflow: hidden;
+          position: relative;
+        }
+        .sl-urun-img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          transition: transform 0.2s;
+        }
+        .sl-urun-kart:hover .sl-urun-img {
+          transform: scale(1.05);
+        }
+        .sl-urun-no-img {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          font-size: 10px;
+          color: #adb5bd;
+          text-transform: uppercase;
+        }
+        .sl-icon-ph {
+          font-size: 24px;
+          margin-bottom: 4px;
+          opacity: 0.5;
+        }
+      `}</style>
+
       <Bildirim note={note} />
 
       {!subLoading && !subActive && (
@@ -309,7 +348,7 @@ export default function Sales() {
       <section className="sl-sol-panel">
         <div className="sl-kart">
           <h3 className="sl-baslik">Hızlı Satış</h3>
-          
+
           <div className="sl-araclar">
             <button 
               className={`sl-btn ${showCamera ? "kirmizi" : "mavi"}`} 
@@ -335,6 +374,19 @@ export default function Sales() {
           <div className="sl-urun-grid">
             {filteredProducts.map((p) => (
               <div key={p.id} className="sl-urun-kart" onClick={() => sepeteEkle(p, 1)}>
+                
+                {/* --- GÖRSEL ALANI (EKLENEN KISIM) --- */}
+                <div className="sl-urun-medya">
+                  {p.imageUrl ? (
+                    <img src={p.imageUrl} alt={p.name} className="sl-urun-img" />
+                  ) : (
+                    <div className="sl-urun-no-img">
+                       <MdImageNotSupported className="sl-icon-ph"/>
+                       <span>Resim Yok</span>
+                    </div>
+                  )}
+                </div>
+
                 <div className="sl-urun-baslik">{p.name}</div>
                 <div className="sl-urun-detay">
                   <span className="sl-stok-etiket">Stok: {p.stock}</span>
@@ -349,11 +401,11 @@ export default function Sales() {
 
       {/* --- SAĞ PANEL: Sepet ve Geçmiş --- */}
       <aside className="sl-sag-panel">
-        
+
         {/* SEPET */}
         <div className="sl-kart full-h">
           <h3 className="sl-baslik">Sepet</h3>
-          
+
           <div className="sl-sepet-liste">
             {cart.length === 0 ? (
               <div className="sl-bos-sepet">Sepet boş</div>
@@ -390,7 +442,7 @@ export default function Sales() {
                 <button className={`sl-toggle ${paymentType === "cash" ? "active" : ""}`} onClick={() => setPaymentType("cash")}>Nakit</button>
                 <button className={`sl-toggle ${paymentType === "credit" ? "active" : ""}`} onClick={() => setPaymentType("credit")}>Veresiye</button>
               </div>
-              
+
               {paymentType === "credit" && (
                 <select value={selectedCustomer} onChange={(e) => setSelectedCustomer(e.target.value)} className="sl-input">
                   <option value="">Müşteri Seçin</option>
@@ -400,7 +452,7 @@ export default function Sales() {
             </div>
 
             <button className="sl-btn mavi buyuk" onClick={satisTamamla} disabled={!subActive}>Satışı Tamamla</button>
-            
+
             <div className="sl-hizli-btnlar">
               <button className="sl-btn hayalet" onClick={gelirModalAc} disabled={!subActive}>+ Gelir</button>
               <button className="sl-btn hayalet" onClick={giderModalAc} disabled={!subActive}>- Gider</button>
@@ -430,22 +482,19 @@ export default function Sales() {
       </aside>
 
       {/* --- MODALLAR --- */}
-      
-      {/* Gelir Modalı (TEXTAREA EKLENDİ) */}
+
+      {/* Gelir Modalı */}
       {showIncomeModal && (
         <div className="sl-modal-overlay">
           <div className="sl-modal small">
             <h4>Gelir Ekle</h4>
             <input placeholder="Tutar (TL)" type="number" value={incomeAmount} onChange={(e)=>setIncomeAmount(e.target.value)} className="sl-input" />
-            
-            {/* Genişleyen Açıklama Alanı */}
             <textarea 
               placeholder="Açıklama (Opsiyonel)" 
               value={incomeDesc} 
               onChange={(e)=>setIncomeDesc(e.target.value)} 
               className="sl-input sl-textarea-expand"
             />
-            
             <div className="sl-modal-footer">
               <button onClick={()=>setShowIncomeModal(false)} className="sl-btn hayalet">İptal</button>
               <button onClick={gelirKaydet} className="sl-btn mavi">Kaydet</button>
@@ -454,21 +503,18 @@ export default function Sales() {
         </div>
       )}
 
-      {/* Gider Modalı (TEXTAREA EKLENDİ) */}
+      {/* Gider Modalı */}
       {showExpenseModal && (
         <div className="sl-modal-overlay">
           <div className="sl-modal small">
             <h4>Gider Ekle</h4>
             <input placeholder="Tutar (TL)" type="number" value={expenseAmount} onChange={(e)=>setExpenseAmount(e.target.value)} className="sl-input" />
-            
-            {/* Genişleyen Açıklama Alanı */}
             <textarea 
               placeholder="Açıklama (Opsiyonel)" 
               value={expenseDesc} 
               onChange={(e)=>setExpenseDesc(e.target.value)} 
               className="sl-input sl-textarea-expand"
             />
-            
             <div className="sl-modal-footer">
               <button onClick={()=>setShowExpenseModal(false)} className="sl-btn hayalet">İptal</button>
               <button onClick={giderKaydet} className="sl-btn mavi">Kaydet</button>
@@ -477,7 +523,7 @@ export default function Sales() {
         </div>
       )}
 
-      {/* Diğer Modallar (Silme/Düzenleme) */}
+      {/* Diğer Modallar */}
       {editingSale && (
         <div className="sl-modal-overlay">
           <div className="sl-modal small">
@@ -510,3 +556,4 @@ export default function Sales() {
     </div>
   );
 }
+
