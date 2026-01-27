@@ -1,6 +1,7 @@
 // src/utils/artifactUserProducts.js
 // Products helpers for artifacts/{ARTIFACT_DOC_ID}/users/{uid}/products
 // NOTE: "cost" field removed from add/update payloads.
+// Added "imageUrl" support.
 
 import {
   collection,
@@ -51,6 +52,7 @@ export async function addProduct(product) {
     price: Number(product.price || 0),
     stock: Number(product.stock || 0),
     category: product.category ? String(product.category) : null,
+    imageUrl: product.imageUrl ? String(product.imageUrl) : null, // EKLENDİ
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   });
@@ -63,11 +65,18 @@ export async function updateProduct(productId, updates = {}) {
   if (!productId) throw new Error("productId gerekli.");
   const ref = doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "products", productId);
   const toUpdate = {};
+  
   if (typeof updates.name !== "undefined") toUpdate.name = String(updates.name || "");
   if (typeof updates.barcode !== "undefined") toUpdate.barcode = updates.barcode ? String(updates.barcode) : null;
   if (typeof updates.price !== "undefined") toUpdate.price = Number(updates.price || 0);
   if (typeof updates.stock !== "undefined") toUpdate.stock = Number(updates.stock || 0);
   if (typeof updates.category !== "undefined") toUpdate.category = updates.category ? String(updates.category) : null;
+  
+  // EKLENDİ: Görsel güncelleme kontrolü
+  if (typeof updates.imageUrl !== "undefined") {
+    toUpdate.imageUrl = updates.imageUrl ? String(updates.imageUrl) : null;
+  }
+
   toUpdate.updatedAt = new Date().toISOString();
   await updateDoc(ref, toUpdate);
   return true;
@@ -83,7 +92,6 @@ export async function deleteProduct(productId) {
 }
 
 /* default export for convenience */
-// Eski hali: export default { ... }
 const productExports = {
   listProductsForCurrentUser,
   addProduct,
