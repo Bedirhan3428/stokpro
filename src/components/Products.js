@@ -11,439 +11,181 @@ import {
 } from "react-icons/fi";
 import "../styles/Products.css";
 
-// Bildirim Bileşeni
+// Basit Hata Bildirimi
 function Bildirim({ note }) {
   if (!note) return null;
-  const tipClass = note.type === "error" ? "hata" : note.type === "success" ? "basari" : "bilgi";
-  return (
-    <div className={`prd-bildirim ${tipClass}`}>
-      <div className="prd-bildirim-baslik">{note.title}</div>
-      <div className="prd-bildirim-icerik">{note.message}</div>
-    </div>
-  );
+  return <div className={`prd-bildirim ${note.type}`}>{note.message}</div>;
 }
 
-// Görsel Bileşeni (Hata yönetimi için)
-function UrunGorseli({ src, alt }) {
-  const [error, setError] = useState(false);
+// Görsel Bileşeni - gorselUrl kullanıyor
+function UrunGorseli({ src }) {
+  const [err, setErr] = useState(false);
+  useEffect(() => setErr(false), [src]);
 
-  // Src değişirse error state'ini sıfırla
-  useEffect(() => { setError(false); }, [src]);
-
-  // Boşsa veya hata varsa placeholder
-  if (!src || error) {
-    return (
-      <div className="img-placeholder" title="Görsel yok">
-        <FiImage size={24} />
-      </div>
-    );
-  }
-
-  return (
-    <img 
-      src={src} 
-      alt={alt} 
-      className="prod-img" 
-      onError={() => setError(true)} 
-    />
-  );
+  if (!src || err) return <div className="img-placeholder"><FiImage /></div>;
+  return <img src={src} className="prod-img" onError={() => setErr(true)} alt="Ürün" />;
 }
-
-const DEFAULT_CATEGORIES = ["Genel", "Gıda", "Elektronik", "Giyim", "Kırtasiye", "Temizlik", "Hırdavat"];
 
 export default function Products() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Form State
+  // Form Verileri - İsim ve gorselUrl aynı mantıkta
   const [name, setName] = useState("");
-  const [barcode, setBarcode] = useState("");
+  const [gorselUrl, setGorselUrl] = useState(""); // gorselUrl değişkeni
   const [price, setPrice] = useState("");
   const [stock, setStock] = useState("");
-  const [image, setImage] = useState(""); // STRING link tutacak
-
+  const [barcode, setBarcode] = useState("");
   const [category, setCategory] = useState("");
-  const [showCatSuggestions, setShowCatSuggestions] = useState(false);
-
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [editing, setEditing] = useState(null);
-  const [confirmDelete, setConfirmDelete] = useState(null);
   const [note, setNote] = useState(null);
+  const { active: subActive } = useSubscription();
 
-  const { loading: subLoading, active: subActive } = useSubscription();
-  const catWrapperRef = useRef(null);
-
-  function bildir(n) {
-    setNote(n);
-    setTimeout(() => setNote(null), 3500);
-  }
-
+  // Veri Çekme
   async function yukle() {
     setLoading(true);
     try {
       const list = await listProductsForCurrentUser();
-      setProducts(Array.isArray(list) ? list : []);
-    } catch (err) {
-      bildir({ type: "error", title: "Hata", message: "Veri çekilemedi." });
+      setProducts(list || []);
+    } catch {
+      setNote({ type: "error", message: "Hata oluştu" });
     } finally {
       setLoading(false);
     }
   }
 
-  useEffect(() => {
-    yukle();
-    function handleClickOutside(event) {
-      if (catWrapperRef.current && !catWrapperRef.current.contains(event.target)) {
-        setShowCatSuggestions(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  useEffect(() => { yukle(); }, []);
 
-  const categoryOptions = useMemo(() => {
-    const existing = products.map(p => p.category).filter(c => c && c.trim() !== "");
-    const allCats = [...new Set([...DEFAULT_CATEGORIES, ...existing])];
-    if (!category) return allCats.sort();
-    return allCats.filter(c => c.toLowerCase().includes(category.toLowerCase())).sort();
-  }, [products, category]);
-
+  // Ürün Ekleme
   async function urunEkle() {
-    if (!subActive) return bildir({ type: "error", title: "Kısıtlı", message: "Özellik kilitli." });
-
-    const tName = name.trim();
-    if (!tName) return bildir({ type: "error", title: "Eksik", message: "Ürün adı şart." });
-
-    const isDuplicate = products.some(p => p.name.toLowerCase() === tName.toLowerCase() || (barcode && p.barcode === barcode));
-    if (isDuplicate) return bildir({ type: "error", title: "Mevcut", message: "Bu ürün zaten var." });
+    if (!subActive) return;
+    if (!name.trim()) return;
 
     try {
       await addProduct({
-        name: tName,
-        barcode: barcode.trim(),
-        price: parseFloat(price) || 0,
-        stock: parseInt(stock, 10) || 0,
-        category: category.trim(),
-        image: image // Direkt state'i gönderiyoruz
+        name: name,
+        gorselUrl: gorselUrl, // Direkt gönderiyoruz
+        price: price,
+        stock: stock,
+        barcode: barcode,
+        category: category
       });
-      setName(""); setBarcode(""); setPrice(""); setStock(""); setCategory(""); setImage("");
+      // Temizle
+      setName(""); setGorselUrl(""); setPrice(""); setStock(""); setBarcode(""); setCategory("");
       await yukle();
-      bildir({ type: "success", title: "Eklendi", message: "Ürün kaydedildi." });
-    } catch (err) {
-      bildir({ type: "error", title: "Hata", message: err.message });
+      setNote({ type: "success", message: "Eklendi" });
+      setTimeout(() => setNote(null), 3000);
+    } catch (e) {
+      console.log(e);
     }
   }
 
-  function duzenlemeAc(p) {
-    setEditing({ 
-      ...p, 
-      price: p.price || 0, 
-      stock: p.stock || 0, 
-      category: p.category || "",
-      image: p.image || "" // Varsa getir
-    });
-  }
-
+  // Düzenleme Kaydet
   async function duzenlemeKaydet() {
-    if (!subActive) return;
-    const { id, name: n, barcode: b, price: pr, stock: st, category: cat, image: img } = editing;
-    if (!n.trim()) return bildir({ type: "error", title: "Eksik", message: "Ad boş olamaz." });
-
+    if (!editing || !editing.name) return;
     try {
-      await updateProduct(id, {
-        name: n.trim(),
-        barcode: b,
-        price: Number(pr),
-        stock: Number(st),
-        category: cat,
-        image: img // Direkt gönder
+      await updateProduct(editing.id, {
+        name: editing.name,
+        gorselUrl: editing.gorselUrl, // Düzenlenen veri
+        price: editing.price,
+        stock: editing.stock,
+        barcode: editing.barcode,
+        category: editing.category
       });
       setEditing(null);
       await yukle();
-      bildir({ type: "success", title: "Güncellendi", message: "Değişiklikler kaydedildi." });
-    } catch (err) {
-      bildir({ type: "error", title: "Hata", message: err.message });
+    } catch (e) {
+      console.log(e);
     }
   }
 
-  async function silGercek() {
-    if (!subActive || !confirmDelete) return;
-    try {
-      await deleteProduct(confirmDelete.id);
-      setConfirmDelete(null);
-      await yukle();
-      bildir({ type: "success", title: "Silindi", message: "Ürün silindi." });
-    } catch (err) {
-      bildir({ type: "error", title: "Hata", message: err.message });
-    }
+  // Silme
+  async function sil(id) {
+    if(!window.confirm("Silinsin mi?")) return;
+    await deleteProduct(id);
+    await yukle();
   }
 
-  async function hizliStok(id, val) {
-    if (!subActive) return;
-    const newVal = Number(val);
-    const oldProducts = [...products];
-    setProducts(prev => prev.map(p => p.id === id ? { ...p, stock: newVal } : p));
-    try {
-      await updateProduct(id, { stock: newVal });
-      bildir({ type: "success", title: "Güncellendi", message: `Stok: ${newVal}` });
-    } catch {
-      setProducts(oldProducts);
-      bildir({ type: "error", title: "Hata", message: "Güncelleme başarısız." });
-    }
-  }
-
-  const filtered = products.filter(p => {
-    const t = searchTerm.toLowerCase();
-    return (
-      (p.name || "").toLowerCase().includes(t) ||
-      (p.barcode || "").toLowerCase().includes(t) ||
-      (p.category || "").toLowerCase().includes(t)
-    );
-  });
+  const filtered = products.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
   return (
     <div className="prd-container">
       <Bildirim note={note} />
 
-      {!subLoading && !subActive && (
-        <div className="alert-banner">
-          <FiAlertCircle size={20} />
-          <span>Hesabınız kısıtlı. Tüm özellikleri açmak için:</span>
-          <a href="https://www.stokpro.shop/product-key" className="alert-link">Ücretsiz Etkinleştir</a>
-        </div>
-      )}
-
-      {/* --- EKLEME KARTI --- */}
+      {/* --- EKLEME KISMI --- */}
       <div className="prd-card add-section">
-        <div className="card-header">
-           <h3>Yeni Ürün Ekle</h3>
-        </div>
-
+        <h3>Yeni Ürün</h3>
         <div className="form-grid">
-          <div className="form-group full">
-            <label>Ürün Adı</label>
-            <input 
-              placeholder="Ürün Adı" 
-              value={name} 
-              onChange={e => setName(e.target.value)} 
-              className="modern-input" 
-            />
-          </div>
+          {/* İsim */}
+          <input placeholder="Ürün Adı" value={name} onChange={e => setName(e.target.value)} className="modern-input" />
+          
+          {/* Görsel URL - İsim gibi davranıyor */}
+          <input 
+            placeholder="Görsel URL (gorselUrl)" 
+            value={gorselUrl} 
+            onChange={e => setGorselUrl(e.target.value)} 
+            className="modern-input" 
+          />
 
-          <div className="form-group half">
-            <label>Barkod (İsteğe Bağlı)</label>
-            <input 
-              placeholder="Barkod" 
-              value={barcode} 
-              onChange={e => setBarcode(e.target.value)} 
-              className="modern-input" 
-            />
-          </div>
-
-          <div className="form-group half">
-            <label>Görsel URL (İsteğe Bağlı)</label>
-            <input 
-              placeholder="https://..." 
-              value={image} 
-              onChange={e => setImage(e.target.value)} 
-              className="modern-input" 
-            />
-          </div>
-
-          <div className="form-group half">
-            <label>Fiyat (₺)</label>
-            <input 
-              type="number" 
-              placeholder="0.00" 
-              value={price} 
-              onChange={e => setPrice(e.target.value)} 
-              className="modern-input" 
-            />
-          </div>
-
-          <div className="form-group half">
-            <label>Stok Adedi</label>
-            <input 
-              type="number" 
-              placeholder="0" 
-              value={stock} 
-              onChange={e => setStock(e.target.value)} 
-              className="modern-input" 
-            />
-          </div>
-
-          <div className="form-group full" ref={catWrapperRef}>
-            <label>Kategori</label>
-            <div className="custom-select-wrapper">
-              <div className="input-icon-wrapper">
-                <FiFilter className="input-icon" />
-                <input 
-                  placeholder="Kategori yazın veya seçin..." 
-                  value={category}
-                  onChange={e => { setCategory(e.target.value); setShowCatSuggestions(true); }}
-                  onFocus={() => setShowCatSuggestions(true)}
-                  className="modern-input with-icon"
-                />
-              </div>
-
-              {showCatSuggestions && (
-                <ul className="suggestions-list">
-                  {categoryOptions.length === 0 && <li className="no-suggestion">"{category}" eklenecek.</li>}
-                  {categoryOptions.map((c, i) => (
-                    <li key={i} onClick={() => { setCategory(c); setShowCatSuggestions(false); }}>
-                      {c}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
-
-          <div className="form-actions">
-             <button className="modern-btn primary full-width" onClick={urunEkle} disabled={!subActive}>
-               <FiPlus /> Ürünü Kaydet
-             </button>
-          </div>
+          <input placeholder="Fiyat" type="number" value={price} onChange={e => setPrice(e.target.value)} className="modern-input" />
+          <input placeholder="Stok" type="number" value={stock} onChange={e => setStock(e.target.value)} className="modern-input" />
+          <input placeholder="Barkod" value={barcode} onChange={e => setBarcode(e.target.value)} className="modern-input" />
+          <input placeholder="Kategori" value={category} onChange={e => setCategory(e.target.value)} className="modern-input" />
+          
+          <button onClick={urunEkle} className="modern-btn primary">Kaydet</button>
         </div>
       </div>
 
-      {/* --- LİSTELEME KARTI --- */}
+      {/* --- LİSTE --- */}
       <div className="prd-card list-section">
-        <div className="list-header">
-          <h3>Ürün Listesi <span className="count-badge">{filtered.length}</span></h3>
-          <div className="search-wrapper">
-            <FiSearch className="search-icon" />
-            <input 
-              placeholder="Ara..." 
-              value={searchTerm} 
-              onChange={e => setSearchTerm(e.target.value)} 
-              className="search-input"
-            />
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="prd-loading"><div className="spinner"></div></div>
-        ) : filtered.length === 0 ? (
-          <div className="prd-empty">
-             <FiSearch size={40} />
-             <p>Ürün bulunamadı.</p>
-          </div>
-        ) : (
-          <div className="product-list">
-            {filtered.map(p => (
-              <div key={p.id} className="product-item">
-                {/* Görsel Alanı */}
-                <div className="prod-img-box">
-                  <UrunGorseli src={p.image} alt={p.name} />
-                </div>
-
-                <div className="prod-main">
-                  <div className="prod-name">{p.name}</div>
-                  <div className="prod-tags">
-                     <span className="tag cat">{p.category || "Genel"}</span>
-                     {p.barcode && <span className="tag bar">{p.barcode}</span>}
-                  </div>
-                </div>
-
-                <div className="prod-values">
-                  <div className="prod-price-box">
-                    {Number(p.price).toLocaleString("tr-TR", {style:"currency", currency:"TRY"})}
-                  </div>
-
-                  <div className="prod-stock-box">
-                    <input 
-                      type="number" 
-                      className="stock-input"
-                      defaultValue={p.stock}
-                      onBlur={e => hizliStok(p.id, e.target.value)}
-                      disabled={!subActive}
-                    />
-                    <span className="stock-label">Adet</span>
-                  </div>
-                </div>
-
-                <div className="prod-actions">
-                  <button onClick={() => duzenlemeAc(p)} className="action-btn edit" title="Düzenle">
-                    <FiEdit2 />
-                  </button>
-                  <button onClick={() => setConfirmDelete({id:p.id, label:p.name})} className="action-btn delete" title="Sil">
-                    <FiTrash2 />
-                  </button>
-                </div>
+        <input placeholder="Ara..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="search-input" />
+        
+        <div className="product-list">
+          {filtered.map(p => (
+            <div key={p.id} className="product-item">
+              {/* Görseli Göster - p.gorselUrl kullanıyor */}
+              <div className="prod-img-box">
+                <UrunGorseli src={p.gorselUrl} />
               </div>
-            ))}
-          </div>
-        )}
+
+              <div className="prod-main">
+                <div className="prod-name">{p.name}</div>
+                <div className="prod-price">{p.price} TL</div>
+              </div>
+
+              <div className="prod-actions">
+                <button onClick={() => setEditing({...p})} className="action-btn"><FiEdit2 /></button>
+                <button onClick={() => sil(p.id)} className="action-btn delete"><FiTrash2 /></button>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* --- DÜZENLEME MODALI --- */}
+      {/* --- DÜZENLEME MODAL --- */}
       {editing && (
         <div className="modal-overlay">
           <div className="modal-card">
-            <div className="modal-header">
-              <h4>Ürün Düzenle</h4>
-              <button onClick={() => setEditing(null)} className="close-btn">×</button>
-            </div>
-            <div className="modal-body">
-              <div className="form-group">
-                <label>Ürün Adı</label>
-                <input value={editing.name} onChange={e => setEditing(s => ({...s, name: e.target.value}))} className="modern-input" />
-              </div>
+            <h4>Düzenle</h4>
+            <input value={editing.name} onChange={e => setEditing({...editing, name: e.target.value})} className="modern-input" />
+            
+            <input 
+              placeholder="Görsel Linki"
+              value={editing.gorselUrl || ""} 
+              onChange={e => setEditing({...editing, gorselUrl: e.target.value})} 
+              className="modern-input" 
+            />
 
-              <div className="form-group">
-                <label>Görsel Linki</label>
-                <input 
-                  placeholder="https://..."
-                  value={editing.image} 
-                  onChange={e => setEditing(s => ({...s, image: e.target.value}))} 
-                  className="modern-input" 
-                />
-              </div>
-
-              <div className="row-2">
-                 <div className="form-group">
-                    <label>Fiyat</label>
-                    <input type="number" value={editing.price} onChange={e => setEditing(s => ({...s, price: e.target.value}))} className="modern-input" />
-                 </div>
-                 <div className="form-group">
-                    <label>Stok</label>
-                    <input type="number" value={editing.stock} onChange={e => setEditing(s => ({...s, stock: e.target.value}))} className="modern-input" />
-                 </div>
-              </div>
-
-              <div className="form-group">
-                <label>Kategori</label>
-                <input value={editing.category} onChange={e => setEditing(s => ({...s, category: e.target.value}))} className="modern-input" />
-              </div>
-
-              <div className="form-group">
-                <label>Barkod</label>
-                <input value={editing.barcode} onChange={e => setEditing(s => ({...s, barcode: e.target.value}))} className="modern-input" />
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button onClick={() => setEditing(null)} className="modern-btn ghost">Vazgeç</button>
-              <button onClick={duzenlemeKaydet} className="modern-btn primary">Kaydet</button>
-            </div>
+            <input type="number" value={editing.price} onChange={e => setEditing({...editing, price: e.target.value})} className="modern-input" />
+            <input type="number" value={editing.stock} onChange={e => setEditing({...editing, stock: e.target.value})} className="modern-input" />
+            
+            <button onClick={duzenlemeKaydet} className="modern-btn primary">Güncelle</button>
+            <button onClick={() => setEditing(null)} className="modern-btn ghost">Kapat</button>
           </div>
         </div>
       )}
-
-      {confirmDelete && (
-        <div className="modal-overlay">
-          <div className="modal-card small">
-             <div className="modal-icon danger"><FiTrash2 /></div>
-             <h4>Siliniyor</h4>
-             <p><b>{confirmDelete.label}</b> silinecek. Emin misin?</p>
-             <div className="modal-footer center">
-               <button onClick={() => setConfirmDelete(null)} className="modern-btn ghost">Hayır</button>
-               <button onClick={silGercek} className="modern-btn danger">Evet, Sil</button>
-             </div>
-          </div>
-        </div>
-      )}
-
     </div>
   );
 }
