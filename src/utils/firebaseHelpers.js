@@ -41,7 +41,7 @@ async function readArtifactCollection(artifactId, pathSegments) {
 }
 
 /* ==========================================================
-   1. ÜRÜN YÖNETİMİ (RESİM LİNKİ EKLENDİ)
+   1. ÜRÜN YÖNETİMİ (GÖRSEL DESTEKLİ)
    ========================================================== */
 
 // Ürünleri Listele
@@ -54,12 +54,13 @@ export async function listProductsForCurrentUser() {
   return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
-// Ürün Ekle (Görsel Linki BURADA)
+// Ürün Ekle (Görsel Linki Dahil)
 export async function addProduct(product) {
   ensureDb();
   const uid = getUidOrThrow();
   const colRef = collection(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "products");
 
+  // React tarafından 'image' olarak geliyor, DB'ye de 'image' olarak kaydediyoruz.
   const docRef = await addDoc(colRef, {
     name: product.name,
     barcode: product.barcode || null,
@@ -67,9 +68,9 @@ export async function addProduct(product) {
     price: Number(product.price) || 0,
     stock: Number(product.stock) || 0,
     
-    // --- GÖRSEL LİNKİ EKLENDİ ---
-    imageUrl: product.imageUrl || null, 
-    // ----------------------------
+    // --- GÖRSEL LİNKİ BURADA KAYDEDİLİYOR ---
+    image: product.image || product.imageUrl || null, 
+    // ----------------------------------------
     
     createdAt: new Date().toISOString()
   });
@@ -83,7 +84,7 @@ export async function updateProduct(productId, updates) {
   const uid = getUidOrThrow();
   const docRef = doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "products", productId);
   
-  // updates içinde imageUrl gelirse otomatik olarak güncellenir
+  // updates içinde { image: "..." } gelirse otomatik güncellenir.
   const payload = { ...updates, updatedAt: new Date().toISOString() };
   
   await updateDoc(docRef, payload);
@@ -599,7 +600,7 @@ export async function updateUserProfile(uid, data = {}) {
 }
 
 const firebaseHelpers = {
-  // ÜRÜNLER (EKLENDİ)
+  // ÜRÜNLER (GÜNCELLENDİ)
   listProductsForCurrentUser,
   addProduct,
   updateProduct,
