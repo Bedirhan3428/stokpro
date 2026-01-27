@@ -22,14 +22,11 @@ function getUid() {
 // 1. Ürünleri Listele
 export async function listProductsForCurrentUser() {
   const uid = getUid();
-  // Kullanıcının "products" koleksiyonuna gidiyoruz
   const colRef = collection(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "products");
   
-  // Tüm ürünleri çek
   const q = query(colRef);
   
   const snapshot = await getDocs(q);
-  // Veriyi düzenleyip döndür
   return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
@@ -45,10 +42,9 @@ export async function addProduct(product) {
     price: Number(product.price) || 0,
     stock: Number(product.stock) || 0,
     
-    // --- BURASI EKLENDİ ---
-    // Eğer resim linki varsa kaydet, yoksa null at
+    // --- GÖRSEL LİNKİ KAYDI ---
     imageUrl: product.imageUrl || null, 
-    // ----------------------
+    // --------------------------
 
     createdAt: new Date().toISOString()
   });
@@ -61,11 +57,7 @@ export async function updateProduct(productId, updates) {
   const uid = getUid();
   const docRef = doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "products", productId);
 
-  // Güncelleme paketini hazırla
   const payload = { ...updates, updatedAt: new Date().toISOString() };
-
-  // Eğer updates içinde imageUrl özellikle gönderildiyse (boş string veya yeni link)
-  // payload içinde zaten var olacaktır. Firestore null değerleri kabul eder.
   
   await updateDoc(docRef, payload);
 }
