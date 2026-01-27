@@ -30,6 +30,7 @@ function UrunGorseli({ src, alt }) {
   // Src değişirse error state'ini sıfırla
   useEffect(() => { setError(false); }, [src]);
 
+  // Boşsa veya hata varsa placeholder
   if (!src || error) {
     return (
       <div className="img-placeholder" title="Görsel yok">
@@ -59,7 +60,7 @@ export default function Products() {
   const [barcode, setBarcode] = useState("");
   const [price, setPrice] = useState("");
   const [stock, setStock] = useState("");
-  const [image, setImage] = useState(""); 
+  const [image, setImage] = useState(""); // STRING link tutacak
 
   const [category, setCategory] = useState("");
   const [showCatSuggestions, setShowCatSuggestions] = useState(false);
@@ -119,11 +120,11 @@ export default function Products() {
     try {
       await addProduct({
         name: tName,
-        barcode: barcode.trim() || null,
+        barcode: barcode.trim(),
         price: parseFloat(price) || 0,
         stock: parseInt(stock, 10) || 0,
-        category: category.trim() || "Genel",
-        image: image || null // SADE VE DİREKT
+        category: category.trim(),
+        image: image // Direkt state'i gönderiyoruz
       });
       setName(""); setBarcode(""); setPrice(""); setStock(""); setCategory(""); setImage("");
       await yukle();
@@ -139,7 +140,7 @@ export default function Products() {
       price: p.price || 0, 
       stock: p.stock || 0, 
       category: p.category || "",
-      image: p.image || ""
+      image: p.image || "" // Varsa getir
     });
   }
 
@@ -151,11 +152,11 @@ export default function Products() {
     try {
       await updateProduct(id, {
         name: n.trim(),
-        barcode: b ? String(b).trim() : null,
+        barcode: b,
         price: Number(pr),
         stock: Number(st),
-        category: cat ? String(cat).trim() : null,
-        image: img || null // SADE VE DİREKT
+        category: cat,
+        image: img // Direkt gönder
       });
       setEditing(null);
       await yukle();
