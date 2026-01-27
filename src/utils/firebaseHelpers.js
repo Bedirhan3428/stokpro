@@ -16,12 +16,7 @@ import {
 import { db, firebaseEnabled, auth } from "../firebase";
 
 const ARTIFACT_DOC_ID = process.env.REACT_APP_FIREBASE_ARTIFACTS_COLLECTION || "";
-const LEGACY_ARTIFACT_DOC_ID =
-  process.env.REACT_APP_FIREBASE_LEGACY_ARTIFACT ||
-  process.env.REACT_APP_FIREBASE_LEGACY_ARTIFACT_ID ||
-  "";
 
-/* ---------- Guards ---------- */
 function ensureDb() {
   if (!firebaseEnabled || !db) throw new Error("Firestore başlatılmadı.");
   if (!ARTIFACT_DOC_ID) throw new Error("REACT_APP_FIREBASE_ARTIFACTS_COLLECTION tanımlı değil.");
@@ -33,62 +28,54 @@ function getUidOrThrow() {
   return u.uid;
 }
 
-/* ---------- Helpers ---------- */
-async function readArtifactCollection(artifactId, pathSegments) {
-  const colRef = collection(db, "artifacts", artifactId, ...pathSegments);
-  const snap = await getDocs(colRef);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-}
-
 /* ==========================================================
-   1. ÜRÜN YÖNETİMİ
+   ÜRÜN YÖNETİMİ (KESİN ÇÖZÜM)
    ========================================================== */
 
-// Ürünleri Listele
 export async function listProductsForCurrentUser() {
   ensureDb();
   const uid = getUidOrThrow();
   const colRef = collection(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "products");
-  const q = query(colRef);
-  const snapshot = await getDocs(q);
+  const snapshot = await getDocs(query(colRef));
   return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
-// Ürün Ekle (Görsel Eklendi - Sadeleştirilmiş)
 export async function addProduct(product) {
   ensureDb();
   const uid = getUidOrThrow();
   const colRef = collection(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "products");
 
-  // Direkt ne geliyorsa onu kaydediyoruz, barkod gibi.
-  const docRef = await addDoc(colRef, {
-    name: product.name,
-    barcode: product.barcode || null,
-    category: product.category || "Genel",
+  // BURASI: String(...) içine alarak veriyi zorla metin yapıyoruz.
+  // Boşsa boş metin gider ama mutlaka 'image' alanı oluşur.
+  const veriler = {
+    name: String(product.name),
+    barcode: product.barcode ? String(product.barcode) : "",
+    category: product.category ? String(product.category) : "Genel",
     price: Number(product.price) || 0,
     stock: Number(product.stock) || 0,
-    image: product.image || null, // Burası barkod mantığıyla aynı oldu
+    image: String(product.image || ""), // KESİN KAYIT İÇİN STRING ZORLAMASI
     createdAt: new Date().toISOString()
-  });
+  };
 
+  const docRef = await addDoc(colRef, veriler);
   return docRef.id;
 }
 
-// Ürün Güncelle
 export async function updateProduct(productId, updates) {
   ensureDb();
   const uid = getUidOrThrow();
   const docRef = doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "products", productId);
   
-  // updates objesi direkt ne gönderirsek onu günceller
-  await updateDoc(docRef, { 
-    ...updates, 
-    updatedAt: new Date().toISOString() 
-  });
+  // Güncellerken de image alanı varsa string'e çeviriyoruz
+  const guncellenecekler = { ...updates, updatedAt: new Date().toISOString() };
+  if (updates.image !== undefined) {
+    guncellenecekler.image = String(updates.image || "");
+  }
+
+  await updateDoc(docRef, guncellenecekler);
   return true;
 }
 
-// Ürün Sil
 export async function deleteProduct(productId) {
   ensureDb();
   const uid = getUidOrThrow();
