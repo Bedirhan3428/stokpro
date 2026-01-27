@@ -1,4 +1,3 @@
-import "../styles/Products.css";
 import React, { useEffect, useState, useMemo, useRef } from "react";
 import {
   listProductsForCurrentUser,
@@ -10,6 +9,7 @@ import useSubscription from "../hooks/useSubscription";
 import { 
   FiTrash2, FiEdit2, FiSearch, FiPlus, FiAlertCircle, FiFilter, FiImage 
 } from "react-icons/fi";
+import "../styles/Products.css";
 
 // Bildirim Bileşeni
 function Bildirim({ note }) {
@@ -59,7 +59,7 @@ export default function Products() {
   const [barcode, setBarcode] = useState("");
   const [price, setPrice] = useState("");
   const [stock, setStock] = useState("");
-  const [image, setImage] = useState(""); // Yeni state: Görsel URL
+  const [image, setImage] = useState(""); // React tarafı 'image' kullanıyor
 
   const [category, setCategory] = useState("");
   const [showCatSuggestions, setShowCatSuggestions] = useState(false);
@@ -123,7 +123,7 @@ export default function Products() {
         price: parseFloat(price) || 0,
         stock: parseInt(stock, 10) || 0,
         category: category.trim() || "Genel",
-        image: image.trim() || null // Görseli kaydet
+        image: image.trim() || null // 'image' olarak helpers'a gönderiyoruz
       });
       setName(""); setBarcode(""); setPrice(""); setStock(""); setCategory(""); setImage("");
       await yukle();
@@ -389,7 +389,7 @@ export default function Products() {
                 <label>Ürün Adı</label>
                 <input value={editing.name} onChange={e => setEditing(s => ({...s, name: e.target.value}))} className="modern-input" />
               </div>
-              
+
               <div className="form-group">
                 <label>Görsel Linki</label>
                 <input 
