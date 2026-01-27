@@ -8,7 +8,7 @@ import {
 } from "../utils/artifactUserProducts";
 import useSubscription from "../hooks/useSubscription";
 import { 
-  FiTrash2, FiEdit2, FiSearch, FiPlus, FiAlertCircle, FiFilter 
+  FiTrash2, FiEdit2, FiSearch, FiPlus, FiAlertCircle, FiFilter, FiImage 
 } from "react-icons/fi";
 
 // Bildirim Bileşeni
@@ -23,6 +23,31 @@ function Bildirim({ note }) {
   );
 }
 
+// Görsel Bileşeni (Hata yönetimi için)
+function UrunGorseli({ src, alt }) {
+  const [error, setError] = useState(false);
+
+  // Src değişirse error state'ini sıfırla
+  useEffect(() => { setError(false); }, [src]);
+
+  if (!src || error) {
+    return (
+      <div className="img-placeholder" title="Görsel yok">
+        <FiImage size={24} />
+      </div>
+    );
+  }
+
+  return (
+    <img 
+      src={src} 
+      alt={alt} 
+      className="prod-img" 
+      onError={() => setError(true)} 
+    />
+  );
+}
+
 const DEFAULT_CATEGORIES = ["Genel", "Gıda", "Elektronik", "Giyim", "Kırtasiye", "Temizlik", "Hırdavat"];
 
 export default function Products() {
@@ -34,7 +59,8 @@ export default function Products() {
   const [barcode, setBarcode] = useState("");
   const [price, setPrice] = useState("");
   const [stock, setStock] = useState("");
-  
+  const [image, setImage] = useState(""); // Yeni state: Görsel URL
+
   const [category, setCategory] = useState("");
   const [showCatSuggestions, setShowCatSuggestions] = useState(false);
 
@@ -96,9 +122,10 @@ export default function Products() {
         barcode: barcode.trim() || null,
         price: parseFloat(price) || 0,
         stock: parseInt(stock, 10) || 0,
-        category: category.trim() || "Genel"
+        category: category.trim() || "Genel",
+        image: image.trim() || null // Görseli kaydet
       });
-      setName(""); setBarcode(""); setPrice(""); setStock(""); setCategory("");
+      setName(""); setBarcode(""); setPrice(""); setStock(""); setCategory(""); setImage("");
       await yukle();
       bildir({ type: "success", title: "Eklendi", message: "Ürün kaydedildi." });
     } catch (err) {
@@ -107,12 +134,18 @@ export default function Products() {
   }
 
   function duzenlemeAc(p) {
-    setEditing({ ...p, price: p.price || 0, stock: p.stock || 0, category: p.category || "" });
+    setEditing({ 
+      ...p, 
+      price: p.price || 0, 
+      stock: p.stock || 0, 
+      category: p.category || "",
+      image: p.image || "" // Düzenlerken mevcut resmi getir
+    });
   }
 
   async function duzenlemeKaydet() {
     if (!subActive) return;
-    const { id, name: n, barcode: b, price: pr, stock: st, category: cat } = editing;
+    const { id, name: n, barcode: b, price: pr, stock: st, category: cat, image: img } = editing;
     if (!n.trim()) return bildir({ type: "error", title: "Eksik", message: "Ad boş olamaz." });
 
     try {
@@ -121,7 +154,8 @@ export default function Products() {
         barcode: b ? String(b).trim() : null,
         price: Number(pr),
         stock: Number(st),
-        category: cat ? String(cat).trim() : null
+        category: cat ? String(cat).trim() : null,
+        image: img ? String(img).trim() : null
       });
       setEditing(null);
       await yukle();
@@ -183,7 +217,7 @@ export default function Products() {
         <div className="card-header">
            <h3>Yeni Ürün Ekle</h3>
         </div>
-        
+
         <div className="form-grid">
           <div className="form-group full">
             <label>Ürün Adı</label>
@@ -195,12 +229,22 @@ export default function Products() {
             />
           </div>
 
-          <div className="form-group full">
+          <div className="form-group half">
             <label>Barkod (İsteğe Bağlı)</label>
             <input 
-              placeholder="Barkod girin" 
+              placeholder="Barkod" 
               value={barcode} 
               onChange={e => setBarcode(e.target.value)} 
+              className="modern-input" 
+            />
+          </div>
+
+          <div className="form-group half">
+            <label>Görsel URL (İsteğe Bağlı)</label>
+            <input 
+              placeholder="https://..." 
+              value={image} 
+              onChange={e => setImage(e.target.value)} 
               className="modern-input" 
             />
           </div>
@@ -240,7 +284,7 @@ export default function Products() {
                   className="modern-input with-icon"
                 />
               </div>
-              
+
               {showCatSuggestions && (
                 <ul className="suggestions-list">
                   {categoryOptions.length === 0 && <li className="no-suggestion">"{category}" eklenecek.</li>}
@@ -288,6 +332,11 @@ export default function Products() {
           <div className="product-list">
             {filtered.map(p => (
               <div key={p.id} className="product-item">
+                {/* Görsel Alanı */}
+                <div className="prod-img-box">
+                  <UrunGorseli src={p.image} alt={p.name} />
+                </div>
+
                 <div className="prod-main">
                   <div className="prod-name">{p.name}</div>
                   <div className="prod-tags">
@@ -336,12 +385,21 @@ export default function Products() {
               <button onClick={() => setEditing(null)} className="close-btn">×</button>
             </div>
             <div className="modal-body">
-              {/* Grup kullanarak boşluğu ayarladık */}
               <div className="form-group">
                 <label>Ürün Adı</label>
                 <input value={editing.name} onChange={e => setEditing(s => ({...s, name: e.target.value}))} className="modern-input" />
               </div>
               
+              <div className="form-group">
+                <label>Görsel Linki</label>
+                <input 
+                  placeholder="https://..."
+                  value={editing.image} 
+                  onChange={e => setEditing(s => ({...s, image: e.target.value}))} 
+                  className="modern-input" 
+                />
+              </div>
+
               <div className="row-2">
                  <div className="form-group">
                     <label>Fiyat</label>
@@ -388,5 +446,4 @@ export default function Products() {
     </div>
   );
 }
-
 
