@@ -33,14 +33,56 @@ function getUidOrThrow() {
   return u.uid;
 }
 
-/* ---------- Helpers (Yardımcılar) ---------- */
-async function readArtifactCollection(artifactId, pathSegments) {
-  const colRef = collection(db, "artifacts", artifactId, ...pathSegments);
-  const snap = await getDocs(colRef);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+/* ------------------ 1. ÜRÜN YÖNETİMİ (GÜNCEL) ------------------ */
+
+// Ürünleri Listele
+export async function listProductsForCurrentUser() {
+  ensureDb();
+  const uid = getUidOrThrow();
+  const colRef = collection(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "products");
+  const q = query(colRef);
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
-/* ------------------ CUSTOMERS (MÜŞTERİLER) ------------------ */
+// Ürün Ekle (Görsel Linki Destekli)
+export async function addProduct(product) {
+  ensureDb();
+  const uid = getUidOrThrow();
+  const colRef = collection(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "products");
+
+  const docRef = await addDoc(colRef, {
+    name: product.name,
+    barcode: product.barcode || null,
+    category: product.category || "Genel",
+    price: Number(product.price) || 0,
+    stock: Number(product.stock) || 0,
+    imageUrl: product.imageUrl || null, // Görsel linki buraya
+    createdAt: new Date().toISOString()
+  });
+
+  return docRef.id;
+}
+
+// Ürün Güncelle
+export async function updateProduct(productId, updates) {
+  ensureDb();
+  const uid = getUidOrThrow();
+  const docRef = doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "products", productId);
+  const payload = { ...updates, updatedAt: new Date().toISOString() };
+  await updateDoc(docRef, payload);
+}
+
+// Ürün Sil
+export async function deleteProduct(productId) {
+  ensureDb();
+  const uid = getUidOrThrow();
+  const docRef = doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "products", productId);
+  await deleteDoc(docRef);
+}
+
+
+/* ------------------ 2. MÜŞTERİ YÖNETİMİ ------------------ */
 export async function listCustomers() {
   ensureDb();
   const uid = getUidOrThrow();
@@ -85,7 +127,7 @@ export async function listCustomerPayments(customerId) {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
-/* Tahsilat ekleme (transaction ile güvenli işlem) */
+/* Tahsilat ekleme */
 export async function addCustomerPayment(customerId, { amount = 0, note = "" } = {}) {
   ensureDb();
   const uid = getUidOrThrow();
@@ -99,9 +141,6 @@ export async function addCustomerPayment(customerId, { amount = 0, note = "" } =
     const mevcutBakiye = Number(custSnap.data()?.balance || 0);
     const odeme = Number(amount || 0);
     if (isNaN(odeme) || odeme <= 0) throw new Error("Geçerli bir tutar girin.");
-    // Borçtan fazla ödeme kontrolü (opsiyonel, istersen kaldırabilirsin)
-    // if (mevcutBakiye <= 0) throw new Error("Müşterinin borcu yok.");
-    // if (odeme > mevcutBakiye) throw new Error(`Ödeme bakiyeyi aşamaz (${mevcutBakiye}).`);
 
     const yeniBakiye = mevcutBakiye - odeme;
     tx.update(custRef, { balance: yeniBakiye, updatedAt: new Date().toISOString() });
@@ -114,7 +153,7 @@ export async function addCustomerPayment(customerId, { amount = 0, note = "" } =
       createdAt: new Date().toISOString()
     });
 
-    // Kasa defterine işle
+    // Kasa kaydı
     const ledgerCol = collection(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "ledger");
     const ledgerRef = doc(ledgerCol);
     const musteriAdi = custSnap.data()?.name || customerId;
@@ -133,14 +172,13 @@ export async function addCustomerPayment(customerId, { amount = 0, note = "" } =
   });
 }
 
-/* ------------------ SATIŞ TAMAMLAMA (Kritik Fonksiyon) ------------------ */
+/* ------------------ 3. SATIŞ TAMAMLAMA ------------------ */
 export async function finalizeSaleTransaction({ items = [], paymentType = "cash", customerId = null, totals = {} } = {}) {
   ensureDb();
   const uid = getUidOrThrow();
   if (!Array.isArray(items) || items.length === 0) throw new Error("Sepet boş.");
 
   return runTransaction(db, async (tx) => {
-    // 1. Stok kontrolü için ürünleri çek
     const productRefs = items.map((it) => doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "products", it.productId));
     const productSnaps = [];
     for (const pref of productRefs) productSnaps.push(await tx.get(pref));
@@ -148,8 +186,6 @@ export async function finalizeSaleTransaction({ items = [], paymentType = "cash"
     let custRef = null;
     let custSnap = null;
     let customerName = null;
-    
-    // Veresiye ise müşteriyi çek
     if (paymentType === "credit" && customerId) {
       custRef = doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "customers", customerId);
       custSnap = await tx.get(custRef);
@@ -178,12 +214,10 @@ export async function finalizeSaleTransaction({ items = [], paymentType = "cash"
       price: it.price
     }));
     
-    // Toplam tutar hesaplama
     const hesaplananToplam = saleItems.reduce((s, it) => s + (Number(it.price || 0) * Number(it.qty || 0)), 0);
     const gelenToplam = totals?.total ?? totals?.subtotal ?? totals?.amount ?? null;
     const toplamTutar = Number(gelenToplam ?? hesaplananToplam ?? 0);
 
-    // Satış belgesi oluştur
     tx.set(saleRef, {
       items: saleItems,
       saleType: paymentType,
@@ -193,12 +227,10 @@ export async function finalizeSaleTransaction({ items = [], paymentType = "cash"
       createdAt: new Date().toISOString()
     });
 
-    // Veresiye ise müşteri bakiyesini güncelle
     if (paymentType === "credit" && customerId && custRef && custSnap) {
       const mevcut = Number(custSnap.data()?.balance || 0);
       tx.update(custRef, { balance: mevcut + toplamTutar, updatedAt: new Date().toISOString() });
 
-      // Müşteri geçmişine de satış kaydı at
       const custSalesCol = collection(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "customers", customerId, "sales");
       const custSaleRef = doc(custSalesCol);
       tx.set(custSaleRef, {
@@ -211,7 +243,6 @@ export async function finalizeSaleTransaction({ items = [], paymentType = "cash"
       });
     }
 
-    // Muhasebe/Ledger kaydı oluştur
     try {
       const ledgerCol = collection(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "ledger");
       const ledgerRef = doc(ledgerCol);
@@ -232,14 +263,14 @@ export async function finalizeSaleTransaction({ items = [], paymentType = "cash"
         createdAt: new Date().toISOString()
       });
     } catch {
-      /* Ledger yazılamazsa işlemi durdurma, satış gerçekleşsin */
+       // Kasa kaydı başarısız olsa da satış dursun
     }
 
     return { saleId: saleRef.id };
   });
 }
 
-/* ------------------ SATIŞ OKUMALARI ------------------ */
+/* ------------------ 4. SATIŞ & KASA OKUMALARI ------------------ */
 export async function listSales() {
   ensureDb();
   const uid = getUidOrThrow();
@@ -248,24 +279,17 @@ export async function listSales() {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
-// Performans için limitli satış çekme (Memory sort)
 export async function listRecentSales(limitCount = 100) {
   ensureDb();
   const uid = getUidOrThrow();
   const salesCol = collection(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "sales");
-
-  // NOT: Karmaşık query (orderBy + limit) index gerektireceğinden 
-  // tüm datayı çekip memory'de sıralıyoruz. 
   const q = query(salesCol); 
   const snap = await getDocs(q);
-
   let results = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
   results.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-
   return results.slice(0, Number(limitCount || 100));
 }
 
-/* ------------------ KASA / LEDGER ------------------ */
 export async function listLedger() {
   ensureDb();
   const uid = getUidOrThrow();
@@ -274,7 +298,6 @@ export async function listLedger() {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
-/* Genel muhasebe girişleri (Gelir/Gider ekleme) */
 export async function addLedgerEntry(entry = {}) {
   ensureDb();
   const uid = getUidOrThrow();
@@ -287,7 +310,7 @@ export async function addLedgerEntry(entry = {}) {
   return ref.id;
 }
 
-/* ------------------ GÜNCELLE / SİL (SATIŞ & LEDGER) ------------------ */
+/* ------------------ 5. GÜNCELLEME VE SİLME İŞLEMLERİ ------------------ */
 export async function updateSale(saleId, updates = {}) {
   ensureDb();
   const uid = getUidOrThrow();
@@ -301,11 +324,10 @@ export async function deleteSale(saleId) {
   ensureDb();
   const uid = getUidOrThrow();
   if (!saleId) throw new Error("saleId gerekli.");
-
   const saleRef = doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "sales", saleId);
   await deleteDoc(saleRef);
-
-  // Müşteri geçmişinden de sil (varsa)
+  
+  // İlişkili müşteri kayıtlarını da temizle
   const customersCol = collection(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "customers");
   const custSnap = await getDocs(customersCol);
   for (const c of custSnap.docs) {
@@ -337,7 +359,6 @@ export async function deleteLedgerEntry(ledgerId) {
   return true;
 }
 
-/* ------------------ MÜŞTERİ BAKİYE / SİLME ------------------ */
 export async function updateCustomer(customerId, updates = {}) {
   ensureDb();
   const uid = getUidOrThrow();
@@ -368,7 +389,6 @@ export async function setCustomerBalance(customerId, newBalance, note = "") {
 
     tx.update(custRef, { balance: hedef, updatedAt: new Date().toISOString() });
 
-    // Farkı kaydet (ödeme veya borç ekleme olarak)
     if (fark < 0) {
       const tutar = Math.abs(fark);
       const paymentsCol = collection(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "customers", customerId, "payments");
@@ -377,31 +397,19 @@ export async function setCustomerBalance(customerId, newBalance, note = "") {
         note: `Manuel bakiye düşümü: ${note || ""}`,
         createdAt: new Date().toISOString()
       });
-      // Ledger kaydı
       const ledgerCol = collection(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "ledger");
       tx.set(doc(ledgerCol), {
         description: `Manuel ödeme: ${custSnap.data()?.name || customerId} (${note || ""})`,
-        lines: [
-          { account: "Kasa", debit: tutar, credit: 0 },
-          { account: `AR:${customerId}`, debit: 0, credit: tutar }
-        ],
+        lines: [{ account: "Kasa", debit: tutar, credit: 0 }, { account: `AR:${customerId}`, debit: 0, credit: tutar }],
         createdAt: new Date().toISOString()
       });
     } else if (fark > 0) {
       const adjCol = collection(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "customers", customerId, "adjustments");
-      tx.set(doc(adjCol), {
-        amount: fark,
-        note: `Manuel bakiye artışı: ${note || ""}`,
-        createdAt: new Date().toISOString()
-      });
-       // Ledger kaydı
+      tx.set(doc(adjCol), { amount: fark, note: `Manuel bakiye artışı: ${note || ""}`, createdAt: new Date().toISOString() });
       const ledgerCol = collection(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "ledger");
       tx.set(doc(ledgerCol), {
         description: `Manuel bakiye artışı: ${custSnap.data()?.name || customerId} (${note || ""})`,
-        lines: [
-          { account: `AR:${customerId}`, debit: fark, credit: 0 },
-          { account: "Satış Geliri", debit: 0, credit: fark }
-        ],
+        lines: [{ account: `AR:${customerId}`, debit: fark, credit: 0 }, { account: "Satış Geliri", debit: 0, credit: fark }],
         createdAt: new Date().toISOString()
       });
     }
@@ -429,33 +437,21 @@ export async function deleteCustomer(customerId) {
   await deleteCollectionDocs([...base, "payments"]);
   await deleteCollectionDocs([...base, "sales"]);
   await deleteCollectionDocs([...base, "adjustments"]);
-
   await deleteDoc(doc(db, ...base));
   return true;
 }
 
-/* ------------------ LEGACY OKUMA (Eski Veriler) ------------------ */
+/* ------------------ 6. LEGACY & PROFİL ------------------ */
+async function readArtifactCollection(artifactId, pathSegments) {
+  const colRef = collection(db, "artifacts", artifactId, ...pathSegments);
+  const snap = await getDocs(colRef);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
 const CANDIDATE_PATHS_FOR = {
-  incomes: [
-    (uid) => ["users", uid, "incomes"],
-    () => ["incomes"],
-    (uid) => ["users", uid, "finance", "incomes"],
-    () => ["finance", "incomes"]
-  ],
-  expenses: [
-    (uid) => ["users", uid, "expenses"],
-    () => ["expenses"],
-    (uid) => ["users", uid, "finance", "expenses"],
-    () => ["finance", "expenses"]
-  ],
-  sales: [
-    (uid) => ["users", uid, "sales"],
-    () => ["sales"],
-    (uid) => ["users", uid, "orders"],
-    () => ["orders"],
-    (uid) => ["users", uid, "history", "sales"],
-    () => ["history", "sales"]
-  ]
+  incomes: [(uid) => ["users", uid, "incomes"], () => ["incomes"], (uid) => ["users", uid, "finance", "incomes"], () => ["finance", "incomes"]],
+  expenses: [(uid) => ["users", uid, "expenses"], () => ["expenses"], (uid) => ["users", uid, "finance", "expenses"], () => ["finance", "expenses"]],
+  sales: [(uid) => ["users", uid, "sales"], () => ["sales"], (uid) => ["users", uid, "orders"], () => ["orders"]]
 };
 
 async function tryPathsAndCollect(artifactId, uid, colName) {
@@ -470,9 +466,7 @@ async function tryPathsAndCollect(artifactId, uid, colName) {
     try {
       const docs = await readArtifactCollection(artifactId, pathSegments);
       docs.forEach((d) => results.push({ ...d, sourceArtifact: artifactId, sourcePath: key }));
-    } catch {
-      /* yoksa geç */
-    }
+    } catch { /* yoksa geç */ }
   }
   return results;
 }
@@ -489,43 +483,36 @@ function uniqByIdAndPath(items) {
 export async function listLegacyIncomes(forUid = null, artifactIdOverride = null) {
   ensureDb();
   const uid = forUid || getUidOrThrow();
-  const artifactIds = artifactIdOverride
-    ? [artifactIdOverride]
-    : [ARTIFACT_DOC_ID].concat(LEGACY_ARTIFACT_DOC_ID && LEGACY_ARTIFACT_DOC_ID !== ARTIFACT_DOC_ID ? [LEGACY_ARTIFACT_DOC_ID] : []);
+  const artifactIds = artifactIdOverride ? [artifactIdOverride] : [ARTIFACT_DOC_ID].concat(LEGACY_ARTIFACT_DOC_ID && LEGACY_ARTIFACT_DOC_ID !== ARTIFACT_DOC_ID ? [LEGACY_ARTIFACT_DOC_ID] : []);
   let merged = [];
   for (const aid of artifactIds) merged.push(...(await tryPathsAndCollect(aid, uid, "incomes")).flat());
   merged = uniqByIdAndPath(merged);
-  merged.sort((a, b) => new Date(b.createdAt || b.created_at || 0).getTime() - new Date(a.createdAt || a.created_at || 0).getTime());
+  merged.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
   return merged;
 }
 
 export async function listLegacyExpenses(forUid = null, artifactIdOverride = null) {
   ensureDb();
   const uid = forUid || getUidOrThrow();
-  const artifactIds = artifactIdOverride
-    ? [artifactIdOverride]
-    : [ARTIFACT_DOC_ID].concat(LEGACY_ARTIFACT_DOC_ID && LEGACY_ARTIFACT_DOC_ID !== ARTIFACT_DOC_ID ? [LEGACY_ARTIFACT_DOC_ID] : []);
+  const artifactIds = artifactIdOverride ? [artifactIdOverride] : [ARTIFACT_DOC_ID].concat(LEGACY_ARTIFACT_DOC_ID && LEGACY_ARTIFACT_DOC_ID !== ARTIFACT_DOC_ID ? [LEGACY_ARTIFACT_DOC_ID] : []);
   let merged = [];
   for (const aid of artifactIds) merged.push(...(await tryPathsAndCollect(aid, uid, "expenses")).flat());
   merged = uniqByIdAndPath(merged);
-  merged.sort((a, b) => new Date(b.createdAt || b.created_at || 0).getTime() - new Date(a.createdAt || a.created_at || 0).getTime());
+  merged.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
   return merged;
 }
 
 export async function listLegacySales(forUid = null, artifactIdOverride = null) {
   ensureDb();
   const uid = forUid || getUidOrThrow();
-  const artifactIds = artifactIdOverride
-    ? [artifactIdOverride]
-    : [ARTIFACT_DOC_ID].concat(LEGACY_ARTIFACT_DOC_ID && LEGACY_ARTIFACT_DOC_ID !== ARTIFACT_DOC_ID ? [LEGACY_ARTIFACT_DOC_ID] : []);
+  const artifactIds = artifactIdOverride ? [artifactIdOverride] : [ARTIFACT_DOC_ID].concat(LEGACY_ARTIFACT_DOC_ID && LEGACY_ARTIFACT_DOC_ID !== ARTIFACT_DOC_ID ? [LEGACY_ARTIFACT_DOC_ID] : []);
   let merged = [];
   for (const aid of artifactIds) merged.push(...(await tryPathsAndCollect(aid, uid, "sales")).flat());
   merged = uniqByIdAndPath(merged);
-  merged.sort((a, b) => new Date(b.createdAt || b.date || b.created_at || 0).getTime() - new Date(a.createdAt || a.date || a.created_at || 0).getTime());
+  merged.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
   return merged;
 }
 
-/* ------------------ LEGACY GÜNCELLE / SİL ------------------ */
 export async function updateLegacyDocument(sourceArtifact, sourcePath, docId, updates = {}) {
   ensureDb();
   if (!sourceArtifact || !sourcePath || !docId) throw new Error("Eksik parametre.");
@@ -543,7 +530,6 @@ export async function deleteLegacyDocument(sourceArtifact, sourcePath, docId) {
   return true;
 }
 
-/* ------------------ LEGACY GELİR/GİDER (Basit Ekleme) ------------------ */
 export async function addLegacyIncome({ amount = 0, description = "" } = {}, forUid = null) {
   ensureDb();
   const uid = forUid || getUidOrThrow();
@@ -570,7 +556,6 @@ export async function addLegacyExpense({ amount = 0, description = "" } = {}, fo
   return { id: ref.id };
 }
 
-/* ------------------ PROFİL ------------------ */
 export async function createUserProfile(profile = {}, targetUid = null) {
   ensureDb();
   const uid = targetUid || getUidOrThrow();
@@ -588,11 +573,7 @@ export async function getUserProfile(targetUid = null) {
   ensureDb();
   const currentUser = auth.currentUser;
   const uid = targetUid || (currentUser ? currentUser.uid : null);
-
-  if (!uid) {
-    return null;
-  }
-
+  if (!uid) return null;
   const ref = doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "profile", "user_doc");
   const snap = await getDoc(ref);
   return snap.exists() ? { id: snap.id || "user_doc", ...snap.data() } : null;
@@ -600,20 +581,19 @@ export async function getUserProfile(targetUid = null) {
 
 export async function updateUserProfile(uid, data = {}) {
   ensureDb();
-  if (!uid) throw new Error("Kullanıcı ID (uid) gerekli.");
-
+  if (!uid) throw new Error("Kullanıcı ID gerekli.");
   const ref = doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "profile", "user_doc");
-
-  // setDoc ile merge: true kullanarak yoksa oluşturur, varsa günceller
-  await setDoc(ref, { 
-    ...data, 
-    updatedAt: new Date().toISOString() 
-  }, { merge: true });
-
+  await setDoc(ref, { ...data, updatedAt: new Date().toISOString() }, { merge: true });
   return true;
 }
 
 const firebaseHelpers = {
+  // Ürünler
+  listProductsForCurrentUser,
+  addProduct,
+  updateProduct,
+  deleteProduct,
+  // Müşteriler
   listCustomers,
   addCustomer,
   getCustomer,
@@ -623,6 +603,7 @@ const firebaseHelpers = {
   updateCustomer,
   setCustomerBalance,
   deleteCustomer,
+  // Satış & Kasa
   finalizeSaleTransaction,
   listLedger,
   listSales,
@@ -632,16 +613,18 @@ const firebaseHelpers = {
   deleteLedgerEntry,
   updateSale,
   deleteSale,
+  // Legacy
   listLegacyIncomes,
   listLegacyExpenses,
   listLegacySales,
   addLegacyIncome,
   addLegacyExpense,
+  updateLegacyDocument,
+  deleteLegacyDocument,
+  // Profil
   createUserProfile,
   getUserProfile,
-  updateUserProfile, 
-  updateLegacyDocument,
-  deleteLegacyDocument
+  updateUserProfile
 };
 
 export default firebaseHelpers;
