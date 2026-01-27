@@ -59,7 +59,8 @@ export default function Products() {
   const [barcode, setBarcode] = useState("");
   const [price, setPrice] = useState("");
   const [stock, setStock] = useState("");
-  const [image, setImage] = useState(""); // React tarafı 'image' kullanıyor
+  // DİKKAT: 'image' state'i (imageUrl değil)
+  const [image, setImage] = useState(""); 
 
   const [category, setCategory] = useState("");
   const [showCatSuggestions, setShowCatSuggestions] = useState(false);
@@ -123,7 +124,7 @@ export default function Products() {
         price: parseFloat(price) || 0,
         stock: parseInt(stock, 10) || 0,
         category: category.trim() || "Genel",
-        image: image.trim() || null // 'image' olarak helpers'a gönderiyoruz
+        image: image.trim() || null // State'teki 'image'ı gönderiyoruz
       });
       setName(""); setBarcode(""); setPrice(""); setStock(""); setCategory(""); setImage("");
       await yukle();
@@ -139,7 +140,8 @@ export default function Products() {
       price: p.price || 0, 
       stock: p.stock || 0, 
       category: p.category || "",
-      image: p.image || "" // Düzenlerken mevcut resmi getir
+      // Veritabanından image veya imageUrl gelirse al, yoksa boş
+      image: p.image || p.imageUrl || "" 
     });
   }
 
@@ -334,7 +336,8 @@ export default function Products() {
               <div key={p.id} className="product-item">
                 {/* Görsel Alanı */}
                 <div className="prod-img-box">
-                  <UrunGorseli src={p.image} alt={p.name} />
+                  {/* Hem image hem imageUrl kontrolü */}
+                  <UrunGorseli src={p.image || p.imageUrl} alt={p.name} />
                 </div>
 
                 <div className="prod-main">
@@ -446,4 +449,5 @@ export default function Products() {
     </div>
   );
 }
+
 
