@@ -1,93 +1,258 @@
 import React from "react";
-// react-icons kütüphanesinden FontAwesome ikonlarını kullanıyoruz
 import { FaArrowLeft, FaBookOpen } from "react-icons/fa";
 
-export default function TornPage404() {
+export default function NotFound() {
   const handleGoHome = () => {
     window.location.href = "/";
   };
 
   return (
-    <div className="min-h-screen bg-[#2c241b] flex items-center justify-center p-4 overflow-hidden relative font-serif">
-      {/* Arka plan için ahşap masa hissi veren gradient */}
-      <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-amber-900 via-stone-900 to-black pointer-events-none" />
+    <div className="not-found-container">
+      {/* CSS Kodlarını buraya yazdım, sen bunu NotFound.css dosyana taşıyabilirsin */}
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&display=swap');
 
-      {/* Sayfa Container */}
-      <div className="relative w-full max-w-lg perspective-1000">
-        
-        {/* Kağıt Efekti */}
-        <div 
-          className="relative bg-[#fdfbf7] text-gray-800 p-8 md:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.5)] transform rotate-1 transition-transform hover:rotate-0 duration-500 ease-out"
-          style={{
-            clipPath: "polygon(2% 0%, 98% 1%, 100% 100%, 0% 98%)",
-            backgroundImage: "linear-gradient(#e5e5e5 1px, transparent 1px)", 
-            backgroundSize: "100% 2rem"
-          }}
-        >
-          {/* Sol Kenar Yırtık Süsü - Spiral Delikleri */}
-          <div className="absolute top-0 left-0 w-8 h-full flex flex-col justify-evenly items-center -translate-x-1/2">
-             {[...Array(10)].map((_, i) => (
-               <div key={i} className="w-4 h-4 rounded-full bg-[#2c241b] shadow-inner opacity-80" />
-             ))}
+        /* Genel Sayfa Yapısı */
+        .not-found-container {
+          min-height: 100vh;
+          background-color: #2c241b;
+          background-image: radial-gradient(circle at center, #433022, #1a1612);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+          font-family: 'Playfair Display', serif;
+          overflow: hidden;
+        }
+
+        /* Sayfa Perspektif Alanı */
+        .page-wrapper {
+          position: relative;
+          width: 100%;
+          max-width: 500px;
+          perspective: 1000px;
+        }
+
+        /* Yırtık Kağıt Efekti */
+        .torn-paper {
+          position: relative;
+          background-color: #fdfbf7;
+          color: #333;
+          padding: 40px;
+          box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+          transform: rotate(-2deg);
+          transition: transform 0.5s ease-out;
+          
+          /* Yırtık Kenar Oluşturma (CSS Clip-path) */
+          clip-path: polygon(
+            2% 0%, 98% 1%, 100% 100%, 0% 98%
+          );
+          
+          /* Hafif Satır Çizgileri */
+          background-image: linear-gradient(#e5e5e5 1px, transparent 1px);
+          background-size: 100% 2rem;
+        }
+
+        .torn-paper:hover {
+          transform: rotate(0deg) scale(1.02);
+        }
+
+        /* Sol Taraftaki Spiral Delikleri */
+        .holes {
+          position: absolute;
+          top: 0;
+          left: 15px;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-evenly;
+          align-items: center;
+        }
+
+        .hole {
+          width: 15px;
+          height: 15px;
+          background-color: #2c241b;
+          border-radius: 50%;
+          box-shadow: inset 2px 2px 5px rgba(0,0,0,0.5);
+          opacity: 0.8;
+        }
+
+        /* İçerik Kutusu (Çerçeve) */
+        .content-box {
+          border: 4px double #d6d3c9;
+          background-color: rgba(255, 254, 240, 0.9);
+          padding: 30px 20px;
+          text-align: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 20px;
+        }
+
+        /* Header: Bölüm Başlığı */
+        .chapter-header {
+          width: 100%;
+          display: flex;
+          justify-content: space-between;
+          border-bottom: 1px solid #d6d3c9;
+          padding-bottom: 10px;
+          color: #8c8880;
+          font-size: 0.8rem;
+          text-transform: uppercase;
+          letter-spacing: 2px;
+          font-family: sans-serif;
+        }
+
+        /* Büyük 404 Başlığı */
+        .title-404-container {
+          position: relative;
+          margin: 10px 0;
+        }
+
+        .title-404 {
+          font-size: 8rem;
+          line-height: 1;
+          font-weight: 900;
+          color: #2c241b;
+          margin: 0;
+          letter-spacing: -5px;
+        }
+
+        /* Kırmızı Kalem Çizgisi */
+        .red-line {
+          position: absolute;
+          bottom: 10px;
+          left: 0;
+          width: 100%;
+          height: 5px;
+          background-color: #8b0000;
+          opacity: 0.6;
+          border-radius: 50%;
+          transform: rotate(-2deg);
+        }
+
+        /* Alt Başlık */
+        .subtitle {
+          font-size: 1.8rem;
+          font-weight: 700;
+          margin: 0;
+          color: #1a1612;
+        }
+
+        /* Açıklama Metni */
+        .description {
+          font-size: 1.1rem;
+          color: #5d554a;
+          font-style: italic;
+          line-height: 1.6;
+          max-width: 300px;
+          margin: 0 auto;
+        }
+
+        .error-code {
+          font-size: 0.8rem;
+          color: #999;
+          font-family: sans-serif;
+          font-style: normal;
+          margin-top: 5px;
+        }
+
+        /* İkonlar */
+        .book-icon {
+          color: #d6d3c9;
+          margin: 10px 0;
+        }
+
+        /* Buton Stili */
+        .home-button {
+          display: inline-flex;
+          align-items: center;
+          gap: 10px;
+          padding: 12px 24px;
+          background-color: #2c241b;
+          color: #fdfbf7;
+          border: 1px solid #5d554a;
+          font-family: sans-serif;
+          font-size: 0.9rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+
+        .home-button:hover {
+          background-color: #4a3b2f;
+          transform: translateY(-2px);
+          box-shadow: 0 6px 10px rgba(0,0,0,0.3);
+        }
+
+        /* Sayfa Numarası */
+        .page-number {
+          position: absolute;
+          bottom: 20px;
+          right: 30px;
+          font-size: 0.9rem;
+          color: #8c8880;
+          font-style: italic;
+        }
+
+        @media (max-width: 768px) {
+          .title-404 {
+            font-size: 5rem;
+          }
+          .torn-paper {
+            padding: 20px;
+          }
+        }
+      `}</style>
+
+      <div className="page-wrapper">
+        <div className="torn-paper">
+          {/* Sol Kenar Delikleri */}
+          <div className="holes">
+            {[...Array(10)].map((_, i) => (
+              <div key={i} className="hole" />
+            ))}
           </div>
 
-          {/* Yırtık Kenar Dokusu (Sol Taraf) */}
-          <div className="absolute left-0 top-0 bottom-0 w-4 bg-stone-300 opacity-50 mix-blend-multiply"></div>
-
-          {/* İçerik Kutusu */}
-          <div className="flex flex-col items-center text-center space-y-6 border-4 border-double border-stone-300 p-6 bg-[#fffef0]">
-            
-            {/* Üst Kısım */}
-            <div className="w-full flex justify-between items-center border-b border-stone-300 pb-2 text-stone-500 text-sm uppercase tracking-widest">
+          <div className="content-box">
+            <div className="chapter-header">
               <span>Bölüm ??</span>
               <span>Kayıp Sayfa</span>
             </div>
 
-            {/* Büyük 404 */}
-            <div className="relative">
-              <h1 className="text-8xl md:text-9xl font-black text-stone-800 tracking-tighter opacity-90 select-none" style={{ fontFamily: '"Playfair Display", serif' }}>
-                404
-              </h1>
-              {/* Altı çizili kırmızı kalem efekti */}
-              <div className="absolute -bottom-2 w-full h-1 bg-red-800 opacity-60 transform -rotate-2 rounded-full"></div>
+            <div className="title-404-container">
+              <h1 className="title-404">404</h1>
+              <div className="red-line"></div>
             </div>
 
-            {/* Metinler */}
-            <div className="space-y-3">
-              <h2 id="nf-title" className="text-2xl md:text-3xl font-bold text-stone-900">
+            <div className="text-content">
+              <h2 id="nf-title" className="subtitle">
                 Sayfa Bulunamadı
               </h2>
-              <p className="nf-alt text-lg text-stone-600 italic leading-relaxed max-w-xs mx-auto">
+              <p className="description">
                 "Aradığınız sayfa bu hikayenin bir parçası değil... Belki de rüzgar onu alıp götürmüştür."
               </p>
-              <p className="text-sm text-stone-400 mt-2 font-sans not-italic">
-                (Hata Kodu: Sayfa mevcut değil veya taşınmış)
+              <p className="error-code">
+                (Hata: Sayfa mevcut değil veya taşınmış olabilir)
               </p>
             </div>
 
-            {/* Kitap İkonu (React Icons) */}
-            <div className="text-stone-300 my-4">
-              <FaBookOpen size={48} />
+            <div className="book-icon">
+              <FaBookOpen size={40} />
             </div>
 
-            {/* Buton (React Icons) */}
-            <button
-              onClick={handleGoHome}
-              className="mt-4 flex items-center gap-2 px-6 py-2 bg-stone-800 text-[#fffef0] text-sm tracking-wide font-medium hover:bg-stone-700 transition-colors shadow-md border border-stone-600"
-            >
-              <FaArrowLeft size={16} />
+            <button onClick={handleGoHome} className="home-button">
+              <FaArrowLeft />
               Ana Sayfaya Dön
             </button>
           </div>
 
-          {/* Alt Sayfa Numarası */}
-          <div className="absolute bottom-4 right-8 text-stone-400 font-serif italic text-sm">
-            Sayfa 404
-          </div>
+          <div className="page-number">Sayfa 404</div>
         </div>
-
-        {/* Arka Gölge */}
-        <div className="absolute top-4 left-4 w-full h-full bg-black opacity-40 blur-lg -z-10 rounded-sm transform rotate-2"></div>
       </div>
     </div>
   );
