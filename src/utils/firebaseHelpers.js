@@ -41,7 +41,7 @@ async function readArtifactCollection(artifactId, pathSegments) {
 }
 
 /* ==========================================================
-   1. ÜRÜN YÖNETİMİ (GÖRSEL FİXLENDİ)
+   1. ÜRÜN YÖNETİMİ
    ========================================================== */
 
 // Ürünleri Listele
@@ -51,31 +51,23 @@ export async function listProductsForCurrentUser() {
   const colRef = collection(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "products");
   const q = query(colRef);
   const snapshot = await getDocs(q);
-  // Veriyi döndürürken id'yi ekliyoruz
   return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
-// Ürün Ekle (Görsel Linki Dahil)
+// Ürün Ekle (Görsel Eklendi - Sadeleştirilmiş)
 export async function addProduct(product) {
   ensureDb();
   const uid = getUidOrThrow();
   const colRef = collection(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "products");
 
-  // React tarafından 'image' olarak geliyor, DB'ye de 'image' olarak kaydediyoruz.
-  // imageUrl gelirse de (eski koddan) onu da image'a atıyoruz.
-  const finalImage = product.image || product.imageUrl || null;
-
+  // Direkt ne geliyorsa onu kaydediyoruz, barkod gibi.
   const docRef = await addDoc(colRef, {
     name: product.name,
     barcode: product.barcode || null,
     category: product.category || "Genel",
     price: Number(product.price) || 0,
     stock: Number(product.stock) || 0,
-    
-    // --- GÖRSEL LİNKİ BURADA KAYDEDİLİYOR ---
-    image: finalImage,
-    // ----------------------------------------
-    
+    image: product.image || null, // Burası barkod mantığıyla aynı oldu
     createdAt: new Date().toISOString()
   });
 
@@ -88,10 +80,11 @@ export async function updateProduct(productId, updates) {
   const uid = getUidOrThrow();
   const docRef = doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "products", productId);
   
-  // updates içinde { image: "..." } gelirse otomatik güncellenir.
-  const payload = { ...updates, updatedAt: new Date().toISOString() };
-  
-  await updateDoc(docRef, payload);
+  // updates objesi direkt ne gönderirsek onu günceller
+  await updateDoc(docRef, { 
+    ...updates, 
+    updatedAt: new Date().toISOString() 
+  });
   return true;
 }
 
