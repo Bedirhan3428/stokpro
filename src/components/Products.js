@@ -59,7 +59,6 @@ export default function Products() {
   const [barcode, setBarcode] = useState("");
   const [price, setPrice] = useState("");
   const [stock, setStock] = useState("");
-  // DİKKAT: 'image' state'i (imageUrl değil)
   const [image, setImage] = useState(""); 
 
   const [category, setCategory] = useState("");
@@ -124,7 +123,7 @@ export default function Products() {
         price: parseFloat(price) || 0,
         stock: parseInt(stock, 10) || 0,
         category: category.trim() || "Genel",
-        image: image.trim() || null // State'teki 'image'ı gönderiyoruz
+        image: image || null // SADE VE DİREKT
       });
       setName(""); setBarcode(""); setPrice(""); setStock(""); setCategory(""); setImage("");
       await yukle();
@@ -140,8 +139,7 @@ export default function Products() {
       price: p.price || 0, 
       stock: p.stock || 0, 
       category: p.category || "",
-      // Veritabanından image veya imageUrl gelirse al, yoksa boş
-      image: p.image || p.imageUrl || "" 
+      image: p.image || ""
     });
   }
 
@@ -157,7 +155,7 @@ export default function Products() {
         price: Number(pr),
         stock: Number(st),
         category: cat ? String(cat).trim() : null,
-        image: img ? String(img).trim() : null
+        image: img || null // SADE VE DİREKT
       });
       setEditing(null);
       await yukle();
@@ -336,8 +334,7 @@ export default function Products() {
               <div key={p.id} className="product-item">
                 {/* Görsel Alanı */}
                 <div className="prod-img-box">
-                  {/* Hem image hem imageUrl kontrolü */}
-                  <UrunGorseli src={p.image || p.imageUrl} alt={p.name} />
+                  <UrunGorseli src={p.image} alt={p.name} />
                 </div>
 
                 <div className="prod-main">
