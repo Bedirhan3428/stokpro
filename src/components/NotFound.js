@@ -1,5 +1,6 @@
 import React from "react";
-import { ArrowLeft, BookOpen } from "lucide-react";
+// react-icons kütüphanesinden FontAwesome ikonlarını kullanıyoruz
+import { FaArrowLeft, FaBookOpen } from "react-icons/fa";
 
 export default function TornPage404() {
   const handleGoHome = () => {
@@ -8,7 +9,7 @@ export default function TornPage404() {
 
   return (
     <div className="min-h-screen bg-[#2c241b] flex items-center justify-center p-4 overflow-hidden relative font-serif">
-      {/* Arka plan için ahşap masa hissi veren gradient veya doku */}
+      {/* Arka plan için ahşap masa hissi veren gradient */}
       <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-amber-900 via-stone-900 to-black pointer-events-none" />
 
       {/* Sayfa Container */}
@@ -18,27 +19,25 @@ export default function TornPage404() {
         <div 
           className="relative bg-[#fdfbf7] text-gray-800 p-8 md:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.5)] transform rotate-1 transition-transform hover:rotate-0 duration-500 ease-out"
           style={{
-            // Yırtık kenar efekti (clip-path ile)
-            clipPath: "polygon(2% 0%, 98% 1%, 100% 100%, 0% 98%)", // Hafif yamukluk
-            backgroundImage: "linear-gradient(#e5e5e5 1px, transparent 1px)", // Satır çizgileri (opsiyonel, şu an sadece hafif doku verelim)
+            clipPath: "polygon(2% 0%, 98% 1%, 100% 100%, 0% 98%)",
+            backgroundImage: "linear-gradient(#e5e5e5 1px, transparent 1px)", 
             backgroundSize: "100% 2rem"
           }}
         >
-          {/* Sol Kenar Yırtık Süsü - Binding Holes */}
+          {/* Sol Kenar Yırtık Süsü - Spiral Delikleri */}
           <div className="absolute top-0 left-0 w-8 h-full flex flex-col justify-evenly items-center -translate-x-1/2">
-             {/* Bu alan koparılmış spiral deliklerini simüle eder */}
              {[...Array(10)].map((_, i) => (
                <div key={i} className="w-4 h-4 rounded-full bg-[#2c241b] shadow-inner opacity-80" />
              ))}
           </div>
 
-          {/* Gerçekçi Yırtık Kenar (Sol Taraf) için maskeleme veya görsel hile */}
-          <div className="absolute left-0 top-0 bottom-0 w-4 bg-[url('https://www.transparenttextures.com/patterns/paper-fibers.png')] opacity-50 mix-blend-multiply"></div>
+          {/* Yırtık Kenar Dokusu (Sol Taraf) */}
+          <div className="absolute left-0 top-0 bottom-0 w-4 bg-stone-300 opacity-50 mix-blend-multiply"></div>
 
-          {/* İçerik */}
+          {/* İçerik Kutusu */}
           <div className="flex flex-col items-center text-center space-y-6 border-4 border-double border-stone-300 p-6 bg-[#fffef0]">
             
-            {/* Üst Kısım: Bölüm Numarası gibi */}
+            {/* Üst Kısım */}
             <div className="w-full flex justify-between items-center border-b border-stone-300 pb-2 text-stone-500 text-sm uppercase tracking-widest">
               <span>Bölüm ??</span>
               <span>Kayıp Sayfa</span>
@@ -46,9 +45,10 @@ export default function TornPage404() {
 
             {/* Büyük 404 */}
             <div className="relative">
-              <h1 className="text-8xl md:text-9xl font-black text-stone-800 tracking-tighter opacity-90" style={{ fontFamily: '"Playfair Display", serif' }}>
+              <h1 className="text-8xl md:text-9xl font-black text-stone-800 tracking-tighter opacity-90 select-none" style={{ fontFamily: '"Playfair Display", serif' }}>
                 404
               </h1>
+              {/* Altı çizili kırmızı kalem efekti */}
               <div className="absolute -bottom-2 w-full h-1 bg-red-800 opacity-60 transform -rotate-2 rounded-full"></div>
             </div>
 
@@ -65,17 +65,17 @@ export default function TornPage404() {
               </p>
             </div>
 
-            {/* İkon / Süsleme */}
+            {/* Kitap İkonu (React Icons) */}
             <div className="text-stone-300 my-4">
-              <BookOpen size={48} strokeWidth={1} />
+              <FaBookOpen size={48} />
             </div>
 
-            {/* Buton */}
+            {/* Buton (React Icons) */}
             <button
               onClick={handleGoHome}
               className="mt-4 flex items-center gap-2 px-6 py-2 bg-stone-800 text-[#fffef0] text-sm tracking-wide font-medium hover:bg-stone-700 transition-colors shadow-md border border-stone-600"
             >
-              <ArrowLeft size={16} />
+              <FaArrowLeft size={16} />
               Ana Sayfaya Dön
             </button>
           </div>
@@ -86,10 +86,11 @@ export default function TornPage404() {
           </div>
         </div>
 
-        {/* Gölge Efekti (Kağıdın altındaki derinlik) */}
+        {/* Arka Gölge */}
         <div className="absolute top-4 left-4 w-full h-full bg-black opacity-40 blur-lg -z-10 rounded-sm transform rotate-2"></div>
       </div>
     </div>
   );
 }
+
 
