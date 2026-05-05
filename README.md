@@ -1,70 +1,131 @@
-# Getting Started with Create React App
+<div align="center">
+  <h1>📦 StokPro</h1>
+  <p><strong>Gelişmiş Stok, Satış ve Ön Muhasebe Yönetim Sistemi</strong></p>
+</div>
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+---
 
-## Available Scripts
+StokPro, modern işletmeler için tasarlanmış, bulut tabanlı (Firebase), barkod okuyucu entegrasyonuna sahip, kapsamlı bir stok takip ve ön muhasebe uygulamasıdır. React ile geliştirilmiş olup, PWA (Progressive Web App) desteği sayesinde hem masaüstü hem de mobil cihazlarda uygulama gibi çalışabilir.
 
-In the project directory, you can run:
+## ✨ Temel Özellikler
 
-### `npm start`
+- **🔐 Güvenli Kimlik Doğrulama:** E-posta/Şifre girişi, şifre sıfırlama ve e-posta doğrulama (Firebase Auth).
+- **🛒 Ürün ve Stok Yönetimi:** Ürün ekleme, düzenleme, silme, kritik stok uyarıları ve kategori bazlı yönetim.
+- **📷 Entegre Barkod Okuyucu:** Kamera üzerinden veya cihazdaki barkod okuyucularla hızlı ürün arama ve satış (`BarcodeScanner.js`).
+- **💰 Satış ve Kasa Noktası (POS):** Hızlı ve pratik satış ekranı, anlık stok düşümü.
+- **👥 Müşteri Yönetimi (CRM):** Müşteri kaydı, cari hesap ve borç/alacak takibi.
+- **📊 Ön Muhasebe & Raporlama:** Gelir-gider takibi, gelişmiş grafiksel raporlar ve istatistikler (`AdvancedReport.js`, `Accounting.js`).
+- **👑 Rol Tabanlı Erişim:** Normal kullanıcı ve Yönetici (Admin) panelleri (`AdminDashboard.js`).
+- **🔑 Abonelik/Lisans Sistemi:** Ürün anahtarı (ProductKey) ile hesap ve abonelik süresi yönetimi.
+- **🎨 Özelleştirilebilir Tema:** Karanlık (Dark) ve Aydınlık (Light) tema desteği (`theme.js`).
+- **📱 PWA Desteği:** Çevrimdışı çalışabilme ve tarayıcıdan cihaza uygulama olarak yüklenebilme (`manifest.json`, `service-worker.js`).
+- **🔔 Gelişmiş Bildirimler:** Başarılı işlem, hata veya stok uyarıları için entegre bildirim sistemi (`notificationHelper.js`).
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+---
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## 🛠 Kullanılan Teknolojiler
 
-### `npm test`
+### Frontend
+- **Kullanıcı Arayüzü:** `React.js`
+- **Rotalama:** `React Router DOM`
+- **Veri Görselleştirme:** `Chart.js` / `Recharts`
+- **Tasarım:** `CSS3` (Özel modüler tasarımlar)
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### Backend & Servisler
+- **Kimlik Doğrulama:** `Firebase Authentication`
+- **Veritabanı:** `Firebase Cloud Firestore` (Gerçek zamanlı NoSQL veritabanı)
+- **Barındırma:** `Vercel` (Uygulama barındırma / Hosting)
 
-### `npm run build`
+---
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## 🚀 Kurulum ve Başlangıç
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+Projeyi yerel ortamınızda çalıştırmak için aşağıdaki adımları izleyin.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### 1. Ön Koşullar
+- Bilgisayarınızda Node.js (v14 veya üzeri) yüklü olmalıdır.
+- Bir Firebase hesabı ve oluşturulmuş bir proje.
 
-### `npm run eject`
+### 2. Projeyi Klonlayın
+```bash
+git clone https://github.com/Bedirhan3428/stokpro.git
+cd stokpro
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### 3. Bağımlılıkları Yükleyin
+```bash
+npm install
+# veya
+yarn install
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### 4. Çevre Değişkenlerini (Environment Variables) Ayarlayın
+Proje dizininde (root) bir `.env` dosyası oluşturun (veya `.env.example` dosyasını kopyalayın) ve Firebase yapılandırma bilgilerinizi girin:
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+```env
+REACT_APP_FIREBASE_API_KEY=senin_api_anahtarin
+REACT_APP_FIREBASE_AUTH_DOMAIN=senin_projen.firebaseapp.com
+REACT_APP_FIREBASE_PROJECT_ID=senin_proje_id
+REACT_APP_FIREBASE_STORAGE_BUCKET=senin_projen.appspot.com
+REACT_APP_FIREBASE_MESSAGING_SENDER_ID=senin_sender_id
+REACT_APP_FIREBASE_APP_ID=senin_app_id
+```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+### 5. Uygulamayı Başlatın
+```bash
+npm start
+# veya
+yarn start
+```
+*Uygulama varsayılan olarak `http://localhost:3000` adresinde çalışmaya başlayacaktır.*
 
-## Learn More
+---
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## 📁 Proje Klasör Yapısı
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```text
+stokpro/
+├── public/                 # PWA dosyaları, logolar, manifest ve sesler (beep.wav)
+├── src/
+│   ├── components/         # Arayüz bileşenleri (Dashboard, Sales, Products vb.)
+│   ├── contexts/           # React Context yapıları (AuthContext)
+│   ├── hooks/              # Özel React Hook'ları (useSubscription)
+│   ├── styles/             # Bileşenlere özel CSS dosyaları
+│   ├── utils/              # Yardımcı fonksiyonlar (Firebase config, api, chartSetup)
+│   ├── App.js              # Ana uygulama rotaları ve sarmalayıcı
+│   ├── firebase.js         # Firebase başlatma ve konfigürasyon ayarları
+│   └── index.js            # React DOM render noktası
+├── .env                    # Ortam değişkenleri (Git'e eklenmez)
+├── package.json            # Proje bağımlılıkları ve scriptler
+└── vercel.json             # Vercel deployment konfigürasyonu
+```
 
-### Code Splitting
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## ☁️ Yayına Alma (Deployment)
 
-### Analyzing the Bundle Size
+Bu proje Vercel üzerinde yayınlanmak üzere konfigüre edilmiştir (`vercel.json` içerir).
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+1. Vercel dashboard'una gidin.
+2. GitHub deponuzu bağlayın.
+3. Vercel proje ayarlarından **Environment Variables (Çevre Değişkenleri)** kısmına `.env` dosyanızdaki Firebase anahtarlarını ekleyin.
+4. **Deploy** butonuna tıklayın.
 
-### Making a Progressive Web App
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+## 📄 Lisans ve Kullanım Şartları
 
-### Advanced Configuration
+Uygulamanın kullanım koşulları, gizlilik politikası ve abonelik sistemleriyle ilgili yasal metinler uygulama içerisinde mevcuttur.
+- **Gizlilik Politikası:** `PrivacyPolicy.js`
+- **Kullanım Şartları:** `TermsOfService.js` / `TermsModal.js`
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+---
 
-### Deployment
+## 🤝 Katkıda Bulunma
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+Bu proje özel bir işletme projesi olduğundan dolayı dışarıdan pull request (PR) kabul edilmemektedir. Geliştirme ekibi için kod standartları aşağıda belirtilmiştir:
+- Her yeni özellik için ayrı bir branch (örn: `feature/barkod-guncelleme`) açılmalıdır.
+- Commit mesajları anlaşılır ve yapılan değişikliği özetler nitelikte olmalıdır.
 
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+---
+**Geliştirici:** Bedirhan İmer | **Proje Versiyonu:** 1.0.0
