@@ -1,50 +1,53 @@
 <div align="center">
   <h1>📦 StokPro</h1>
-  <p><strong>Gelişmiş Stok, Satış ve Ön Muhasebe Yönetim Sistemi</strong></p>
+  <p><strong>Next.js 16 (App Router) & Firebase Tabanlı Gelişmiş Stok, POS Satış ve Ön Muhasebe Otomasyonu</strong></p>
 </div>
 
 ---
 
-StokPro, modern işletmeler için tasarlanmış, bulut tabanlı (Firebase), barkod okuyucu entegrasyonuna sahip, kapsamlı bir stok takip ve ön muhasebe uygulamasıdır. React ile geliştirilmiş olup, PWA (Progressive Web App) desteği sayesinde hem masaüstü hem de mobil cihazlarda uygulama gibi çalışabilir.
+StokPro, modern işletmeler için tasarlanmış, bulut tabanlı (Firebase Cloud Firestore), 0ms gecikmesiz akıllı yerel belleğe (`Master Data Cache` / `LocalStorage`), entegre barkod okuyucuya ve profesyonel E-Fatura / PDF yazdırma motoruna sahip kapsamlı bir stok takip ve ön muhasebe otomasyonudur. 
+
+Proje **Next.js 16 (Turbopack & App Router)** mimarisine taşınmış olup %100 SEO uyumlu ve yüksek performanslıdır.
+
+---
 
 ## ✨ Temel Özellikler
 
-- **🔐 Güvenli Kimlik Doğrulama:** E-posta/Şifre girişi, şifre sıfırlama ve e-posta doğrulama (Firebase Auth).
-- **🛒 Ürün ve Stok Yönetimi:** Ürün ekleme, düzenleme, silme, kritik stok uyarıları ve kategori bazlı yönetim.
-- **📷 Entegre Barkod Okuyucu:** Kamera üzerinden veya cihazdaki barkod okuyucularla hızlı ürün arama ve satış (`BarcodeScanner.js`).
-- **💰 Satış ve Kasa Noktası (POS):** Hızlı ve pratik satış ekranı, anlık stok düşümü.
-- **👥 Müşteri Yönetimi (CRM):** Müşteri kaydı, cari hesap ve borç/alacak takibi.
-- **📊 Ön Muhasebe & Raporlama:** Gelir-gider takibi, gelişmiş grafiksel raporlar ve istatistikler (`AdvancedReport.js`, `Accounting.js`).
-- **👑 Rol Tabanlı Erişim:** Normal kullanıcı ve Yönetici (Admin) panelleri (`AdminDashboard.js`).
-- **🔑 Abonelik/Lisans Sistemi:** Ürün anahtarı (ProductKey) ile hesap ve abonelik süresi yönetimi.
-- **🎨 Özelleştirilebilir Tema:** Karanlık (Dark) ve Aydınlık (Light) tema desteği (`theme.js`).
-- **📱 PWA Desteği:** Çevrimdışı çalışabilme ve tarayıcıdan cihaza uygulama olarak yüklenebilme (`manifest.json`, `service-worker.js`).
-- **🔔 Gelişmiş Bildirimler:** Başarılı işlem, hata veya stok uyarıları için entegre bildirim sistemi (`notificationHelper.js`).
+- **⚡ 0ms Optimistic UI & LocalStorage Motoru:** Veri değişiklikleri (satış, stok, borç/alacak) ağ beklenmeden anında 0ms hızında yerel belleğe ve `LocalStorage` deposuna yazılır.
+- **🔄 Arka Plan Gecikmeli Senkronizasyon:** Veri işlemleri 0ms'de ekranda görünür; arka planda Firebase ve Master JSON dokümanı sessizce senkronize edilir.
+- **📄 Profesyonel Fatura & PDF Sistemi (`InvoiceModal.js`):** Fatura yazdırma, PDF indirme, özel logo gösterimi, dinamik Fatura Öneki (örn: `GIB2026`) ve ayarlanabilir KDV Oranları (%0, %1, %10, %20).
+- **🖨️ İzole Yazıcı Çıktı Desteği (`@media print`):** Yazıcıdan "Yazdır" dendiğinde arka plan ögeleri otomatik gizlenir, sadece saf beyaz zeminli net fatura çıktısı alınır.
+- **📊 4 İnteraktif Finansal KPI Kartı & Hover Menü:** Dashboard üzerinde Ciro, Gider, Net Kâr/Zarar ve Kasa/Banka dengesi anında hesaplanır ve hover popup menüleri ile detay sunar.
+- **🛒 POS Hızlı Satış Ekranı (`Sales.js`):** Barkod tarama, arama, veresiye müşteri seçimi, sepet ve anında eksiye düşmeyen güvenli stok düşümü.
+- **📦 Stok ve Ürün Yönetimi (`Products.js`):** Hızlı inline stok artırma/azaltma stepper'ı (`QtyStepper`), resim yükleme, toplu ürün ekleme (CSV/Excel) ve gelişmiş filtreleme ribbon barı.
+- **👥 Müşteri ve Cari Yönetimi (`Customers.js`):** Veresiye alacak/borç takibi, tahsilat alma, telefon formatlama ve dinamik müşteri arama.
+- **📑 Muhasebe ve Günlük Finans (`Accounting.js`):** Günlük bazda gruplanmış kasa hareketleri, ek gelir/gider kaydı ve detaylı finansal filtreleme.
+- **🤖 Yaplı Zeka (AI Now Brief) Widget'ı:** İşletmeniz için hızlı ve akıllı satış/stok analiz tavsiyeleri.
+- **🎨 Dinamik Tema ve Kurumsal Ayarlar:** Aydınlık/Karanlık mod desteği, firma logosu yükleme, adres ve vergi bilgileri yapılandırması.
 
 ---
 
 ## 🛠 Kullanılan Teknolojiler
 
-### Frontend
-- **Kullanıcı Arayüzü:** `React.js`
-- **Rotalama:** `React Router DOM`
-- **Veri Görselleştirme:** `Chart.js` / `Recharts`
-- **Tasarım:** `CSS3` (Özel modüler tasarımlar)
+### Frontend & Çatı
+- **Framework:** `Next.js 16` (App Router, Turbopack, React 19)
+- **Stil & CSS:** Tailwind CSS v3 & Single Master Global CSS (`src/styles/global.css`)
+- **İkon Seti:** `React Icons` (Feather Icons)
+- **PDF Oluşturucu:** `html2pdf.js` & `html2canvas`
 
-### Backend & Servisler
+### Backend & Veritabanı
 - **Kimlik Doğrulama:** `Firebase Authentication`
-- **Veritabanı:** `Firebase Cloud Firestore` (Gerçek zamanlı NoSQL veritabanı)
-- **Barındırma:** `Vercel` (Uygulama barındırma / Hosting)
+- **Veritabanı:** `Firebase Cloud Firestore` (NoSQL & Sync Meta)
+- **Önbellek & Cache:** Universal LocalStorage & Memory Store Engine (`masterDataCache.js`)
 
 ---
 
-## 🚀 Kurulum ve Başlangıç
+## 🚀 Kurulum ve Çalıştırma
 
 Projeyi yerel ortamınızda çalıştırmak için aşağıdaki adımları izleyin.
 
 ### 1. Ön Koşullar
-- Bilgisayarınızda Node.js (v14 veya üzeri) yüklü olmalıdır.
-- Bir Firebase hesabı ve oluşturulmuş bir proje.
+- Bilgisayarınızda Node.js (v18.0 veya üzeri) yüklü olmalıdır.
 
 ### 2. Projeyi Klonlayın
 ```bash
@@ -55,29 +58,36 @@ cd stokpro
 ### 3. Bağımlılıkları Yükleyin
 ```bash
 npm install
-# veya
-yarn install
 ```
 
 ### 4. Çevre Değişkenlerini (Environment Variables) Ayarlayın
-Proje dizininde (root) bir `.env` dosyası oluşturun (veya `.env.example` dosyasını kopyalayın) ve Firebase yapılandırma bilgilerinizi girin:
+Dizin kökünde bir `.env` dosyası oluşturun ve Firebase konfigürasyonunuzu ekleyin:
 
 ```env
-REACT_APP_FIREBASE_API_KEY=senin_api_anahtarin
-REACT_APP_FIREBASE_AUTH_DOMAIN=senin_projen.firebaseapp.com
-REACT_APP_FIREBASE_PROJECT_ID=senin_proje_id
-REACT_APP_FIREBASE_STORAGE_BUCKET=senin_projen.appspot.com
-REACT_APP_FIREBASE_MESSAGING_SENDER_ID=senin_sender_id
-REACT_APP_FIREBASE_APP_ID=senin_app_id
+NEXT_PUBLIC_FIREBASE_API_KEY=senin_api_anahtarin
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=senin_projen.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=senin_proje_id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=senin_projen.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=senin_sender_id
+NEXT_PUBLIC_FIREBASE_APP_ID=senin_app_id
 ```
 
-### 5. Uygulamayı Başlatın
+### 5. Geliştirici Sunucusunu Başlatın
 ```bash
-npm start
-# veya
-yarn start
+npm run dev
 ```
-*Uygulama varsayılan olarak `http://localhost:3000` adresinde çalışmaya başlayacaktır.*
+*Uygulama `http://localhost:3000` adresinde Turbopack hızıyla çalışmaya başlayacaktır.*
+
+---
+
+## 🏗️ Production Build (Canlıya Alma)
+
+Üretim sürümünü derlemek ve statik/dinamik sayfaları doğrulamak için:
+
+```bash
+npm run build
+npm run start
+```
 
 ---
 
@@ -85,47 +95,31 @@ yarn start
 
 ```text
 stokpro/
-├── public/                 # PWA dosyaları, logolar, manifest ve sesler (beep.wav)
+├── app/                    # Next.js 16 App Router Sayfaları ve Rotaları
+│   ├── accounting/         # Muhasebe & Kasa Hareketleri
+│   ├── customers/          # Müşteri & Cari Takibi
+│   ├── dashboard/          # Finansal Özet & KPI Kartları
+│   ├── products/           # Stok & Ürün Yönetimi
+│   ├── sales/              # POS Satış Ekranı
+│   ├── settings/           # Firma, Logo, KDV & Fatura Ayarları
+│   └── layout.js           # Ana HTML Kapsayıcı & SEO Meta Tanımları
+├── public/                 # Statik görseller, logolar ve ikonlar
 ├── src/
-│   ├── components/         # Arayüz bileşenleri (Dashboard, Sales, Products vb.)
-│   ├── contexts/           # React Context yapıları (AuthContext)
-│   ├── hooks/              # Özel React Hook'ları (useSubscription)
-│   ├── styles/             # Bileşenlere özel CSS dosyaları
-│   ├── utils/              # Yardımcı fonksiyonlar (Firebase config, api, chartSetup)
-│   ├── App.js              # Ana uygulama rotaları ve sarmalayıcı
-│   ├── firebase.js         # Firebase başlatma ve konfigürasyon ayarları
-│   └── index.js            # React DOM render noktası
-├── .env                    # Ortam değişkenleri (Git'e eklenmez)
-├── package.json            # Proje bağımlılıkları ve scriptler
-└── vercel.json             # Vercel deployment konfigürasyonu
+│   ├── components/         # Modüler React Bileşenleri (InvoiceModal, Toast vb.)
+│   ├── styles/             # Master Global CSS (`global.css`)
+│   └── utils/              # Firebase Yardımcıları ve Master Data Cache Engine
+├── .env                    # Çevre Değişkenleri
+├── next.config.mjs         # Next.js Konfigürasyonu
+└── package.json            # Proje Bağımlılıkları ve Scriptler
 ```
-
----
-
-## ☁️ Yayına Alma (Deployment)
-
-Bu proje Vercel üzerinde yayınlanmak üzere konfigüre edilmiştir (`vercel.json` içerir).
-
-1. Vercel dashboard'una gidin.
-2. GitHub deponuzu bağlayın.
-3. Vercel proje ayarlarından **Environment Variables (Çevre Değişkenleri)** kısmına `.env` dosyanızdaki Firebase anahtarlarını ekleyin.
-4. **Deploy** butonuna tıklayın.
 
 ---
 
 ## 📄 Lisans ve Kullanım Şartları
 
-Uygulamanın kullanım koşulları, gizlilik politikası ve abonelik sistemleriyle ilgili yasal metinler uygulama içerisinde mevcuttur.
-- **Gizlilik Politikası:** `PrivacyPolicy.js`
-- **Kullanım Şartları:** `TermsOfService.js` / `TermsModal.js`
+Uygulama şartları ve sözleşmeler sistem içerisinden görüntülenebilir:
+- **Gizlilik Politikası:** `/privacy-policy`
+- **Kullanım Şartları:** `/terms-of-service`
 
 ---
-
-## 🤝 Katkıda Bulunma
-
-Bu proje özel bir işletme projesi olduğundan dolayı dışarıdan pull request (PR) kabul edilmemektedir. Geliştirme ekibi için kod standartları aşağıda belirtilmiştir:
-- Her yeni özellik için ayrı bir branch (örn: `feature/barkod-guncelleme`) açılmalıdır.
-- Commit mesajları anlaşılır ve yapılan değişikliği özetler nitelikte olmalıdır.
-
----
-**Geliştirici:** Bedirhan İmer | **Proje Versiyonu:** 1.0.0
+**Geliştirici:** Bedirhan İmer | **Proje Versiyonu:** 2.0.0 (Next.js 16 Edition)
