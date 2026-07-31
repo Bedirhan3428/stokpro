@@ -1,12 +1,14 @@
-import "../styles/Register.css";
-import React, { useState } from "react";
-import { useNavigate, Navigate, Link } from "react-router-dom";
+"use client";
+
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "../contexts/AuthContext";
 import { createUserProfile } from "../utils/firebaseHelpers";
 
 export default function Register() {
   const { signup, user, signInWithGoogle } = useAuth();
-  const navigate = useNavigate();
+  const router = useRouter();
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -14,7 +16,11 @@ export default function Register() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  if (user) return <Navigate to="/dashboard" replace />;
+  useEffect(() => {
+    if (user) {
+      router.replace("/dashboard");
+    }
+  }, [user, router]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -40,7 +46,7 @@ export default function Register() {
       } catch (storageErr) {
         console.warn("localStorage yazılamadı:", storageErr);
       }
-      navigate("/dashboard");
+      router.push("/dashboard");
     } catch (err) {
       setError(err.message || "Kayıt başarısız.");
     } finally {
@@ -62,11 +68,13 @@ export default function Register() {
       } catch (storageErr) {
         console.warn("localStorage yazılamadı:", storageErr);
       }
-      navigate("/dashboard");
+      router.push("/dashboard");
     } catch (err) {
       setError(err.message || "Google ile kayıt başarısız.");
     }
   }
+
+  if (user) return null;
 
   return (
     <div className="reg-kapsul" role="main">
@@ -74,8 +82,6 @@ export default function Register() {
       <p className="reg-alt">Hızla kaydolun ve StokPro'yu kullanmaya başlayın</p>
 
       <form onSubmit={handleSubmit} className="reg-form" noValidate>
-        
-        {/* İsim Alanı */}
         <div className="reg-input-grup">
           <input
             id="name"
@@ -87,10 +93,9 @@ export default function Register() {
             required
             autoComplete="name"
           />
-          <label htmlFor="name" className="reg-etiket">Adınız Soyadınız</label>
+          <label htmlFor="name" className="reg-etiket">İşletme Adı veya İsim Soyisim</label>
         </div>
 
-        {/* Email Alanı */}
         <div className="reg-input-grup">
           <input
             id="email"
@@ -105,7 +110,6 @@ export default function Register() {
           <label htmlFor="email" className="reg-etiket">E-posta Adresi</label>
         </div>
 
-        {/* Şifre Alanı */}
         <div className="reg-input-grup">
           <input
             id="password"
@@ -120,7 +124,6 @@ export default function Register() {
           <label htmlFor="password" className="reg-etiket">Parola</label>
         </div>
 
-        {/* Şifre Tekrar Alanı */}
         <div className="reg-input-grup">
           <input
             id="confirm"
@@ -158,7 +161,7 @@ export default function Register() {
           </button>
         </div>
 
-        <Link to="/login" className="reg-link">
+        <Link href="/login" className="reg-link">
           Zaten hesabınız var mı? <strong>Giriş yap</strong>
         </Link>
       </form>

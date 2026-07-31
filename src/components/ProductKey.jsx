@@ -1,11 +1,12 @@
+"use client";
+
 import React, { useEffect, useState } from "react";
-import "../styles/product-key.css";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { db } from "../firebase";
 import { doc, runTransaction } from "firebase/firestore";
 import { getUserProfile } from "../utils/firebaseHelpers";
 
-const ARTIFACT_DOC_ID = process.env.REACT_APP_FIREBASE_ARTIFACTS_COLLECTION || "";
+const ARTIFACT_DOC_ID = process.env.NEXT_PUBLIC_FIREBASE_ARTIFACTS_COLLECTION || process.env.REACT_APP_FIREBASE_ARTIFACTS_COLLECTION || "1:330292329201:web:d19827937fb863ea490750";
 
 function hasActiveSubscription(profile) {
   if (!profile) return false;

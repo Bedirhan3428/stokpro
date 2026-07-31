@@ -1,17 +1,23 @@
-import "../styles/Login.css"; // Dosya ismini güncellediğinizden emin olun
-import React, { useState } from "react";
-import { useNavigate, Navigate, Link } from "react-router-dom";
+"use client";
+
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function Login() {
   const { login, user, signInWithGoogle } = useAuth();
-  const navigate = useNavigate();
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  if (user) return <Navigate to="/dashboard" replace />;
+  useEffect(() => {
+    if (user) {
+      router.replace("/dashboard");
+    }
+  }, [user, router]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -19,7 +25,7 @@ export default function Login() {
     setLoading(true);
     try {
       await login(email.trim(), password);
-      navigate("/dashboard");
+      router.push("/dashboard");
     } catch (err) {
       setError(err.message || "Giriş başarısız. Lütfen bilgilerinizi kontrol edin.");
     } finally {
@@ -31,11 +37,13 @@ export default function Login() {
     setError("");
     try {
       await signInWithGoogle();
-      navigate("/dashboard");
+      router.push("/dashboard");
     } catch (err) {
       setError(err.message || "Google ile giriş başarısız.");
     }
   }
+
+  if (user) return null;
 
   return (
     <div className="lg-kapsul" role="main">
@@ -43,8 +51,6 @@ export default function Login() {
       <p className="lg-alt">Devam etmek için hesabınıza giriş yapın</p>
 
       <form onSubmit={handleSubmit} className="lg-form" noValidate>
-        
-        {/* Email Input Grubu */}
         <div className="lg-input-grup">
           <input
             id="email"
@@ -52,14 +58,13 @@ export default function Login() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder=" " /* Floating label için gerekli */
+            placeholder=" "
             required
             autoComplete="email"
           />
           <label htmlFor="email" className="lg-etiket">E-posta Adresi</label>
         </div>
 
-        {/* Şifre Input Grubu */}
         <div className="lg-input-grup">
           <input
             id="password"
@@ -67,14 +72,14 @@ export default function Login() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder=" " /* Floating label için gerekli */
+            placeholder=" "
             required
             autoComplete="current-password"
           />
           <label htmlFor="password" className="lg-etiket">Parola</label>
         </div>
 
-        <Link to="/forgot-password" className="lg-link">Şifremi Unuttum?</Link>
+        <Link href="/forgot-password" className="lg-link">Şifremi Unuttum?</Link>
 
         {error && <div className="lg-hata" role="alert">{error}</div>}
 
@@ -99,7 +104,7 @@ export default function Login() {
           </button>
         </div>
 
-        <Link to="/register" className="lg-link ikincil">
+        <Link href="/register" className="lg-link ikincil">
           Hesabınız yok mu? <strong>Kayıt Ol</strong>
         </Link>
       </form>

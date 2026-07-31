@@ -14,17 +14,22 @@ import {
 } from "firebase/firestore";
 
 import { db, firebaseEnabled, auth } from "../firebase";
+import { invalidateAndRefreshMasterCache } from "./masterDataCache";
 
-const ARTIFACT_DOC_ID = process.env.REACT_APP_FIREBASE_ARTIFACTS_COLLECTION || "";
+const ARTIFACT_DOC_ID =
+  process.env.NEXT_PUBLIC_FIREBASE_ARTIFACTS_COLLECTION ||
+  process.env.REACT_APP_FIREBASE_ARTIFACTS_COLLECTION ||
+  "1:330292329201:web:d19827937fb863ea490750";
 const LEGACY_ARTIFACT_DOC_ID =
+  process.env.NEXT_PUBLIC_FIREBASE_LEGACY_ARTIFACT ||
   process.env.REACT_APP_FIREBASE_LEGACY_ARTIFACT ||
   process.env.REACT_APP_FIREBASE_LEGACY_ARTIFACT_ID ||
-  "";
+  "1:330292329201:web:d19827937fb863ea490750";
 
 /* ---------- Guards ---------- */
 function ensureDb() {
   if (!firebaseEnabled || !db) throw new Error("Firestore başlatılmadı.");
-  if (!ARTIFACT_DOC_ID) throw new Error("REACT_APP_FIREBASE_ARTIFACTS_COLLECTION tanımlı değil.");
+  if (!ARTIFACT_DOC_ID) throw new Error("FIREBASE_ARTIFACTS_COLLECTION tanımlı değil.");
 }
 
 function getUidOrThrow() {
@@ -99,8 +104,6 @@ export async function addCustomerPayment(customerId, { amount = 0, note = "" } =
     const mevcutBakiye = Number(custSnap.data()?.balance || 0);
     const odeme = Number(amount || 0);
     if (isNaN(odeme) || odeme <= 0) throw new Error("Geçerli bir tutar girin.");
-    if (mevcutBakiye <= 0) throw new Error("Müşterinin borcu yok.");
-    if (odeme > mevcutBakiye) throw new Error(`Ödeme bakiyeyi aşamaz (${mevcutBakiye}).`);
 
     const yeniBakiye = mevcutBakiye - odeme;
     tx.update(custRef, { balance: yeniBakiye, updatedAt: new Date().toISOString() });
@@ -132,62 +135,77 @@ export async function addCustomerPayment(customerId, { amount = 0, note = "" } =
 }
 
 /* ------------------ SATIŞ TAMAMLAMA ------------------ */
-export async function finalizeSaleTransaction({ items = [], paymentType = "cash", customerId = null, totals = {} } = {}) {
+export async function finalizeSaleTransaction({ items = [], paymentType = "cash", saleType = null, customerId = null, customerName: passedCustName = null, totals = {}, total = null } = {}) {
   ensureDb();
   const uid = getUidOrThrow();
   if (!Array.isArray(items) || items.length === 0) throw new Error("Sepet boş.");
 
+  const activePayType = saleType || paymentType || "cash";
+
   return runTransaction(db, async (tx) => {
-    const productRefs = items.map((it) => doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "products", it.productId));
+    // 1. Ürün ID'lerini güvenli çöz (eski veriler ve yeni verilerle %100 uyumluluk)
+    const validItems = items.map((it) => {
+      const pId = String(it.productId || it.id || "").trim();
+      if (!pId) throw new Error(`Ürün ID'si bulunamadı (${it.name || 'Bilinmeyen Ürün'}).`);
+      return {
+        id: pId,
+        productId: pId,
+        name: String(it.name || "Ürün").trim(),
+        qty: Number(it.qty || 1),
+        price: Number(it.price || 0)
+      };
+    });
+
+    const productRefs = validItems.map((it) => doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "products", it.productId));
     const productSnaps = [];
     for (const pref of productRefs) productSnaps.push(await tx.get(pref));
 
     let custRef = null;
     let custSnap = null;
-    let customerName = null;
-    if (paymentType === "credit" && customerId) {
+    let finalCustName = passedCustName || null;
+    if (activePayType === "credit" && customerId) {
       custRef = doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "customers", customerId);
       custSnap = await tx.get(custRef);
-      if (!custSnap.exists()) throw new Error("Veresiye satış için müşteri bulunamadı.");
-      customerName = custSnap.data()?.name || null;
+      if (custSnap.exists()) {
+        finalCustName = custSnap.data()?.name || finalCustName;
+      }
     }
 
-    // Stok kontrolleri
+    // Stok güncellemeleri (Asla eksiye düşmez, en az 0 Adet olarak sabitlenir)
     productSnaps.forEach((pSnap, i) => {
-      if (!pSnap.exists()) throw new Error(`Ürün bulunamadı: ${items[i].productId}`);
-      const stok = Number(pSnap.data().stock || 0);
-      if (stok < items[i].qty) throw new Error(`Yetersiz stok: ${pSnap.data().name || items[i].productId}`);
-    });
-
-    // Stok güncellemeleri
-    productSnaps.forEach((pSnap, i) => {
-      const stok = Number(pSnap.data().stock || 0);
-      tx.update(productRefs[i], { stock: stok - items[i].qty, updatedAt: new Date().toISOString() });
+      if (pSnap.exists()) {
+        const stok = Number(pSnap.data().stock || 0);
+        const yeniStok = Math.max(0, stok - validItems[i].qty);
+        tx.update(productRefs[i], { stock: yeniStok, updatedAt: new Date().toISOString() });
+      }
     });
 
     const saleRef = doc(collection(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "sales"));
-    const saleItems = items.map((it) => ({
+    const saleItems = validItems.map((it) => ({
+      id: it.id,
       productId: it.productId,
-      name: it.name || null,
+      name: it.name,
       qty: it.qty,
       price: it.price
     }));
-    const hesaplananToplam = saleItems.reduce((s, it) => s + (Number(it.price || 0) * Number(it.qty || 0)), 0);
-    const gelenToplam = totals?.total ?? totals?.subtotal ?? totals?.amount ?? null;
+    const hesaplananToplam = saleItems.reduce((s, it) => s + (it.price * it.qty), 0);
+    const gelenToplam = totals?.total ?? totals?.subtotal ?? totals?.amount ?? total ?? null;
     const toplamTutar = Number(gelenToplam ?? hesaplananToplam ?? 0);
 
     // Satış belgesi
     tx.set(saleRef, {
       items: saleItems,
-      saleType: paymentType,
+      saleType: activePayType,
+      paymentType: activePayType,
+      total: toplamTutar,
       customerId: customerId || null,
-      customerName: customerName || null,
+      customerName: finalCustName || null,
       totals: { total: toplamTutar },
       createdAt: new Date().toISOString()
     });
 
     // Veresiye ise müşteri güncellemesi
-    if (paymentType === "credit" && customerId && custRef && custSnap) {
+    if (activePayType === "credit" && customerId && custRef && custSnap && custSnap.exists()) {
       const mevcut = Number(custSnap.data()?.balance || 0);
       tx.update(custRef, { balance: mevcut + toplamTutar, updatedAt: new Date().toISOString() });
 
@@ -195,10 +213,11 @@ export async function finalizeSaleTransaction({ items = [], paymentType = "cash"
       const custSaleRef = doc(custSalesCol);
       tx.set(custSaleRef, {
         saleId: saleRef.id,
-        customerName: customerName || null,
+        customerName: finalCustName || null,
         items: saleItems,
+        total: toplamTutar,
         totals: { total: toplamTutar },
-        saleType: paymentType,
+        saleType: activePayType,
         createdAt: new Date().toISOString()
       });
     }
@@ -207,13 +226,13 @@ export async function finalizeSaleTransaction({ items = [], paymentType = "cash"
       const ledgerCol = collection(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "ledger");
       const ledgerRef = doc(ledgerCol);
       const lines = [];
-      if (paymentType === "cash") lines.push({ account: "Kasa", debit: toplamTutar, credit: 0 });
-      else if (paymentType === "credit") lines.push({ account: `AR:${customerId}`, debit: toplamTutar, credit: 0 });
+      if (activePayType === "cash") lines.push({ account: "Kasa", debit: toplamTutar, credit: 0 });
+      else if (activePayType === "credit") lines.push({ account: `AR:${customerId}`, debit: toplamTutar, credit: 0 });
       else lines.push({ account: "Kasa", debit: toplamTutar, credit: 0 });
       lines.push({ account: "Satış Geliri", debit: 0, credit: toplamTutar });
 
-      const desc = paymentType === "credit"
-        ? `Satış (Veresiye${customerName ? ` - ${customerName}` : ""})`
+      const desc = activePayType === "credit"
+        ? `Satış (Veresiye${finalCustName ? ` - ${finalCustName}` : ""})`
         : "Satış (Nakit)";
 
       tx.set(ledgerRef, {
@@ -225,7 +244,15 @@ export async function finalizeSaleTransaction({ items = [], paymentType = "cash"
       /* ledger yazılamazsa işlemi durdurma */
     }
 
-    return { saleId: saleRef.id };
+    invalidateAndRefreshMasterCache().catch(() => {});
+
+    return {
+      id: saleRef.id,
+      items: saleItems,
+      total: toplamTutar,
+      saleType: activePayType,
+      customerName: finalCustName
+    };
   });
 }
 
@@ -419,6 +446,7 @@ export async function deleteCustomer(customerId) {
   await deleteCollectionDocs([...base, "adjustments"]);
 
   await deleteDoc(doc(db, ...base));
+  invalidateAndRefreshMasterCache().catch(() => {});
   return true;
 }
 

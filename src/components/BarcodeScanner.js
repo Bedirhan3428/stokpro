@@ -1,4 +1,3 @@
-import "../styles/BarcodeScanner.css";
 import React, { useEffect, useRef, useState } from "react";
 // @zxing/library kütüphanesini import ediyoruz
 import {

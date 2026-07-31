@@ -1,12 +1,13 @@
-import "../styles/ForgotPassword.css";
+"use client";
+
 import React, { useEffect, useState } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getAuth, verifyPasswordResetCode, confirmPasswordReset } from "firebase/auth";
 
 export default function ResetPassword() {
   const auth = getAuth();
-  const nav = useNavigate();
-  const [searchParams] = useSearchParams();
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [oobCode, setOobCode] = useState("");
   const [email, setEmail] = useState("");
@@ -15,7 +16,6 @@ export default function ResetPassword() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Düzeltme: .get öncesindeki boşluk silindi
     const code = searchParams.get("oobCode");
 
     if (!code) {
@@ -51,7 +51,7 @@ export default function ResetPassword() {
     try {
       await confirmPasswordReset(auth, oobCode, password);
       setStatus({ type: "success", msg: "Parola güncellendi! Yönlendiriliyorsunuz..." });
-      setTimeout(() => nav("/login", { replace: true }), 1500);
+      setTimeout(() => router.replace("/login"), 1500);
     } catch (err) {
       let message = "Parola güncellenemedi.";
       if (err.code === "auth/weak-password") message = "Parola çok zayıf.";
@@ -71,13 +71,12 @@ export default function ResetPassword() {
     );
   }
 
-  // Düzeltme: ?.type arasındaki boşluk silindi
   if (status?.type === "error" && !email) {
     return (
       <div className="fp-kapsul">
         <h3 className="fp-baslik">Şifre Sıfırlama</h3>
         <div className="fp-durum fp-hata">{status.msg}</div>
-        <button className="fp-btn" onClick={() => nav("/forgot-password")}>
+        <button className="fp-btn" onClick={() => router.push("/forgot-password")}>
           Tekrar Dene
         </button>
       </div>
@@ -90,17 +89,18 @@ export default function ResetPassword() {
       <p className="fp-alt">{email}</p>
 
       <form className="fp-form" onSubmit={handleSubmit} noValidate>
-        <label className="fp-etiket">Yeni Parola</label>
-        <input
-          className="fp-input"
-          type="password"
-          value={password}
-          // Düzeltme: .value arasındaki boşluk silindi
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="En az 6 karakter"
-          required
-          minLength={6}
-        />
+        <div className="fp-input-grup">
+          <input
+            className="fp-input"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder=" "
+            required
+            minLength={6}
+          />
+          <label className="fp-etiket">Yeni Parola (En az 6 karakter)</label>
+        </div>
 
         <div className="fp-islem">
           <button className="fp-btn fp-btn-mavi" type="submit" disabled={loading}>

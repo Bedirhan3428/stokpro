@@ -1,46 +1,61 @@
+"use client";
+
 import React, { useEffect, useState } from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function RequireAuth({ children }) {
   const { user, loading } = useAuth();
-  const location = useLocation();
+  const router = useRouter();
+  const pathname = usePathname();
   const [checkingEmail, setCheckingEmail] = useState(false);
 
-  // Eğer kullanıcı var ama emailVerified false ise, fresh durum için reload et
   useEffect(() => {
+    // SADECE E-posta henüz doğrulanmamışsa sunucuya sor (Doğrulanmış oturumda 0ms Hızlı Açılış)
+    if (!user || user.emailVerified) {
+      setCheckingEmail(false);
+      return;
+    }
+
     let mounted = true;
     async function refreshEmailStatus() {
-      if (!user || user.emailVerified) return;
       setCheckingEmail(true);
       try {
         await user.reload();
       } catch (e) {
-        // sessiz yut
+        // quiet
       } finally {
         if (mounted) setCheckingEmail(false);
       }
     }
+
     refreshEmailStatus();
     return () => {
       mounted = false;
     };
-  }, [user]);
+  }, [user?.emailVerified]);
+
+  useEffect(() => {
+    if (!loading && !checkingEmail) {
+      if (!user) {
+        router.replace("/login");
+      } else if (!user.emailVerified) {
+        router.replace("/verify-email");
+      }
+    }
+  }, [user, loading, checkingEmail, router]);
 
   if (loading || checkingEmail) {
     return (
-      <div className="ra-yukleme">
-        <div className="ra-spinner" />
-        <p>Oturum doğrulanıyor...</p>
+      <div className="ra-yukleme" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: '1rem' }}>
+        <div className="spinner" />
+        <p style={{ fontWeight: 700, color: 'var(--text-muted)' }}>Oturum doğrulanıyor...</p>
       </div>
     );
   }
 
-  if (!user) return <Navigate to="/login" state={{ from: location }} replace />;
-
-  // Reload sonrası da doğrulanmadıysa, verify-email’e yönlendir
-  if (!user.emailVerified) {
-    return <Navigate to="/verify-email" state={{ from: location }} replace />;
+  if (!user || !user.emailVerified) {
+    return null;
   }
 
   return children;

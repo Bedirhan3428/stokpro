@@ -17,7 +17,6 @@ import {
 import { listSales } from "../utils/firebaseHelpers";
 // DÜZELTME BURADA: Ürün listeleme fonksiyonu doğru dosyadan çağrılıyor
 import { listProductsForCurrentUser } from "../utils/artifactUserProducts";
-import "../styles/AdvancedReport.css";
 
 // --- GRAFİK MODÜLLERİ KAYDI ---
 ChartJS.register(

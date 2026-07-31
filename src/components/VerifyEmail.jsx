@@ -1,20 +1,21 @@
+"use client";
+
 import React, { useEffect, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getAuth, sendEmailVerification, applyActionCode, signOut } from "firebase/auth";
 
 export default function VerifyEmail() {
   const auth = getAuth();
-  const nav = useNavigate();
-  const location = useLocation();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const user = auth.currentUser;
 
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const mode = params.get("mode");
-    const oobCode = params.get("oobCode");
+    const mode = searchParams.get("mode");
+    const oobCode = searchParams.get("oobCode");
 
     async function handleOob() {
       if (mode !== "verifyEmail" || !oobCode) return;
@@ -25,9 +26,8 @@ export default function VerifyEmail() {
         if (auth.currentUser) {
           await auth.currentUser.reload();
           if (auth.currentUser.emailVerified) {
-            const dest = (location.state && location.state.from?.pathname) || "/dashboard";
             setStatus({ type: "success", msg: "E-posta doğrulandı, yönlendiriliyorsunuz..." });
-            setTimeout(() => nav(dest, { replace: true }), 800);
+            setTimeout(() => router.replace("/dashboard"), 800);
             return;
           }
         }
@@ -40,8 +40,7 @@ export default function VerifyEmail() {
     }
 
     handleOob();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.search]);
+  }, [searchParams, auth, router]);
 
   async function resend() {
     if (!user) return;
@@ -67,8 +66,7 @@ export default function VerifyEmail() {
     try {
       await user.reload();
       if (user.emailVerified) {
-        const dest = (location.state && location.state.from?.pathname) || "/dashboard";
-        nav(dest, { replace: true });
+        router.replace("/dashboard");
       } else {
         setStatus({ type: "info", msg: "Henüz doğrulanmadı. Lütfen e-postanızı kontrol edin." });
       }
@@ -79,15 +77,14 @@ export default function VerifyEmail() {
     }
   }
 
-  // --- ÇIKIŞ YAP VE KAYIT EKRANINA GİT ---
   async function cikisVeYonlendir() {
     setLoading(true);
     try {
       await signOut(auth);
-      nav("/register", { replace: true });
+      router.replace("/register");
     } catch (err) {
       console.error("Çıkış hatası:", err);
-      nav("/register", { replace: true });
+      router.replace("/register");
     } finally {
       setLoading(false);
     }
@@ -207,7 +204,6 @@ export default function VerifyEmail() {
             {loading ? "Yenileniyor..." : "Doğrulama Durumunu Yenile"}
           </button>
 
-          {/* ÇIKIŞ YAP BUTONU */}
           <button 
             className="fp-btn fp-btn-kirmizi" 
             onClick={cikisVeYonlendir}
@@ -230,5 +226,3 @@ export default function VerifyEmail() {
     </div>
   );
 }
-
-

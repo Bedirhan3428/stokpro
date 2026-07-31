@@ -1,559 +1,682 @@
-import "../styles/Sales.css";
-import React, { useEffect, useMemo, useState } from "react";
-import BarcodeScanner from "../components/BarcodeScanner"; 
-import { listProductsForCurrentUser } from "../utils/artifactUserProducts";
-import {
-  listCustomers,
-  finalizeSaleTransaction,
-  listRecentSales,
-  updateSale,
-  deleteSale,
-  addLegacyIncome,
-  addLegacyExpense
-} from "../utils/firebaseHelpers";
-import useSubscription from "../hooks/useSubscription";
-import { MdEdit, MdImageNotSupported } from "react-icons/md"; // İkon eklendi
-import { IoMdTrash } from "react-icons/io";
+"use client";
 
-// Basit Bildirim
-function Bildirim({ note }) {
-  if (!note) return null;
-  const tip = note.type === "error" ? "hata" : note.type === "success" ? "basari" : "bilgi";
+import React, { useEffect, useState, useRef, useMemo } from "react";
+import { 
+  FiShoppingCart, FiSearch, FiPlus, FiMinus, FiTrash2, 
+  FiCreditCard, FiDollarSign, FiUser, FiCheckCircle, FiX, 
+  FiTrendingUp, FiTrendingDown, FiArchive, FiTag, FiPrinter, FiFileText, FiZap
+} from "react-icons/fi";
+import { 
+  finalizeSaleTransaction, 
+  addLegacyIncome, 
+  addLegacyExpense 
+} from "../utils/firebaseHelpers";
+import { updateProduct } from "../utils/artifactUserProducts";
+import { 
+  syncFullMasterStore, 
+  getMasterStoreSnapshot, 
+  subscribeToMasterStore,
+  updateMemoryStoreOptimistically,
+  invalidateAndRefreshMasterCache
+} from "../utils/masterDataCache";
+import useSubscription from "../hooks/useSubscription";
+import Toast from "./Toast";
+import InvoiceModal from "./InvoiceModal";
+import { formatPhone } from "./Customers";
+
+function QtyStepper({ value, onChange, min = 0, disabled = false }) {
   return (
-    <div className="sl-bildirim-bar">
-      <div className={`sl-bildirim ${tip}`}>
-        <div className="sl-bildirim-baslik">{note.title || "Bilgi"}</div>
-        <div className="sl-bildirim-icerik">{note.message}</div>
-      </div>
+    <div className="qty-stepper">
+      <button 
+        type="button"
+        className="qty-stepper-btn" 
+        onClick={() => onChange(Math.max(min, Number(value || 0) - 1))}
+        disabled={disabled || value <= min}
+      >
+        -
+      </button>
+      <input
+        type="number"
+        className="qty-stepper-input"
+        value={value}
+        onChange={(e) => onChange(Math.max(min, parseInt(e.target.value, 10) || min))}
+        disabled={disabled}
+      />
+      <button 
+        type="button"
+        className="qty-stepper-btn" 
+        onClick={() => onChange(Number(value || 0) + 1)}
+        disabled={disabled}
+      >
+        +
+      </button>
     </div>
   );
 }
-
-function saleTypeLabel(t) {
-  if (t === "cash") return "Nakit";
-  if (t === "credit") return "Veresiye";
-  return t || "";
-}
-
-function parseDateKey(d) {
-  try {
-    const dt = typeof d === "object" && d?.toDate ? d.toDate() : new Date(d);
-    return isNaN(dt.getTime()) ? 0 : dt.getTime();
-  } catch { return 0; }
-}
-
-const norm = (c) => String(c ?? "").trim();
-const normDigits = (c) => norm(c).replace(/^0+/, "");
 
 export default function Sales() {
   const [products, setProducts] = useState([]);
   const [customers, setCustomers] = useState([]);
-  const [cart, setCart] = useState([]);
-  const [paymentType, setPaymentType] = useState("cash");
-  const [selectedCustomer, setSelectedCustomer] = useState("");
-  const [scanResult, setScanResult] = useState("");
-  const [search, setSearch] = useState("");
-
-  const [salesList, setSalesList] = useState([]);
+  const [salesHistory, setSalesHistory] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [note, setNote] = useState(null);
 
-  const [showCamera, setShowCamera] = useState(false);
-  const [editingSale, setEditingSale] = useState(null);
-  const [confirmDelete, setConfirmDelete] = useState(null);
+  // Arama & Filtre State
+  const [searchTerm, setSearchTerm] = useState("");
+  const [barcodeInput, setBarcodeInput] = useState("");
+  const [custSearchTerm, setCustSearchTerm] = useState("");
 
-  const [showIncomeModal, setShowIncomeModal] = useState(false);
+  // Sepet State
+  const [cart, setCart] = useState([]);
+  const [saleType, setSaleType] = useState("cash");
+  const [selectedCustomerId, setSelectedCustomerId] = useState("");
+
+  // Modallar State
+  const [showGelirModal, setShowGelirModal] = useState(false);
+  const [showGiderModal, setShowGiderModal] = useState(false);
   const [incomeAmount, setIncomeAmount] = useState("");
   const [incomeDesc, setIncomeDesc] = useState("");
-
-  const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [expenseAmount, setExpenseAmount] = useState("");
   const [expenseDesc, setExpenseDesc] = useState("");
 
+  // Fatura Modal State
+  const [activeInvoice, setActiveInvoice] = useState(null);
+
+  const [note, setNote] = useState(null);
+  const barcodeInputRef = useRef(null);
+
   const { loading: subLoading, active: subActive } = useSubscription();
-
-  const beepAudio = useMemo(() => {
-    if (typeof Audio === "undefined") return null;
-    return new Audio(`${process.env.PUBLIC_URL || ""}/beep.wav`);
-  }, []);
-
-  const playBeep = () => {
-    if (!beepAudio) return;
-    try { beepAudio.currentTime = 0; beepAudio.play().catch(() => {}); } catch {}
-  };
 
   function bildir(n) {
     setNote(n);
-    setTimeout(() => setNote(null), 3500);
-  }
-
-  // Veri Yükleme
-  async function yenile(isSilent = false) {
-    if (!isSilent) setLoading(true);
-    try {
-      const [prods, custs, recentSales] = await Promise.all([
-        listProductsForCurrentUser(), 
-        listCustomers(), 
-        listRecentSales(50) 
-      ]);
-
-      setProducts(Array.isArray(prods) ? prods : []);
-      setCustomers(Array.isArray(custs) ? custs : []);
-
-      // Satış verisini normalize et
-      const normalized = (Array.isArray(recentSales) ? recentSales : []).map((s) => {
-        const itemsArr = Array.isArray(s.items) ? s.items : [];
-        const items = itemsArr.map((it) => {
-          const qty = Number(it.qty ?? 1);
-          let price = Number(it.price ?? 0);
-          return {
-            name: it.name ?? "Ürün",
-            price,
-            qty,
-            productId: it.productId ?? null,
-          };
-        });
-
-        const totalVal = Number(s.totals?.total ?? s.total ?? 0);
-
-        return {
-          id: String(s.id),
-          createdAt: s.createdAt ?? s.date,
-          saleType: s.saleType ?? "cash",
-          items,
-          totals: { total: totalVal },
-        };
-      });
-
-      normalized.sort((a, b) => parseDateKey(b.createdAt) - parseDateKey(a.createdAt));
-      setSalesList(normalized);
-    } catch (err) {
-      bildir({ type: "error", title: "Hata", message: "Veriler yüklenemedi." });
-    } finally {
-      if (!isSilent) setLoading(false);
-    }
+    const dur = n?.duration || (n?.actionText ? 8000 : 4000);
+    setTimeout(() => setNote(null), dur);
   }
 
   useEffect(() => {
-    yenile();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const initialSnap = getMasterStoreSnapshot();
+    if (initialSnap.products && initialSnap.products.length > 0) {
+      setProducts(initialSnap.products);
+      setCustomers(initialSnap.customers || []);
+      setSalesHistory(initialSnap.sales || []);
+      setLoading(false);
+    }
+
+    const unsubscribe = subscribeToMasterStore((store) => {
+      if (store) {
+        setProducts(store.products || []);
+        setCustomers(store.customers || []);
+        setSalesHistory(store.sales || []);
+        setLoading(false);
+      }
+    });
+
+    syncFullMasterStore(false).then((store) => {
+      if (store) {
+        setProducts(store.products || []);
+        setCustomers(store.customers || []);
+        setSalesHistory(store.sales || []);
+      }
+      setLoading(false);
+    }).catch(() => setLoading(false));
+
+    return () => unsubscribe();
   }, []);
 
-  const totals = useMemo(() => {
-    const sub = cart.reduce((s, it) => s + (it.price || 0) * (it.qty || 0), 0);
-    return { subtotal: sub, total: sub };
+  function moneyFormat(val) {
+    return Number(val || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" });
+  }
+
+  const selectedCustomer = useMemo(() => {
+    return customers.find(c => c.id === selectedCustomerId);
+  }, [customers, selectedCustomerId]);
+
+  const filteredCustomers = useMemo(() => {
+    if (!custSearchTerm) return customers;
+    const t = custSearchTerm.toLowerCase();
+    return customers.filter(c => (c.name || "").toLowerCase().includes(t) || (c.phone || "").includes(t));
+  }, [customers, custSearchTerm]);
+
+  function sepeteEkle(product) {
+    if (!subActive) return bildir({ type: "error", title: "Kısıtlı Mod", message: "Satış yapmak için lisans anahtarınızı etkinleştirin." });
+    if ((product.stock || 0) <= 0) {
+      return bildir({ type: "warning", title: "Stok Yetersiz", message: `"${product.name}" ürünü stokta tükenmiştir.` });
+    }
+
+    setCart(prevCart => {
+      const existing = prevCart.find(item => item.id === product.id);
+      if (existing) {
+        if (existing.qty >= product.stock) {
+          bildir({ type: "warning", title: "Stok Limiti", message: `En fazla ${product.stock} adet eklenebilir.` });
+          return prevCart;
+        }
+        return prevCart.map(item => item.id === product.id ? { ...item, qty: item.qty + 1 } : item);
+      }
+      return [...prevCart, { ...product, qty: 1 }];
+    });
+  }
+
+  function sepetMiktarDegistir(id, delta) {
+    setCart(prevCart => {
+      return prevCart.map(item => {
+        if (item.id === id) {
+          const newQty = item.qty + delta;
+          if (newQty <= 0) return null;
+          if (newQty > item.stock) {
+            bildir({ type: "warning", title: "Stok Yetersiz", message: `Maksimum stok ${item.stock} adettir.` });
+            return item;
+          }
+          return { ...item, qty: newQty };
+        }
+        return item;
+      }).filter(Boolean);
+    });
+  }
+
+  function sepettenCikar(id) {
+    setCart(prevCart => prevCart.filter(item => item.id !== id));
+  }
+
+  function handleBarcodeSubmit(e) {
+    e.preventDefault();
+    const code = barcodeInput.trim();
+    if (!code) return;
+
+    const found = products.find(p => p.barcode === code);
+    if (found) {
+      sepeteEkle(found);
+      setBarcodeInput("");
+      bildir({ type: "success", title: "Barkod Okutuldu", message: `"${found.name}" sepete eklendi.` });
+    } else {
+      bildir({ type: "error", title: "Barkod Bulunamadı", message: `"${code}" barkodlu ürün sistemde kayıtlı değil.` });
+    }
+  }
+
+  const cartTotal = useMemo(() => {
+    return cart.reduce((sum, item) => sum + (Number(item.price) * item.qty), 0);
   }, [cart]);
 
-  // Sepet İşlemleri
-  function sepeteEkle(p, qty = 1) {
-    const stok = Number(p.stock || 0);
-    if (stok <= 0) return bildir({ type: "error", title: "Stok Yok", message: `${p.name} stokta kalmadı.` });
+  async function satisiTamamla() {
+    if (!subActive) return;
+    if (cart.length === 0) return bildir({ type: "warning", title: "Sepet Boş", message: "Lütfen önce sepete ürün ekleyiniz." });
+    if (saleType === "credit" && !selectedCustomerId) {
+      return bildir({ type: "error", title: "Müşteri Seçilmedi", message: "Lütfen veresiye satış için bir müşteri seçiniz." });
+    }
 
-    setCart((c) => {
-      const idx = c.findIndex((it) => it.productId === p.id);
-      const mevcut = idx >= 0 ? Number(c[idx].qty) : 0;
+    const currentCart = [...cart];
+    const currentTotal = cartTotal;
+    const currentSaleType = saleType;
+    const currentCustId = selectedCustomerId;
+    const currentCustName = selectedCustomer?.name;
+    const currentCustPhone = selectedCustomer?.phone;
 
-      if (mevcut + qty > stok) {
-        bildir({ type: "error", title: "Yetersiz Stok", message: `Mevcut stok: ${stok}` });
-        return c;
+    const saleItems = currentCart.map(item => ({
+      id: item.id,
+      productId: item.id,
+      name: item.name || "Ürün",
+      qty: Number(item.qty || 1),
+      price: Number(item.price || 0)
+    }));
+
+    // 1. ANINDA 0MS EKRAN VE YEREL CACHE GÜNCELLEMESİ (OPTIMISTIC UI)
+    setCart([]);
+    setSelectedCustomerId("");
+    setCustSearchTerm("");
+
+    const isVeresiye = currentSaleType === "credit";
+    const tempSaleId = `sale_${Date.now()}`;
+    const invoiceData = {
+      saleId: tempSaleId,
+      items: saleItems,
+      total: currentTotal,
+      saleType: currentSaleType,
+      customerName: isVeresiye ? currentCustName : "Perakende Müşteri",
+      customerPhone: isVeresiye ? formatPhone(currentCustPhone) : "",
+      createdAt: new Date().toISOString()
+    };
+
+    updateMemoryStoreOptimistically(store => {
+      // Ürün stoklarını anında yerel düş
+      saleItems.forEach(sItem => {
+        const targetPrd = store.products.find(p => p.id === sItem.productId);
+        if (targetPrd) {
+          targetPrd.stock = Math.max(0, Number(targetPrd.stock || 0) - sItem.qty);
+        }
+      });
+
+      // Müşteri veresiye bakiyesini anında artır
+      if (isVeresiye && currentCustId) {
+        const targetCust = store.customers.find(c => c.id === currentCustId);
+        if (targetCust) {
+          targetCust.balance = Number(targetCust.balance || 0) + currentTotal;
+        }
       }
 
-      if (idx >= 0) {
-        const copy = [...c];
-        copy[idx].qty = mevcut + qty;
-        return copy;
-      }
-      return [{ productId: p.id, name: p.name, price: Number(p.price), qty }, ...c];
+      // Satış kaydını önbelleğe ekle
+      store.sales.unshift({
+        id: tempSaleId,
+        items: saleItems,
+        total: currentTotal,
+        saleType: currentSaleType,
+        customerId: currentCustId || null,
+        customerName: isVeresiye ? currentCustName : null,
+        createdAt: new Date().toISOString()
+      });
+
+      return store;
+    });
+
+    bildir({
+      type: "success",
+      title: "Satış Tamamlandı",
+      message: `${moneyFormat(currentTotal)} tutarındaki satış başarıyla işlendi.`,
+      actionText: "Faturayı Görüntüle",
+      onAction: () => setActiveInvoice(invoiceData)
+    });
+
+    // 2. ARKA PLANDA FIREBASE YAZMA İŞLEMİ (KULLANICI HİÇ BEKLEMEZ)
+    finalizeSaleTransaction({
+      items: saleItems,
+      total: currentTotal,
+      totals: { total: currentTotal },
+      saleType: currentSaleType,
+      paymentType: currentSaleType,
+      customerId: isVeresiye ? currentCustId : null,
+      customerName: isVeresiye ? currentCustName : null
+    }).catch(err => {
+      console.error("Arka plan satış yazma hatası:", err);
+      invalidateAndRefreshMasterCache().catch(() => {});
     });
   }
 
-  function barkodlaEkle(rawCode) {
-    const code = norm(rawCode);
-    if (!code) return false;
+  async function gelirEkle() {
+    if (!subActive) return;
+    const amount = parseFloat(incomeAmount);
+    if (!amount || amount <= 0) return bildir({ type: "warning", title: "Geçersiz Tutar", message: "Lütfen 0'dan büyük tutar giriniz." });
 
-    const match = products.find((x) => {
-      const bc = norm(x.barcode);
-      if (!bc) return false;
-      if (bc === code) return true;
-      if (normDigits(bc) === normDigits(code)) return true;
-      return false;
+    const desc = incomeDesc.trim() || "Kasa Ek Gelir Girişi";
+    setIncomeAmount(""); setIncomeDesc(""); setShowGelirModal(false);
+
+    // 0ms Anında yerel güncelleme
+    updateMemoryStoreOptimistically(store => {
+      store.incomes.unshift({ id: `inc_${Date.now()}`, amount, description: desc, createdAt: new Date().toISOString() });
+      return store;
     });
 
-    if (match) {
-      sepeteEkle(match, 1);
-      playBeep();
-      setScanResult(`Eklendi: ${match.name}`);
-      setTimeout(() => setScanResult(""), 2000);
-      return true; 
-    } else {
-      setScanResult(`Bulunamadı: ${code}`);
-      bildir({ type: "error", title: "Bulunamadı", message: "Ürün kayıtlı değil." });
-      setTimeout(() => setScanResult(""), 2000);
-      return false; 
-    }
+    bildir({ type: "success", title: "Gelir Kaydedildi", message: `${moneyFormat(amount)} kasaya ek gelir olarak işlendi.` });
+
+    addLegacyIncome({ amount, description: desc }).catch(err => console.error("Arka plan gelir hatası:", err));
   }
 
-  // Satış Tamamlama
-  async function satisTamamla() {
-    if (cart.length === 0) return bildir({ type: "error", title: "Boş", message: "Sepet boş." });
-    if (!subActive) return bildir({ type: "error", title: "Abonelik", message: "İşlem için abonelik gerekli." });
-
-    const itemsForSale = cart.map((it) => ({ productId: it.productId, name: it.name, qty: it.qty, price: it.price }));
-    const saleData = { items: itemsForSale, paymentType, customerId: selectedCustomer || null, totals };
-    const cartBackup = [...cart];
-
-    setCart([]); // Optimistik temizlik
-    bildir({ type: "success", title: "Başarılı", message: "Satış tamamlandı." });
-
-    try {
-      await finalizeSaleTransaction(saleData);
-
-      // Veresiye ise yerel state güncelle
-      if (paymentType === "credit" && selectedCustomer) {
-        setCustomers(prev => prev.map(c => 
-          c.id === selectedCustomer ? { ...c, balance: (c.balance || 0) + totals.total } : c
-        ));
-      }
-
-      await yenile(true);
-    } catch (err) {
-      setCart(cartBackup);
-      bildir({ type: "error", title: "Hata", message: err.message });
-    }
-  }
-
-  // Diğer İşlemler
-  function sepettenSil(pid) { setCart(c => c.filter(it => it.productId !== pid)); }
-  function miktarDegis(pid, qty) { setCart(c => c.map(it => it.productId === pid ? { ...it, qty: Math.max(1, qty) } : it)); }
-
-  async function satisDuzenleKaydet() {
+  async function giderEkle() {
     if (!subActive) return;
-    try {
-      await updateSale(editingSale.id, { saleType: editingSale.saleType, totals: { total: Number(editingSale.total) } });
-      setEditingSale(null);
-      await yenile(true);
-      bildir({ type: "success", title: "Güncellendi", message: "Kayıt güncellendi." });
-    } catch (err) {
-      bildir({ type: "error", title: "Hata", message: err.message });
-    }
+    const amount = parseFloat(expenseAmount);
+    if (!amount || amount <= 0) return bildir({ type: "warning", title: "Geçersiz Tutar", message: "Lütfen 0'dan büyük tutar giriniz." });
+
+    const desc = expenseDesc.trim() || "Kasa Gider Çıktısı";
+    setExpenseAmount(""); setExpenseDesc(""); setShowGiderModal(false);
+
+    // 0ms Anında yerel güncelleme
+    updateMemoryStoreOptimistically(store => {
+      store.expenses.unshift({ id: `exp_${Date.now()}`, amount, description: desc, createdAt: new Date().toISOString() });
+      return store;
+    });
+
+    bildir({ type: "info", title: "Gider Kaydedildi", message: `${moneyFormat(amount)} kasadan gider olarak düşüldü.` });
+
+    addLegacyExpense({ amount, description: desc }).catch(err => console.error("Arka plan gider hatası:", err));
   }
 
-  async function satisSilGercek() {
-    if (!subActive) return;
-    try {
-      await deleteSale(confirmDelete.id);
-      setConfirmDelete(null);
-      await yenile(true);
-      bildir({ type: "success", title: "Silindi", message: "Kayıt silindi." });
-    } catch (err) {
-      bildir({ type: "error", title: "Hata", message: err.message });
-    }
-  }
-
-  // --- Modal Açma Fonksiyonları ---
-  function gelirModalAc() {
-    if (!subActive) return bildir({ type: "error", title: "Abonelik", message: "İşlem için abonelik gerekli." });
-    setIncomeAmount("");
-    setIncomeDesc("");
-    setShowIncomeModal(true);
-  }
-
-  function giderModalAc() {
-    if (!subActive) return bildir({ type: "error", title: "Abonelik", message: "İşlem için abonelik gerekli." });
-    setExpenseAmount("");
-    setExpenseDesc("");
-    setShowExpenseModal(true);
-  }
-
-  // Gelir / Gider Kayıt
-  async function gelirKaydet() {
-    const amt = Number(incomeAmount);
-    if (!amt || amt <= 0) return;
-    try {
-      await addLegacyIncome({ amount: amt, description: incomeDesc || "Manuel gelir" });
-      setShowIncomeModal(false);
-      await yenile(true);
-      bildir({ type: "success", title: "Kaydedildi", message: `Gelir: ${amt} TL` });
-    } catch (err) { bildir({ type: "error", title: "Hata", message: err.message }); }
-  }
-
-  async function giderKaydet() {
-    const amt = Number(expenseAmount);
-    if (!amt || amt <= 0) return;
-    try {
-      await addLegacyExpense({ amount: amt, description: expenseDesc || "Manuel gider" });
-      setShowExpenseModal(false);
-      await yenile(true);
-      bildir({ type: "success", title: "Kaydedildi", message: `Gider: ${amt} TL` });
-    } catch (err) { bildir({ type: "error", title: "Hata", message: err.message }); }
-  }
-
-  // Ürün Filtreleme
-  const filteredProducts = products.filter((p) => {
-    const t = search.trim().toLowerCase();
-    if (!t) return true;
-    return (p.name || "").toLowerCase().includes(t) || (p.barcode || "").toLowerCase().includes(t);
+  const filteredProducts = products.filter(p => {
+    const t = searchTerm.toLowerCase();
+    return (
+      (p.name || "").toLowerCase().includes(t) ||
+      (p.barcode || "").toLowerCase().includes(t) ||
+      (p.category || "").toLowerCase().includes(t)
+    );
   });
 
   return (
-    <div className="sl-sayfa">
-      {/* Özel CSS - Resimler için */}
-      <style>{`
-        .sl-urun-medya {
-          width: 100%;
-          height: 100px;
-          background: #f4f6f8;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 6px;
-          margin-bottom: 8px;
-          overflow: hidden;
-          position: relative;
-        }
-        .sl-urun-img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          transition: transform 0.2s;
-        }
-        .sl-urun-kart:hover .sl-urun-img {
-          transform: scale(1.05);
-        }
-        .sl-urun-no-img {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          font-size: 10px;
-          color: #adb5bd;
-          text-transform: uppercase;
-        }
-        .sl-icon-ph {
-          font-size: 24px;
-          margin-bottom: 4px;
-          opacity: 0.5;
-        }
-      `}</style>
+    <div className="page-container">
+      <Toast note={note} onClose={() => setNote(null)} />
 
-      <Bildirim note={note} />
-
-      {!subLoading && !subActive && (
-        <div className="sl-uyari-bar">
-          <span>Abonelik Gerekli.</span> <a href="https://www.stokpro.shop/product-key">Satın Al</a>
-        </div>
+      {activeInvoice && (
+        <InvoiceModal 
+          invoice={activeInvoice} 
+          onClose={() => setActiveInvoice(null)} 
+        />
       )}
 
-      {/* --- SOL PANEL: Ürün Seçimi --- */}
-      <section className="sl-sol-panel">
-        <div className="sl-kart">
-          <h3 className="sl-baslik">Hızlı Satış</h3>
+      {/* ÜST BİLGİ VE HIZLI KASA İŞLEM BUTONLARI */}
+      <div className="prd-card" style={{ marginBottom: '16px', padding: '12px 16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+          <form onSubmit={handleBarcodeSubmit} style={{ display: 'flex', gap: '8px', flex: '1 1 300px' }}>
+            <div className="input-icon-wrapper" style={{ width: '100%' }}>
+              <FiZap className="input-icon" style={{ color: 'var(--warning)' }} />
+              <input 
+                ref={barcodeInputRef}
+                placeholder="Barkod okutun veya yazın (Enter)..." 
+                value={barcodeInput} 
+                onChange={e => setBarcodeInput(e.target.value)} 
+                className="search-input"
+                autoFocus 
+              />
+            </div>
+          </form>
 
-          <div className="sl-araclar">
-            <button 
-              className={`sl-btn ${showCamera ? "kirmizi" : "mavi"}`} 
-              onClick={() => { setShowCamera(!showCamera); setScanResult(""); }}
-            >
-              {showCamera ? "Kamerayı Kapat" : "Barkod Tara"}
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button className="modern-btn success" onClick={() => setShowGelirModal(true)} disabled={!subActive}>
+              <FiTrendingUp size={16} /> + Kasa Ek Gelir
             </button>
-            <input
-              placeholder="Ürün ara..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="sl-input"
+            <button className="modern-btn danger" onClick={() => setShowGiderModal(true)} disabled={!subActive}>
+              <FiTrendingDown size={16} /> - Kasa Gider Çıkışı
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ANA POS İKİ KOLONLU DÜZEN */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '16px' }}>
+        
+        {/* SOL KOLON: ÜRÜN KATALOĞU VE HIZLI ARAMA */}
+        <div className="prd-card">
+          <div className="input-icon-wrapper" style={{ marginBottom: '14px' }}>
+            <FiSearch className="input-icon" />
+            <input 
+              placeholder="Ürün adı, barkod veya kategori arayın..." 
+              value={searchTerm} 
+              onChange={e => setSearchTerm(e.target.value)} 
+              className="search-input" 
             />
           </div>
 
-          {showCamera && (
-            <div className="sl-kamera-kutu">
-              <BarcodeScanner onDetected={barkodlaEkle} />
-            </div>
-          )}
-          {scanResult && <div className="sl-info">{scanResult}</div>}
-
-          <div className="sl-urun-grid">
-            {filteredProducts.map((p) => (
-              <div key={p.id} className="sl-urun-kart" onClick={() => sepeteEkle(p, 1)}>
-                
-                {/* --- GÖRSEL ALANI (EKLENEN KISIM) --- */}
-                <div className="sl-urun-medya">
-                  {p.imageUrl ? (
-                    <img src={p.imageUrl} alt={p.name} className="sl-urun-img" />
-                  ) : (
-                    <div className="sl-urun-no-img">
-                       <MdImageNotSupported className="sl-icon-ph"/>
-                       <span>Resim Yok</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="sl-urun-baslik">{p.name}</div>
-                <div className="sl-urun-detay">
-                  <span className="sl-stok-etiket">Stok: {p.stock}</span>
-                  <span className="sl-fiyat">{Number(p.price).toLocaleString("tr-TR", {style:"currency", currency:"TRY"})}</span>
-                </div>
-              </div>
-            ))}
-            {filteredProducts.length === 0 && <div className="sl-bos-mesaj">Ürün bulunamadı.</div>}
+          <div className="table-responsive-wrapper" style={{ maxHeight: '520px', overflowY: 'auto' }}>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Ürün Adı</th>
+                  <th>Kategori</th>
+                  <th style={{ textAlign: 'right' }}>Fiyat</th>
+                  <th style={{ textAlign: 'center' }}>Stok</th>
+                  <th style={{ textAlign: 'center', width: '90px' }}>Ekle</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredProducts.map(p => (
+                  <tr key={p.id}>
+                    <td>
+                      <strong>{p.name}</strong>
+                    </td>
+                    <td>
+                      <span className="table-badge gray">{p.category || "Genel"}</span>
+                    </td>
+                    <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--success)' }}>
+                      {moneyFormat(p.price)}
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
+                      <span className={`table-badge ${Number(p.stock) <= 0 ? 'red' : Number(p.stock) < 10 ? 'orange' : 'green'}`}>
+                        {p.stock} Adet
+                      </span>
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
+                      <button 
+                        onClick={() => sepeteEkle(p)} 
+                        className="tbl-btn primary icon-only" 
+                        disabled={(p.stock || 0) <= 0 || !subActive}
+                        title="Sepete Ekle"
+                      >
+                        <FiPlus />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
-      </section>
 
-      {/* --- SAĞ PANEL: Sepet ve Geçmiş --- */}
-      <aside className="sl-sag-panel">
+        {/* SAĞ KOLON: SEPET VE ÖDEME SEÇENEKLERİ */}
+        <div className="prd-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div>
+            <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--border-main)', paddingBottom: '10px', marginBottom: '12px' }}>
+              <FiShoppingCart style={{ color: 'var(--primary)' }} /> Satış Sepeti ({cart.length})
+            </h4>
 
-        {/* SEPET */}
-        <div className="sl-kart full-h">
-          <h3 className="sl-baslik">Sepet</h3>
-
-          <div className="sl-sepet-liste">
             {cart.length === 0 ? (
-              <div className="sl-bos-sepet">Sepet boş</div>
+              <div style={{ padding: '3rem 1rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                <FiShoppingCart size={40} style={{ marginBottom: '8px' }} />
+                <p>Sepetiniz boş. Soldaki listeden ürün seçiniz.</p>
+              </div>
             ) : (
-              cart.map((it) => (
-                <div key={it.productId} className="sl-sepet-item">
-                  <div className="sl-item-info">
-                    <div className="sl-item-name">{it.name}</div>
-                    <div className="sl-item-price">
-                      {Number(it.price).toLocaleString("tr-TR", {style:"currency",currency:"TRY"})} x {it.qty}
-                    </div>
-                  </div>
-                  <div className="sl-item-actions">
-                    <input 
-                      type="number" min="1" value={it.qty} 
-                      onChange={(e) => miktarDegis(it.productId, parseInt(e.target.value))}
-                      className="sl-input mini"
-                    />
-                    <button onClick={() => sepettenSil(it.productId)} className="sl-btn icon delete"><IoMdTrash /></button>
-                  </div>
-                </div>
-              ))
+              <div className="table-responsive-wrapper" style={{ maxHeight: '280px', overflowY: 'auto' }}>
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Ürün</th>
+                      <th style={{ textAlign: 'center' }}>Adet</th>
+                      <th style={{ textAlign: 'right' }}>Toplam</th>
+                      <th style={{ width: '40px' }}></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cart.map(item => (
+                      <tr key={item.id}>
+                        <td><strong>{item.name}</strong></td>
+                        <td style={{ textAlign: 'center' }}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                            <button onClick={() => sepetMiktarDegistir(item.id, -1)} className="qty-stepper-btn">-</button>
+                            <span style={{ fontWeight: 800 }}>{item.qty}</span>
+                            <button onClick={() => sepetMiktarDegistir(item.id, 1)} className="qty-stepper-btn">+</button>
+                          </div>
+                        </td>
+                        <td style={{ textAlign: 'right', fontWeight: 700 }}>
+                          {moneyFormat(item.price * item.qty)}
+                        </td>
+                        <td>
+                          <button onClick={() => sepettenCikar(item.id)} className="tbl-btn danger icon-only" style={{ width: '24px', height: '24px' }}>
+                            <FiTrash2 size={12} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
 
-          <div className="sl-sepet-footer">
-            <div className="sl-toplam-satir">
-              <span>Toplam</span>
-              <span className="sl-toplam-tutar">{totals.total.toLocaleString("tr-TR", {style:"currency", currency:"TRY"})}</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '16px', borderTop: '1px solid var(--border-main)', paddingTop: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '1.1rem', fontWeight: 700 }}>Genel Toplam:</span>
+              <span style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--primary)' }}>
+                {moneyFormat(cartTotal)}
+              </span>
             </div>
 
-            <div className="sl-odeme-secim">
-              <div className="sl-toggle-group">
-                <button className={`sl-toggle ${paymentType === "cash" ? "active" : ""}`} onClick={() => setPaymentType("cash")}>Nakit</button>
-                <button className={`sl-toggle ${paymentType === "credit" ? "active" : ""}`} onClick={() => setPaymentType("credit")}>Veresiye</button>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <button 
+                className={`modern-btn ${saleType === "cash" ? "primary" : "secondary"}`}
+                onClick={() => setSaleType("cash")}
+              >
+                <FiDollarSign /> Peşin / Nakit
+              </button>
+              <button 
+                className={`modern-btn ${saleType === "credit" ? "primary" : "secondary"}`}
+                onClick={() => setSaleType("credit")}
+              >
+                <FiUser /> Veresiye Satış
+              </button>
+            </div>
+
+            {/* VERESİYE SATIŞ İÇİN ARANABİLİR VE OKUNAKLI MÜŞTERİ SEÇİCİ */}
+            {saleType === "credit" && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: 'var(--bg-subtle)', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-main)' }}>
+                <label style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <FiUser size={16} /> Veresiye Hesabına İşlenecek Müşteri *
+                </label>
+
+                {selectedCustomer ? (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-card)', padding: '10px 12px', borderRadius: '6px', border: '1.5px solid var(--primary)' }}>
+                    <div>
+                      <strong style={{ fontSize: '0.95rem', display: 'block' }}>{selectedCustomer.name}</strong>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                        {formatPhone(selectedCustomer.phone) || "Telefon Belirtilmedi"} • Bakiye: 
+                        <b style={{ marginLeft: '4px', color: (selectedCustomer.balance || 0) > 0 ? 'var(--danger)' : 'var(--success)' }}>
+                          {moneyFormat(selectedCustomer.balance)}
+                        </b>
+                      </span>
+                    </div>
+                    <button 
+                      type="button"
+                      onClick={() => setSelectedCustomerId("")}
+                      className="modern-btn secondary" 
+                      style={{ padding: '4px 10px', fontSize: '0.75rem', fontWeight: 700 }}
+                    >
+                      Değiştir
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <div className="input-icon-wrapper">
+                      <FiSearch className="input-icon" />
+                      <input 
+                        placeholder="Müşteri adı veya telefon ile hızlı ara..." 
+                        value={custSearchTerm} 
+                        onChange={e => setCustSearchTerm(e.target.value)} 
+                        className="search-input" 
+                        style={{ fontSize: '0.85rem' }}
+                      />
+                    </div>
+
+                    <div style={{ maxHeight: '160px', overflowY: 'auto', border: '1px solid var(--border-main)', borderRadius: '6px', background: 'var(--bg-card)' }}>
+                      {filteredCustomers.length === 0 ? (
+                        <div style={{ padding: '12px', textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                          Eşleşen müşteri bulunamadı.
+                        </div>
+                      ) : (
+                        filteredCustomers.map(c => (
+                          <div 
+                            key={c.id} 
+                            onClick={() => setSelectedCustomerId(c.id)}
+                            style={{ padding: '8px 12px', borderBottom: '1px solid var(--border-subtle)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                            className="hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors"
+                          >
+                            <div>
+                              <strong style={{ fontSize: '0.85rem', display: 'block' }}>{c.name}</strong>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{formatPhone(c.phone) || "Telefon Yok"}</span>
+                            </div>
+                            <span className={`table-badge ${(c.balance || 0) > 0 ? 'red' : (c.balance || 0) < 0 ? 'green' : 'gray'}`} style={{ fontSize: '0.75rem' }}>
+                              {moneyFormat(c.balance)}
+                            </span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <button 
+              onClick={satisiTamamla} 
+              className="modern-btn success" 
+              style={{ width: '100%', padding: '12px', fontSize: '1rem', fontWeight: 900 }}
+              disabled={cart.length === 0 || !subActive}
+            >
+              <FiCheckCircle size={20} /> Satışı Tamamla
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      {/* EK GELİR POPUP MODALI */}
+      {showGelirModal && (
+        <div className="modal-overlay">
+          <div className="modal-card">
+            <div className="modal-header">
+              <h4><FiTrendingUp style={{ color: 'var(--success)' }} /> Kasa Ek Gelir Girişi</h4>
+              <button onClick={() => setShowGelirModal(false)} className="close-btn"><FiX /></button>
+            </div>
+            <div className="modal-body">
+              <label>Gelir Tutarı (₺) *</label>
+              <input type="number" placeholder="0.00" value={incomeAmount} onChange={e => setIncomeAmount(e.target.value)} className="modern-input" autoFocus />
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '10px' }}>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700 }}>Hızlı Açıklama Seçenekleri:</label>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  {["Kasa Devir", "Sermaye İlavesi", "Eski Alacak Tahsilatı", "Hurda / Atık Satışı", "Ortak Katkısı"].map((chip, idx) => (
+                    <button 
+                      key={idx}
+                      type="button" 
+                      onClick={() => setIncomeDesc(chip)} 
+                      className="tbl-btn secondary"
+                      style={{ padding: '4px 10px', fontSize: '0.75rem', fontWeight: 700, borderRadius: '16px' }}
+                    >
+                      + {chip}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              {paymentType === "credit" && (
-                <select value={selectedCustomer} onChange={(e) => setSelectedCustomer(e.target.value)} className="sl-input">
-                  <option value="">Müşteri Seçin</option>
-                  {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-              )}
+              <label style={{ marginTop: '10px' }}>Açıklama / Not</label>
+              <textarea placeholder="Gelir detayını yazabilir veya yukarıdaki seçeneklerden tıklayabilirsiniz..." value={incomeDesc} onChange={e => setIncomeDesc(e.target.value)} className="modern-textarea" />
             </div>
-
-            <button className="sl-btn mavi buyuk" onClick={satisTamamla} disabled={!subActive}>Satışı Tamamla</button>
-
-            <div className="sl-hizli-btnlar">
-              <button className="sl-btn hayalet" onClick={gelirModalAc} disabled={!subActive}>+ Gelir</button>
-              <button className="sl-btn hayalet" onClick={giderModalAc} disabled={!subActive}>- Gider</button>
+            <div className="modal-footer">
+              <button onClick={() => setShowGelirModal(false)} className="modern-btn ghost">Vazgeç</button>
+              <button onClick={gelirEkle} className="modern-btn success">Gelir Kaydet</button>
             </div>
           </div>
         </div>
+      )}
 
-        {/* SON İŞLEMLER */}
-        <div className="sl-kart">
-          <h4 className="sl-baslik-kucuk">Son İşlemler</h4>
-          <div className="sl-gecmis-liste">
-            {salesList.slice(0, 10).map((s) => (
-              <div key={s.id} className="sl-gecmis-item">
-                <div className="sl-gecmis-info">
-                  <span className="sl-gecmis-tutar">{Number(s.totals.total).toLocaleString("tr-TR",{style:"currency",currency:"TRY"})}</span>
-                  <small>{saleTypeLabel(s.saleType)} • {new Date(s.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</small>
-                </div>
-                <div className="sl-gecmis-aks">
-                  <button onClick={() => { setEditingSale({id:s.id, saleType:s.saleType, total:s.totals.total})}} className="sl-btn icon edit"><MdEdit /></button>
-                  <button onClick={() => setConfirmDelete({id:s.id})} className="sl-btn icon delete"><IoMdTrash /></button>
+      {/* GİDER POPUP MODALI */}
+      {showGiderModal && (
+        <div className="modal-overlay">
+          <div className="modal-card">
+            <div className="modal-header">
+              <h4><FiTrendingDown style={{ color: 'var(--danger)' }} /> Kasa Gider Çıkışı</h4>
+              <button onClick={() => setShowGiderModal(false)} className="close-btn"><FiX /></button>
+            </div>
+            <div className="modal-body">
+              <label>Gider Tutarı (₺) *</label>
+              <input type="number" placeholder="0.00" value={expenseAmount} onChange={e => setExpenseAmount(e.target.value)} className="modern-input" autoFocus />
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '10px' }}>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700 }}>Hızlı Açıklama Seçenekleri:</label>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  {["Dükkan Kirası", "Elektrik / Su / İnternet", "Personel / Yemek", "Mal Alım Ödemesi", "Kargo / Nakliye", "Tedarikçi Ödemesi"].map((chip, idx) => (
+                    <button 
+                      key={idx}
+                      type="button" 
+                      onClick={() => setExpenseDesc(chip)} 
+                      className="tbl-btn secondary"
+                      style={{ padding: '4px 10px', fontSize: '0.75rem', fontWeight: 700, borderRadius: '16px' }}
+                    >
+                      + {chip}
+                    </button>
+                  ))}
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
 
-      </aside>
-
-      {/* --- MODALLAR --- */}
-
-      {/* Gelir Modalı */}
-      {showIncomeModal && (
-        <div className="sl-modal-overlay">
-          <div className="sl-modal small">
-            <h4>Gelir Ekle</h4>
-            <input placeholder="Tutar (TL)" type="number" value={incomeAmount} onChange={(e)=>setIncomeAmount(e.target.value)} className="sl-input" />
-            <textarea 
-              placeholder="Açıklama (Opsiyonel)" 
-              value={incomeDesc} 
-              onChange={(e)=>setIncomeDesc(e.target.value)} 
-              className="sl-input sl-textarea-expand"
-            />
-            <div className="sl-modal-footer">
-              <button onClick={()=>setShowIncomeModal(false)} className="sl-btn hayalet">İptal</button>
-              <button onClick={gelirKaydet} className="sl-btn mavi">Kaydet</button>
+              <label style={{ marginTop: '10px' }}>Açıklama / Not</label>
+              <textarea placeholder="Gider detayını yazabilir veya yukarıdaki seçeneklerden tıklayabilirsiniz..." value={expenseDesc} onChange={e => setExpenseDesc(e.target.value)} className="modern-textarea" />
+            </div>
+            <div className="modal-footer">
+              <button onClick={() => setShowGiderModal(false)} className="modern-btn ghost">Vazgeç</button>
+              <button onClick={giderEkle} className="modern-btn danger">Gider Kaydet</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Gider Modalı */}
-      {showExpenseModal && (
-        <div className="sl-modal-overlay">
-          <div className="sl-modal small">
-            <h4>Gider Ekle</h4>
-            <input placeholder="Tutar (TL)" type="number" value={expenseAmount} onChange={(e)=>setExpenseAmount(e.target.value)} className="sl-input" />
-            <textarea 
-              placeholder="Açıklama (Opsiyonel)" 
-              value={expenseDesc} 
-              onChange={(e)=>setExpenseDesc(e.target.value)} 
-              className="sl-input sl-textarea-expand"
-            />
-            <div className="sl-modal-footer">
-              <button onClick={()=>setShowExpenseModal(false)} className="sl-btn hayalet">İptal</button>
-              <button onClick={giderKaydet} className="sl-btn mavi">Kaydet</button>
-            </div>
-          </div>
-        </div>
+      {/* FATURA VE FİŞ MODALI */}
+      {activeInvoice && (
+        <InvoiceModal 
+          invoiceData={activeInvoice} 
+          onClose={() => setActiveInvoice(null)} 
+        />
       )}
 
-      {/* Diğer Modallar */}
-      {editingSale && (
-        <div className="sl-modal-overlay">
-          <div className="sl-modal small">
-            <h4>Satış Düzenle</h4>
-            <select value={editingSale.saleType} onChange={(e)=>setEditingSale(s=>({...s, saleType:e.target.value}))} className="sl-input">
-              <option value="cash">Nakit</option>
-              <option value="credit">Veresiye</option>
-            </select>
-            <input type="number" value={editingSale.total} onChange={(e)=>setEditingSale(s=>({...s, total:e.target.value}))} className="sl-input" />
-            <div className="sl-modal-footer">
-              <button onClick={()=>setEditingSale(null)} className="sl-btn hayalet">İptal</button>
-              <button onClick={satisDuzenleKaydet} className="sl-btn mavi">Güncelle</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {confirmDelete && (
-        <div className="sl-modal-overlay">
-          <div className="sl-modal small">
-            <h4>Silinsin mi?</h4>
-            <p>Bu satış kaydı kalıcı olarak silinecek.</p>
-            <div className="sl-modal-footer">
-              <button onClick={()=>setConfirmDelete(null)} className="sl-btn hayalet">Vazgeç</button>
-              <button onClick={satisSilGercek} className="sl-btn kirmizi">Sil</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
-

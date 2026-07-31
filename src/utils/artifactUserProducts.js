@@ -1,7 +1,5 @@
 // src/utils/artifactUserProducts.js
 // Products helpers for artifacts/{ARTIFACT_DOC_ID}/users/{uid}/products
-// NOTE: "cost" field removed from add/update payloads.
-// Added "imageUrl" support.
 
 import {
   collection,
@@ -16,6 +14,7 @@ import {
 import { db, firebaseEnabled } from "../firebase";
 import { auth } from "../firebase";
 import { ARTIFACT_DOC_ID } from "../config";
+import { invalidateAndRefreshMasterCache } from "./masterDataCache";
 
 function ensureDb() {
   if (!firebaseEnabled || !db) throw new Error("Firestore not initialized.");
@@ -52,10 +51,13 @@ export async function addProduct(product) {
     price: Number(product.price || 0),
     stock: Number(product.stock || 0),
     category: product.category ? String(product.category) : null,
-    imageUrl: product.imageUrl ? String(product.imageUrl) : null, // EKLENDİ
+    imageUrl: product.imageUrl ? String(product.imageUrl) : null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   });
+
+  // Master Cache Yenile
+  invalidateAndRefreshMasterCache().catch(() => {});
   return ref.id;
 }
 
@@ -72,13 +74,15 @@ export async function updateProduct(productId, updates = {}) {
   if (typeof updates.stock !== "undefined") toUpdate.stock = Number(updates.stock || 0);
   if (typeof updates.category !== "undefined") toUpdate.category = updates.category ? String(updates.category) : null;
   
-  // EKLENDİ: Görsel güncelleme kontrolü
   if (typeof updates.imageUrl !== "undefined") {
     toUpdate.imageUrl = updates.imageUrl ? String(updates.imageUrl) : null;
   }
 
   toUpdate.updatedAt = new Date().toISOString();
   await updateDoc(ref, toUpdate);
+
+  // Master Cache Yenile
+  invalidateAndRefreshMasterCache().catch(() => {});
   return true;
 }
 
@@ -88,6 +92,9 @@ export async function deleteProduct(productId) {
   if (!productId) throw new Error("productId gerekli.");
   const ref = doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "products", productId);
   await deleteDoc(ref);
+
+  // Master Cache Yenile
+  invalidateAndRefreshMasterCache().catch(() => {});
   return true;
 }
 

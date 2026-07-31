@@ -1,7 +1,8 @@
-import "../styles/ForgotPassword.css";
+"use client";
+
 import React, { useState } from "react";
 import { getAuth, sendPasswordResetEmail } from "firebase/auth";
-import { Link } from "react-router-dom"; // Geri dön linki için
+import Link from "next/link";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -26,7 +27,7 @@ export default function ForgotPassword() {
         type: "success",
         msg: "Sıfırlama bağlantısı gönderildi. Lütfen e-postanızı kontrol edin.",
       });
-      setEmail(""); // Başarılıysa inputu temizle
+      setEmail("");
     } catch (err) {
       let message = "İşlem başarısız.";
       if (err.code === "auth/user-not-found") message = "Bu e-posta ile kayıtlı kullanıcı yok.";
@@ -46,8 +47,6 @@ export default function ForgotPassword() {
       </p>
       
       <form onSubmit={handleSubmit} className="fp-form" noValidate>
-        
-        {/* Floating Label Input */}
         <div className="fp-input-grup">
           <input
             className="fp-input"
@@ -74,9 +73,8 @@ export default function ForgotPassword() {
       </form>
 
       <div className="fp-geri-don">
-        <Link to="/login" className="fp-link">← Giriş ekranına dön</Link>
+        <Link href="/login" className="fp-link">← Giriş ekranına dön</Link>
       </div>
     </div>
   );
 }
-

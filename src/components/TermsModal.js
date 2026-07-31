@@ -1,28 +1,26 @@
+"use client";
+
 import React, { useEffect, useState } from "react";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { useLocation } from "react-router-dom"; // <-- YENİ: Konum kontrolü için
+import { usePathname } from "next/navigation";
 import { getUserProfile, updateUserProfile } from "../utils/firebaseHelpers";
 import { FiCheckCircle, FiLock } from "react-icons/fi";
-import "../styles/TermsModal.css";
 
 const TermsModal = () => {
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
   
-  // Checkbox durumları
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const auth = getAuth();
-  const location = useLocation(); // <-- YENİ: Şu anki sayfayı al
+  const pathname = usePathname();
 
-  // Modalın görünmemesi gereken sayfalar (Kullanıcı bunları okumaya çalışıyor olabilir)
   const EXCLUDED_PATHS = ["/privacy-policy", "/terms-of-service"];
 
   useEffect(() => {
-    // Eğer kullanıcı yasal sayfalardaysa modalı hiç tetikleme
-    if (EXCLUDED_PATHS.includes(location.pathname)) {
+    if (EXCLUDED_PATHS.includes(pathname)) {
       setShowModal(false);
       return;
     }
@@ -35,8 +33,6 @@ const TermsModal = () => {
 
       try {
         const profile = await getUserProfile(currentUser.uid);
-        
-        // Onaylanmamışsa göster
         if (!profile || profile.termsAccepted !== true) {
           setShowModal(true);
         }
@@ -48,7 +44,7 @@ const TermsModal = () => {
     });
 
     return () => unsubscribe();
-  }, [auth, location.pathname]); // location.pathname değiştiğinde tekrar kontrol et
+  }, [auth, pathname]);
 
   const handleConfirm = async () => {
     const user = auth.currentUser;
@@ -72,8 +68,7 @@ const TermsModal = () => {
     }
   };
 
-  // Yasal sayfalardaysak veya yükleniyorsa gösterme
-  if (loading || !showModal || EXCLUDED_PATHS.includes(location.pathname)) return null;
+  if (loading || !showModal || EXCLUDED_PATHS.includes(pathname)) return null;
 
   return (
     <div className="terms-overlay">
@@ -99,7 +94,6 @@ const TermsModal = () => {
               {termsAccepted && <FiCheckCircle />}
             </span>
             <span className="text">
-              {/* target="_blank" ile yeni sekmede açıyoruz ama garanti olsun diye location kontrolü de koyduk */}
               <a href="/terms-of-service" target="_blank" rel="noreferrer">Hizmet Şartları</a>'nı okudum ve kabul ediyorum.
             </span>
           </label>

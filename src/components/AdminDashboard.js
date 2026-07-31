@@ -1,5 +1,6 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
-import '../styles/AdminDashboard.css';
 import { auth, db } from '../firebase';
 import { 
   doc, 
@@ -13,25 +14,22 @@ import {
 } from "firebase/firestore";
 import { MdSecurity, MdLockOutline, MdPersonSearch, MdHistory } from "react-icons/md";
 
-// SENİN UID'N
 const MASTER_ADMIN_UID = "p4h4hZYTtaPBk6kp1UUfRA7z2px2";
-const ARTIFACT_ID = process.env.REACT_APP_FIREBASE_ARTIFACTS_COLLECTION || "default_artifact";
+const ARTIFACT_ID = process.env.NEXT_PUBLIC_FIREBASE_ARTIFACTS_COLLECTION || process.env.REACT_APP_FIREBASE_ARTIFACTS_COLLECTION || "1:330292329201:web:d19827937fb863ea490750";
 
 const AdminDashboard = () => {
   const [authState, setAuthState] = useState('checking');
   const [pinInput, setPinInput] = useState('');
   const [storedPin, setStoredPin] = useState(null);
   
-  // Veri State'leri
-  const [usersList, setUsersList] = useState([]); // Sol panel için liste
-  const [filteredUsers, setFilteredUsers] = useState([]); // Arama sonucu
+  const [usersList, setUsersList] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   
-  const [selectedUser, setSelectedUser] = useState(null); // Seçili Kullanıcı
-  const [targetLogs, setTargetLogs] = useState([]); // Seçili kişinin son 10 işlemi
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [targetLogs, setTargetLogs] = useState([]);
   const [loadingTarget, setLoadingTarget] = useState(false);
 
-  // 1. GİRİŞ VE GÜVENLİK
   useEffect(() => {
     const checkAccess = async () => {
       const user = auth.currentUser;
@@ -66,7 +64,6 @@ const AdminDashboard = () => {
     else { alert("ERİŞİM REDDEDİLDİ"); setPinInput(''); }
   };
 
-  // 2. KULLANICI LİSTESİNİ ÇEK (Sadece Listeyi Alır)
   useEffect(() => {
     if (authState !== 'unlocked') return;
     
@@ -84,7 +81,6 @@ const AdminDashboard = () => {
     fetchUsers();
   }, [authState]);
 
-  // 3. ARAMA FONKSİYONU
   const handleSearch = (e) => {
     const term = e.target.value.toLowerCase();
     setSearchTerm(term);
@@ -95,21 +91,18 @@ const AdminDashboard = () => {
     setFilteredUsers(filtered);
   };
 
-  // 4. HEDEF SEÇME VE LOGLARI ÇEKME (KRİTİK KISIM)
   const selectTarget = async (user) => {
     setSelectedUser(user);
     setLoadingTarget(true);
     setTargetLogs([]);
 
     try {
-      // A) Son 10 Ürün (Ürün Ekleme İşlemi)
       const pQuery = query(
         collection(db, "artifacts", ARTIFACT_ID, "users", user.uid, "products"), 
         orderBy('createdAt', 'desc'), 
         limit(10)
       );
       
-      // B) Son 10 Satış (Satış İşlemi)
       const sQuery = query(
         collection(db, "artifacts", ARTIFACT_ID, "users", user.uid, "sales"), 
         orderBy('createdAt', 'desc'), 
@@ -120,18 +113,16 @@ const AdminDashboard = () => {
 
       let logs = [];
 
-      // Ürünleri listeye ekle
       pSnap.forEach(doc => {
         logs.push({
           id: doc.id,
           type: 'ÜRÜN_EKLEME',
           desc: doc.data().name || 'İsimsiz Ürün',
-          time: doc.data().createdAt, // String ISO veya Timestamp olabilir
+          time: doc.data().createdAt,
           detail: `${doc.data().price}₺ | Stok: ${doc.data().stock}`
         });
       });
 
-      // Satışları listeye ekle
       sSnap.forEach(doc => {
         logs.push({
           id: doc.id,
@@ -142,10 +133,7 @@ const AdminDashboard = () => {
         });
       });
 
-      // Tarihe göre sırala (En yeniden en eskiye)
       logs.sort((a, b) => new Date(b.time) - new Date(a.time));
-
-      // Sadece en son 10 tanesini al
       setTargetLogs(logs.slice(0, 10));
 
     } catch (err) {
@@ -156,7 +144,6 @@ const AdminDashboard = () => {
     }
   };
 
-  // --- RENDER ---
   if (authState === 'checking') return <div className="hacker-wrapper"><div className="loading">SİSTEM BAŞLATILIYOR...</div></div>;
   
   if (authState === 'unauthorized') return (
@@ -201,32 +188,42 @@ const AdminDashboard = () => {
 
       <div className="grid-container">
         
-        {/* SOL PANEL: KULLANICI LİSTESİ */}
+        {/* SOL PANEL: KULLANICI TABLOSU */}
         <div className="cyber-card">
-          <h3 className="card-title">{'>'} TESPİT EDİLEN KULLANICILAR ({filteredUsers.length})</h3>
-          <ul className="data-list">
-            {filteredUsers.map((u) => (
-              <li 
-                key={u.uid} 
-                className="data-item" 
-                onClick={() => selectTarget(u)}
-                style={{background: selectedUser?.uid === u.uid ? '#003300' : 'transparent'}}
-              >
-                <span className="id-tag">USR</span>
-                <div style={{display:'flex', flexDirection:'column', width:'100%'}}>
-                  <span className="value">{u.email}</span>
-                  <span className="info" style={{fontSize:'0.7rem'}}>UID: {u.uid.slice(0,12)}...</span>
-                </div>
-                <button className="cyber-btn" style={{width:'auto', padding:'5px 10px', fontSize:'0.8rem', marginTop:0}}>SEÇ</button>
-              </li>
-            ))}
-          </ul>
+          <h3 className="card-title">{'>'} TESPİT EDİLEN KULLANICILAR TABLOSU ({filteredUsers.length})</h3>
+          <div className="table-responsive-wrapper" style={{ background: '#0a0a0a', borderColor: '#00ff00' }}>
+            <table className="data-table" style={{ color: '#00ff00' }}>
+              <thead>
+                <tr>
+                  <th style={{ color: '#00ff00', borderBottomColor: '#00ff00' }}>E-Posta</th>
+                  <th style={{ color: '#00ff00', borderBottomColor: '#00ff00' }}>UID</th>
+                  <th style={{ color: '#00ff00', borderBottomColor: '#00ff00', textAlign: 'center' }}>Eylem</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredUsers.map((u) => (
+                  <tr 
+                    key={u.uid} 
+                    style={{ background: selectedUser?.uid === u.uid ? '#003300' : 'transparent', borderBottomColor: '#003300' }}
+                  >
+                    <td><strong>{u.email}</strong></td>
+                    <td style={{ fontSize: '0.8rem', fontFamily: 'monospace' }}>{u.uid.slice(0, 14)}...</td>
+                    <td style={{ textAlign: 'center' }}>
+                      <button className="cyber-btn" style={{ width: 'auto', padding: '4px 8px', fontSize: '0.75rem' }} onClick={() => selectTarget(u)}>
+                        SEÇ
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        {/* SAĞ PANEL: SEÇİLİ KİŞİNİN LOGLARI */}
+        {/* SAĞ PANEL: SEÇİLİ KİŞİNİN LOG TABLOSU */}
         <div className="cyber-card">
           <h3 className="card-title">
-            {'>'} {selectedUser ? `HEDEF ANALİZİ: ${selectedUser.email}` : 'HEDEF SEÇİLMESİ BEKLENİYOR...'}
+            {'>'} {selectedUser ? `HEDEF LOG TABLOSU: ${selectedUser.email}` : 'HEDEF SEÇİLMESİ BEKLENİYOR...'}
           </h3>
           
           {!selectedUser ? (
@@ -237,27 +234,38 @@ const AdminDashboard = () => {
           ) : loadingTarget ? (
             <div className="loading">VERİLER DEŞİFRE EDİLİYOR...</div>
           ) : (
-            <ul className="data-list">
+            <div className="table-responsive-wrapper" style={{ background: '#0a0a0a', borderColor: '#00ff00' }}>
               {targetLogs.length === 0 ? (
-                 <div style={{textAlign:'center', marginTop:20}}>BU KULLANICIYA AİT KAYIT BULUNAMADI.</div>
+                <div style={{textAlign:'center', padding: '2rem'}}>BU KULLANICIYA AİT KAYIT BULUNAMADI.</div>
               ) : (
-                targetLogs.map((log, i) => (
-                  <li key={i} className="data-item">
-                    <span className="id-tag" style={{width:'80px', color: log.type === 'SATIŞ_İŞLEMİ' ? '#ffcc00' : '#00ccff'}}>
-                      [{log.type === 'SATIŞ_İŞLEMİ' ? 'SATIŞ' : 'EKLE'}]
-                    </span>
-                    <div style={{display:'flex', flexDirection:'column', width:'100%'}}>
-                      <span className="value">{log.desc}</span>
-                      <span className="info">{log.detail}</span>
-                    </div>
-                    <span className="date">
-                      {new Date(log.time).toLocaleDateString()} <br/>
-                      {new Date(log.time).toLocaleTimeString()}
-                    </span>
-                  </li>
-                ))
+                <table className="data-table" style={{ color: '#00ff00' }}>
+                  <thead>
+                    <tr>
+                      <th style={{ color: '#00ff00', borderBottomColor: '#00ff00' }}>Tür</th>
+                      <th style={{ color: '#00ff00', borderBottomColor: '#00ff00' }}>Açıklama</th>
+                      <th style={{ color: '#00ff00', borderBottomColor: '#00ff00' }}>Detay</th>
+                      <th style={{ color: '#00ff00', borderBottomColor: '#00ff00' }}>Zaman</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {targetLogs.map((log, i) => (
+                      <tr key={i} style={{ borderBottomColor: '#003300' }}>
+                        <td>
+                          <span className={`table-badge ${log.type === 'SATIŞ_İŞLEMİ' ? 'orange' : 'blue'}`}>
+                            {log.type === 'SATIŞ_İŞLEMİ' ? 'SATIŞ' : 'EKLE'}
+                          </span>
+                        </td>
+                        <td>{log.desc}</td>
+                        <td style={{ fontSize: '0.85rem' }}>{log.detail}</td>
+                        <td style={{ fontSize: '0.8rem', fontFamily: 'monospace' }}>
+                          {new Date(log.time).toLocaleDateString()} {new Date(log.time).toLocaleTimeString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               )}
-            </ul>
+            </div>
           )}
         </div>
 

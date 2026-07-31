@@ -1,4 +1,5 @@
 export function initTheme() {
+  if (typeof window === "undefined") return "light";
   const saved = localStorage.getItem("theme");
   if (saved) {
     document.documentElement.setAttribute("data-theme", saved);
@@ -12,7 +13,10 @@ export function initTheme() {
 
 export function toggleTheme(current) {
   const next = current === "light" ? "dark" : "light";
-  localStorage.setItem("theme", next);
-  document.documentElement.setAttribute("data-theme", next);
+  if (typeof window !== "undefined") {
+    localStorage.setItem("theme", next);
+    document.documentElement.setAttribute("data-theme", next);
+    window.dispatchEvent(new CustomEvent("themeChange", { detail: next }));
+  }
   return next;
 }

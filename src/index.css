@@ -1,5 +1,0 @@
-/* Global CSS - lightweight and responsive */
-html,body,#root{height:100%}
-body{margin:0;background:transparent;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
-a{color:inherit;text-decoration:none}
-input,button,select,textarea{font-family:inherit}

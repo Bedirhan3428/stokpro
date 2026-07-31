@@ -1,68 +1,56 @@
+"use client";
+
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, collection, getDocs } from "firebase/firestore"; 
 import { 
   FiArrowRight, FiSearch, FiAlertTriangle, FiTrendingDown, 
-  FiAward, FiCheckCircle, FiBox, FiUsers, FiPieChart, FiDownload, FiShare
+  FiAward, FiCheckCircle, FiBox, FiUsers, FiPieChart, FiDownload, FiShare,
+  FiShield, FiFileText, FiDollarSign, FiZap, FiLock
 } from "react-icons/fi";
-import "../styles/Home.css";
 
-// Firebase App ID
 const appId = (typeof window !== 'undefined' && window.__app_id) 
   ? window.__app_id 
-  : (process.env.REACT_APP_FIREBASE_ARTIFACTS_COLLECTION || 'default-app-id');
+  : (process.env.NEXT_PUBLIC_FIREBASE_ARTIFACTS_COLLECTION || process.env.REACT_APP_FIREBASE_ARTIFACTS_COLLECTION || '1:330292329201:web:d19827937fb863ea490750');
 
-// --- Animasyonlu Sayaç ve Grafik Bileşeni ---
 const TrustStats = () => {
   const [count, setCount] = useState(0);
   const [targetCount, setTargetCount] = useState(0);
 
   useEffect(() => {
     const fetchUserCount = async () => {
-      // 1. ÖNCEKİ KAYITLI VERİYİ KONTROL ET (Offline Desteği)
       const cachedCount = localStorage.getItem('cached_user_count');
-      
-      // Eğer hafızada varsa, hemen onu hedef olarak belirle (İnternet yoksa bile bu görünecek)
       if (cachedCount) {
         setTargetCount(Number(cachedCount));
       } else {
-        // Hafızada hiç yoksa 10 gibi makul bir sayıyla başla ki 0 görünmesin
-        setTargetCount(10);
+        setTargetCount(100);
       }
 
       try {
         const db = getFirestore();
         const usersRef = collection(db, "artifacts", appId, "users");
-        
-        // İnternetten güncel veriyi çekmeyi dene
         const snapshot = await getDocs(usersRef);
         const realCount = snapshot.size;
 
         if (realCount > 0) {
-          // 2. YENİ VERİYİ GÜNCELLE VE KAYDET
           setTargetCount(realCount);
           localStorage.setItem('cached_user_count', realCount.toString());
-          console.log(`[TrustStats] Online: ${realCount} kullanıcı bulundu.`);
         }
-        
       } catch (error) {
-        console.warn("İnternet yok veya veri çekilemedi, önbellekteki veri kullanılıyor:", error);
-        // Hata olursa (internet yoksa) hiçbir şey yapmamıza gerek yok, 
-        // çünkü yukarıda zaten cachedCount'u set etmiştik.
+        console.warn("Sayaç yüklenirken hata oluştu:", error);
       }
     };
 
     fetchUserCount();
   }, []);
 
-  // Sayaç Animasyonu
   useEffect(() => {
     if (targetCount === 0) return;
 
     let start = 0;
-    // Eğer cached veri varsa animasyon anında hedefe daha yakın başlasın (daha pürüzsüz geçiş)
-    const duration = 2000; 
+    const duration = 1500; 
     const increment = Math.max(1, targetCount / (duration / 16)); 
     
     const timer = setInterval(() => {
@@ -79,108 +67,31 @@ const TrustStats = () => {
   }, [targetCount]);
 
   return (
-    <div className="trust-stats-wrapper">
-      <div className="animated-chart">
-        <div className="bar bar-1"></div>
-        <div className="bar bar-2"></div>
-        <div className="bar bar-3"></div>
-        <div className="bar bar-4"></div>
-        <div className="bar bar-5"></div>
+    <div className="flex items-center justify-center gap-6 my-6 flex-wrap">
+      <div className="flex items-end gap-1.5 h-16">
+        <div className="w-3.5 bg-blue-600 rounded-t h-[40%] animate-pulse"></div>
+        <div className="w-3.5 bg-blue-600 rounded-t h-[70%] animate-pulse delay-75"></div>
+        <div className="w-3.5 bg-blue-600 rounded-t h-[55%] animate-pulse delay-150"></div>
+        <div className="w-3.5 bg-blue-600 rounded-t h-[90%] animate-pulse delay-200"></div>
+        <div className="w-3.5 bg-blue-600 rounded-t h-[100%] animate-pulse delay-300"></div>
       </div>
       
-      <div className="stat-text-box">
-        <div className="stat-number">
-          {count.toLocaleString('tr-TR')}
+      <div className="flex flex-col text-left">
+        <div className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
+          {count.toLocaleString('tr-TR')}+
         </div>
-        <div className="stat-label">Esnaf Bize Güveniyor</div>
+        <div className="text-sm font-bold text-slate-500 dark:text-slate-400 mt-1">
+          Aktif Esnaf & İşletme StokPro Kullanıyor
+        </div>
       </div>
-
-      <style>{`
-        .trust-stats-wrapper {
-          display: flex;
-          flex-direction: row;
-          align-items: flex-end;
-          justify-content: center;
-          gap: 20px;
-          margin-bottom: 3rem;
-          margin-top: 1rem;
-          animation: fadeIn 1s ease-out;
-        }
-
-        .animated-chart {
-          display: flex;
-          align-items: flex-end;
-          gap: 6px;
-          height: 80px;
-          padding-bottom: 8px;
-        }
-
-        .bar {
-          width: 16px;
-          background: #000;
-          border-radius: 4px 4px 0 0;
-          animation: growUp 1.5s ease-out forwards;
-          box-shadow: 2px 2px 10px rgba(0,0,0,0.2);
-        }
-        .bar-1 { height: 0; animation-delay: 0.1s; --target-h: 30%; }
-        .bar-2 { height: 0; animation-delay: 0.2s; --target-h: 60%; }
-        .bar-3 { height: 0; animation-delay: 0.3s; --target-h: 40%; }
-        .bar-4 { height: 0; animation-delay: 0.4s; --target-h: 80%; }
-        .bar-5 { height: 0; animation-delay: 0.5s; --target-h: 100%; }
-
-        @keyframes growUp {
-          from { height: 0; }
-          to { height: var(--target-h); }
-        }
-
-        .stat-text-box {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-          justify-content: flex-end;
-        }
-
-        .stat-number {
-          font-size: 4.5rem;
-          font-weight: 900;
-          color: #000;
-          line-height: 0.9;
-          letter-spacing: -2px;
-        }
-
-        .stat-label {
-          font-size: 1.1rem;
-          color: #555;
-          font-weight: 600;
-          margin-left: 4px;
-          margin-top: 5px;
-        }
-
-        @media (max-width: 600px) {
-          .trust-stats-wrapper {
-            flex-direction: row;
-            gap: 15px;
-          }
-          .stat-number {
-            font-size: 3rem;
-          }
-          .bar { width: 10px; }
-        }
-
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
     </div>
   );
 };
 
-function Home() {
-  const navigate = useNavigate();
+export default function Home() {
+  const router = useRouter();
   const [user, setUser] = useState(null);
 
-  // PWA Durumları
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
@@ -199,7 +110,6 @@ function Home() {
     const handleBeforeInstallPrompt = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      console.log("✅ PWA Yükleme sinyali yakalandı.");
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -214,146 +124,176 @@ function Home() {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    console.log(`Kullanıcı tercihi: ${outcome}`);
     setDeferredPrompt(null);
   };
 
   return (
-    <div className="home-container">
-      {/* HERO BÖLÜMÜ */}
-      <section className="hero-section">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col">
+      
+      {/* MAIN CONTENT AREA */}
+      <main className="flex-1 max-w-7xl mx-auto px-5 py-8 flex flex-col gap-14">
         
-        {/* Siyah Grafik ve Sayaç (Offline Korumalı) */}
-        <TrustStats />
+        {/* HERO SECTION WITH EXPLICIT APPLICATION PURPOSE */}
+        <section className="text-center flex flex-col items-center gap-6 max-w-4xl mx-auto pt-2">
+          
+          {/* OAUTH VERIFICATION VERBATIM BRAND BADGE */}
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 dark:bg-blue-950/80 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-900 text-xs font-extrabold tracking-wide">
+            <FiZap /> STOKPRO® BARKODLU STOK VE ÖN MUHASEBE UYGULAMASI
+          </div>
 
-        {!user && <div className="badge">İlk 100 Gerçek Kullanıcıya Ömür Boyu Ücretsiz</div>}
+          <h1 className="text-3xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+            StokPro ile İşletmenizi Dijitalleştirin <br />
+            <span className="text-blue-600 dark:text-blue-500">Stok, Cari ve Kasa Yönetimi</span>
+          </h1>
 
-        <h1 className="hero-title">
-          Karmaşık Defterlere Son <br />
-          <span className="highlight">Stok ve Veresiyeni Dijitalde Yönet</span>
-        </h1>
+          {/* APPLICATION PURPOSE BANNER (GOOGLE OAUTH VERIFICATION REQUIREMENT) */}
+          <div className="w-full bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-900/60 rounded-xl p-6 shadow-sm text-left flex flex-col gap-3">
+            <h3 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+              <FiShield className="text-blue-600" /> StokPro Uygulamasının Amacı Nedir?
+            </h3>
+            <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+              <strong>StokPro</strong>, küçük ve orta ölçekli ticari işletmeler (esnaf, hırdavat, perakende mağazaları) için geliştirilmiş <strong>bulut tabanlı barkodlu stok takip, müşteri cari alacak yönetimi ve ön muhasebe yazılımıdır</strong>. Kullanıcıların karmaşık defter hesaplarına son vererek; depolardaki ürün adetlerini anlık izlemelerini, kasaya nakit/veresiye satış kaydetmelerini ve dijital satış faturası kesmelerini sağlar.
+            </p>
+          </div>
 
-        <p className="hero-description">
-          StokPro sadece bir kayıt defteri değil, işletmenizin akıl hocasıdır. 
-          Stoklarını saniyeler içinde gir, veresiyelerini takip et ve mağaza zekasıyla işini büyüt.
-        </p>
+          <TrustStats />
 
-        <div className="cta-group">
-          <button 
-            className="primary-btn" 
-            onClick={() => navigate(user ? "/dashboard" : "/register")}
-          >
-            {user ? "Panele Git" : "Hemen Başla"} <FiArrowRight />
-          </button>
-
-          {!isStandalone && deferredPrompt && (
-            <button className="install-btn" onClick={handleInstallClick}>
-              <FiDownload /> Uygulamayı İndir
+          <div className="flex flex-wrap justify-center gap-4">
+            <button 
+              onClick={() => router.push(user ? "/dashboard" : "/register")} 
+              className="modern-btn primary"
+              style={{ padding: '12px 28px', fontSize: '1rem', fontWeight: 900 }}
+            >
+              {user ? "Yönetim Paneline Geç" : "Hemen Ücretsiz Başla"} <FiArrowRight size={18} />
             </button>
-          )}
 
-          {!isStandalone && isIOS && (
-            <div className="ios-hint">
-              <small><FiShare /> butonuna basıp "Ana Ekrana Ekle" diyerek yükle.</small>
-            </div>
-          )}
+            {!isStandalone && deferredPrompt && (
+              <button onClick={handleInstallClick} className="modern-btn secondary" style={{ padding: '12px 20px' }}>
+                <FiDownload size={18} /> Masaüstü / Mobil Uygulamayı İndir
+              </button>
+            )}
+          </div>
 
           {!user && (
-            <p className="sub-note">
-              <FiCheckCircle style={{ marginRight: 5 }} /> Kredi kartı gerekmez, kurulum yok.
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-bold flex items-center gap-1.5">
+              <FiCheckCircle className="text-emerald-500" /> Kurulum veya Kredi Kartı Gerekmez — Anında Deneyin
             </p>
           )}
-        </div>
-      </section>
+        </section>
 
-      {/* TEMEL ÖZELLİKLER */}
-      <section className="features-section">
-        <div className="section-header">
-          <h2 className="section-title">İhtiyacın Olan <span className="blue-text">Temel Çözümler</span></h2>
-          <p className="section-subtitle">İşletmeni yönetmek için gereken her şey elinin altında.</p>
-        </div>
+        {/* DETAILED FEATURE MODULES SECTION */}
+        <section className="flex flex-col gap-8">
+          <div className="text-center flex flex-col gap-2">
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+              StokPro Sunulan <span className="text-blue-600">Temel Modüller ve İşlevler</span>
+            </h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
+              İşletmenizi yönetmek için gereken her şey elinizin altında.
+            </p>
+          </div>
 
-        <div className="features-grid three-col">
-          <div className="feature-card">
-            <div className="icon-box blue"><FiBox /></div>
-            <h3>Hızlı Stok Girişi</h3>
-            <p>Ürünlerini barkodla veya elle saniyeler içinde ekle. Karmaşık menülerle uğraşma.</p>
-          </div>
-          <div className="feature-card">
-            <div className="icon-box green"><FiUsers /></div>
-            <h3>Veresiye Takibi</h3>
-            <p>Kimin ne kadar borcu var asla unutma. Müşteri bazlı detaylı döküm al.</p>
-          </div>
-          <div className="feature-card">
-            <div className="icon-box purple"><FiPieChart /></div>
-            <h3>Anlık Raporlar</h3>
-            <p>Ay sonunu bekleme. Kazancını, stoğunu ve alacaklarını tek tıkla gör.</p>
-          </div>
-        </div>
-      </section>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <div className="card hover:border-blue-500 transition-all">
+              <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xl font-black mb-2">
+                <FiBox />
+              </div>
+              <h3 className="text-base font-black text-slate-900 dark:text-white">Barkodlu Stok & Depo Takibi</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
+                Ürünlerinizi barkod okuyucu veya manuel seri no ile kaydedin. Kritik stok seviyelerine ulaşan ürünleri anında uyarır.
+              </p>
+            </div>
 
-      {/* MAĞAZA ZEKASI */}
-      <section className="features-section alt-bg">
-        <div className="section-header">
-          <h2 className="section-title">Sadece Stok Değil, <span className="highlight">Mağaza Zekası!</span></h2>
-          <p className="section-subtitle">Verilerinizi işleyerek size para kazandıran içgörüler sunuyoruz.</p>
-        </div>
+            <div className="card hover:border-emerald-500 transition-all">
+              <div className="w-10 h-10 rounded-lg bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl font-black mb-2">
+                <FiUsers />
+              </div>
+              <h3 className="text-base font-black text-slate-900 dark:text-white">Müşteri Cari & Veresiye Takibi</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
+                Müşterilerinize veresiye satış yapın, borç ve ödeme geçmişlerini tarihsel olarak tek tıkla döküm alın.
+              </p>
+            </div>
 
-        <div className="features-grid four-col">
-          <div className="feature-card small-card">
-            <div className="icon-box-sm blue"><FiSearch /></div>
-            <h4>Işık Hızında Arama</h4>
-            <p>Müşterini bekletme, aradığını anında bul.</p>
-          </div>
-          <div className="feature-card small-card">
-            <div className="icon-box-sm red"><FiAlertTriangle /></div>
-            <h4>Kritik Stok Radarı</h4>
-            <p>Biten ürünleri önceden haber al, satışı kaçırma.</p>
-          </div>
-          <div className="feature-card small-card">
-            <div className="icon-box-sm orange"><FiTrendingDown /></div>
-            <h4>Ölü Stok Analizi</h4>
-            <p>Satılmayan ürünleri tespit et, nakite çevir.</p>
-          </div>
-          <div className="feature-card small-card">
-            <div className="icon-box-sm purple"><FiAward /></div>
-            <h4>Şampiyon Ürünler</h4>
-            <p>En çok kazandıran ürünlerini keşfet.</p>
-          </div>
-        </div>
-      </section>
+            <div className="card hover:border-purple-500 transition-all">
+              <div className="w-10 h-10 rounded-lg bg-purple-50 dark:bg-purple-950 text-purple-600 dark:text-purple-400 flex items-center justify-center text-xl font-black mb-2">
+                <FiPieChart />
+              </div>
+              <h3 className="text-base font-black text-slate-900 dark:text-white">Ön Muhasebe & PDF Fatura</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
+                Kasa gelir-gider hesaplarınızı tutun. Tamamlanan her satış için resmi PDF faturası veya fiş çıktısı alın.
+              </p>
+            </div>
 
-      {/* FOOTER */}
-      <footer className="home-footer">
-        {/* YASAL UYARI VE LİNKLER */}
-        <div className="legal-section" style={{ marginBottom: "1rem", fontSize: "0.85rem", opacity: 0.8 }}>
-          <p>
-            Uygulamayı kullanmaya başlayarak{" "}
-            <span 
-              onClick={() => navigate("/privacy-policy")} 
-              style={{ cursor: "pointer", textDecoration: "underline" }}
-            >
-              Gizlilik Politikası
-            </span>
-            {" ve "}
-            <span 
-              onClick={() => navigate("/terms-of-service")} 
-              style={{ cursor: "pointer", textDecoration: "underline" }}
-            >
-              Hizmet Şartları
-            </span>
-            'nı kabul etmiş sayılırsınız.
-          </p>
-        </div>
+          </div>
+        </section>
 
-        <div className="simple-copyright">
-          © {new Date().getFullYear()} StokPro. Tüm hakları saklıdır.
+        {/* ARTIFICIAL INTELLIGENCE STORE INSIGHTS */}
+        <section className="bg-slate-900 text-white rounded-xl p-8 flex flex-col gap-6 shadow-xl">
+          <div className="flex flex-col gap-2">
+            <span className="text-xs font-black text-blue-400 uppercase tracking-widest">AKILLI MAĞAZA ANALİZİ</span>
+            <h2 className="text-2xl font-black text-white tracking-tight">
+              StokPro AI Mağaza Zekası
+            </h2>
+            <p className="text-xs text-slate-400 font-medium">
+              Verilerinizi işleyerek satılmayan ölü stokları ve en çok kazandıran şampiyon ürünleri tespit eder.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-slate-800/80 border border-slate-700 p-4 rounded-lg flex flex-col gap-1">
+              <FiSearch className="text-blue-400 text-xl" />
+              <strong className="text-sm text-white">Hızlı Arama</strong>
+              <span className="text-xs text-slate-400">Ürün ve müşterileri anında bulun.</span>
+            </div>
+
+            <div className="bg-slate-800/80 border border-slate-700 p-4 rounded-lg flex flex-col gap-1">
+              <FiAlertTriangle className="text-amber-400 text-xl" />
+              <strong className="text-sm text-white">Kritik Stok Uyarısı</strong>
+              <span className="text-xs text-slate-400">Tükenmek üzere olan ürün uyarısı.</span>
+            </div>
+
+            <div className="bg-slate-800/80 border border-slate-700 p-4 rounded-lg flex flex-col gap-1">
+              <FiTrendingDown className="text-red-400 text-xl" />
+              <strong className="text-sm text-white">Ölü Stok Tespiti</strong>
+              <span className="text-xs text-slate-400">Satılmayan ürünlerde indirim önerisi.</span>
+            </div>
+
+            <div className="bg-slate-800/80 border border-slate-700 p-4 rounded-lg flex flex-col gap-1">
+              <FiAward className="text-purple-400 text-xl" />
+              <strong className="text-sm text-white">En Çok Kazandıranlar</strong>
+              <span className="text-xs text-slate-400">Kar marjı en yüksek ürün listesi.</span>
+            </div>
+          </div>
+        </section>
+
+      </main>
+
+      {/* FOOTER WITH EXPLICIT GOOGLE OAUTH COMPLIANCE LINKS */}
+      <footer className="w-full bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-8 px-5 mt-auto">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 dark:text-slate-400">
+          
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-blue-600 text-white font-black rounded flex items-center justify-center text-xs">S</div>
+            <strong className="text-slate-900 dark:text-white font-black text-sm">StokPro®</strong>
+            <span>— Ticari Stok & Ön Muhasebe Yazılımı</span>
+          </div>
+
+          <div className="flex items-center gap-6 font-bold">
+            <Link href="/privacy-policy" className="hover:text-blue-600 transition-colors">
+              Gizlilik Politikası (Privacy Policy)
+            </Link>
+            <Link href="/terms-of-service" className="hover:text-blue-600 transition-colors">
+              Hizmet Şartları (Terms of Service)
+            </Link>
+          </div>
+
+          <div>
+            © {new Date().getFullYear()} StokPro. Tüm hakları saklıdır.
+          </div>
+
         </div>
       </footer>
+
     </div>
   );
 }
-
-export default Home;
-
-
