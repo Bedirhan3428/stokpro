@@ -8,7 +8,7 @@ import { getFirestore, collection, getDocs } from "firebase/firestore";
 import { 
   FiArrowRight, FiSearch, FiAlertTriangle, FiTrendingDown, 
   FiAward, FiCheckCircle, FiBox, FiUsers, FiPieChart, FiDownload, FiShare,
-  FiShield, FiFileText, FiDollarSign, FiZap, FiLock, FiInfo
+  FiShield, FiFileText, FiDollarSign, FiZap, FiLock
 } from "react-icons/fi";
 
 const appId = (typeof window !== 'undefined' && window.__app_id) 
@@ -133,57 +133,27 @@ export default function Home() {
       {/* MAIN CONTENT AREA */}
       <main className="flex-1 max-w-7xl mx-auto px-5 py-8 flex flex-col gap-14">
         
-        {/* HERO SECTION WITH EXPLICIT STOKPRO APP NAME & GOOGLE OAUTH PURPOSE BANNER */}
+        {/* HERO SECTION WITH EXPLICIT APPLICATION PURPOSE */}
         <section className="text-center flex flex-col items-center gap-6 max-w-4xl mx-auto pt-2">
           
-          {/* GOOGLE OAUTH VERIFICATION EXPLICIT APP NAME BADGE */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-950/80 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-900 text-xs font-black tracking-wider uppercase">
-            <FiZap className="text-blue-600" /> UYGULAMA ADI: STOKPRO® BARKODLU STOK VE ÖN MUHASEBE OTOMASYONU
+          {/* OAUTH VERIFICATION VERBATIM BRAND BADGE */}
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 dark:bg-blue-950/80 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-900 text-xs font-extrabold tracking-wide">
+            <FiZap /> STOKPRO® BARKODLU STOK VE ÖN MUHASEBE UYGULAMASI
           </div>
 
-          <h1 className="text-3xl sm:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
-            <span className="text-blue-600 dark:text-blue-500">StokPro</span> ile İşletmenizi Dijitalleştirin
-            <br />
-            <span className="text-slate-800 dark:text-slate-200 text-2xl sm:text-4xl font-extrabold">Bulut Tabanlı Stok, Cari ve Kasa Yönetimi</span>
+          <h1 className="text-3xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+            StokPro ile İşletmenizi Dijitalleştirin <br />
+            <span className="text-blue-600 dark:text-blue-500">Stok, Cari ve Kasa Yönetimi</span>
           </h1>
 
-          {/* GOOGLE OAUTH COMPLIANCE: EXPLICIT APPLICATION PURPOSE & SCOPE SECTION */}
-          <div className="w-full bg-white dark:bg-slate-900 border-2 border-blue-500/30 rounded-2xl p-6 sm:p-8 shadow-md text-left flex flex-col gap-4">
-            <div className="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-xl">
-                S
-              </div>
-              <div>
-                <h3 className="text-xl font-black text-slate-900 dark:text-white">
-                  StokPro Uygulamasının Amacı ve Tanımı (Application Purpose)
-                </h3>
-                <p className="text-xs text-blue-600 dark:text-blue-400 font-bold">
-                  Google OAuth Onay Ekranı Doğrulama Belgesi — StokPro®
-                </p>
-              </div>
-            </div>
-
-            <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
-              <strong>StokPro</strong>, küçük ve orta ölçekli ticari işletmeler (esnaf, hırdavat mağazaları, perakende satış noktaları ve toptancılar) için tasarlanmış <strong>bulut tabanlı barkodlu stok takip, müşteri cari borç/alacak yönetimi ve ön muhasebe yazılımıdır</strong>. 
+          {/* APPLICATION PURPOSE BANNER (GOOGLE OAUTH VERIFICATION REQUIREMENT) */}
+          <div className="w-full bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-900/60 rounded-xl p-6 shadow-sm text-left flex flex-col gap-3">
+            <h3 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+              <FiShield className="text-blue-600" /> StokPro Uygulamasının Amacı Nedir?
+            </h3>
+            <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+              <strong>StokPro</strong>, küçük ve orta ölçekli ticari işletmeler (esnaf, hırdavat, perakende mağazaları) için geliştirilmiş <strong>bulut tabanlı barkodlu stok takip, müşteri cari alacak yönetimi ve ön muhasebe yazılımıdır</strong>. Kullanıcıların karmaşık defter hesaplarına son vererek; depolardaki ürün adetlerini anlık izlemelerini, kasaya nakit/veresiye satış kaydetmelerini ve dijital satış faturası kesmelerini sağlar.
             </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
-              <div className="bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 flex items-start gap-2.5">
-                <FiCheckCircle className="text-blue-600 text-lg shrink-0 mt-0.5" />
-                <div className="text-xs">
-                  <strong className="text-slate-900 dark:text-white block font-bold">Neden Giriş Yapılır?</strong>
-                  Kullanıcılar Google hesapları ile giriş yaparak işletmelerine ait ürün stok miktarlarını günceller, veresiye müşteri borçlarını takip eder ve satış faturası keserler.
-                </div>
-              </div>
-
-              <div className="bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 flex items-start gap-2.5">
-                <FiShield className="text-emerald-600 text-lg shrink-0 mt-0.5" />
-                <div className="text-xs">
-                  <strong className="text-slate-900 dark:text-white block font-bold">Veri Gizliliği ve Güvenlik</strong>
-                  StokPro sadece kullanıcının kendi işletmesine ait ticari verileri güvenli Firebase sunucularında saklar. Hiçbir üçüncü tarafla paylaşılmaz.
-                </div>
-              </div>
-            </div>
           </div>
 
           <TrustStats />
@@ -192,23 +162,13 @@ export default function Home() {
             <button 
               onClick={() => router.push(user ? "/dashboard" : "/register")} 
               className="modern-btn primary"
-              style={{ padding: '14px 32px', fontSize: '1.05rem', fontWeight: 900 }}
+              style={{ padding: '12px 28px', fontSize: '1rem', fontWeight: 900 }}
             >
-              {user ? "StokPro Yönetim Paneline Geç" : "StokPro'yu Ücretsiz Deneyin"} <FiArrowRight size={18} />
+              {user ? "Yönetim Paneline Geç" : "Hemen Ücretsiz Başla"} <FiArrowRight size={18} />
             </button>
 
-            {!user && (
-              <button 
-                onClick={() => router.push("/login")} 
-                className="modern-btn secondary"
-                style={{ padding: '14px 24px', fontSize: '1rem', fontWeight: 800 }}
-              >
-                Giriş Yap
-              </button>
-            )}
-
             {!isStandalone && deferredPrompt && (
-              <button onClick={handleInstallClick} className="modern-btn ghost" style={{ padding: '14px 20px' }}>
+              <button onClick={handleInstallClick} className="modern-btn secondary" style={{ padding: '12px 20px' }}>
                 <FiDownload size={18} /> Masaüstü / Mobil Uygulamayı İndir
               </button>
             )}
@@ -216,7 +176,7 @@ export default function Home() {
 
           {!user && (
             <p className="text-xs text-slate-500 dark:text-slate-400 font-bold flex items-center gap-1.5">
-              <FiCheckCircle className="text-emerald-500" /> Kurulum veya Kredi Kartı Gerekmez — Giriş yapmadan tüm bilgileri inceleyebilirsiniz.
+              <FiCheckCircle className="text-emerald-500" /> Kurulum veya Kredi Kartı Gerekmez — Anında Deneyin
             </p>
           )}
         </section>
@@ -225,10 +185,10 @@ export default function Home() {
         <section className="flex flex-col gap-8">
           <div className="text-center flex flex-col gap-2">
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-              StokPro Tarafından Sunulan <span className="text-blue-600">Temel Modüller</span>
+              StokPro Sunulan <span className="text-blue-600">Temel Modüller ve İşlevler</span>
             </h2>
             <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
-              İşletmenizi dijitalleştirmek için gereken tüm modüller StokPro bünyesindedir.
+              İşletmenizi yönetmek için gereken her şey elinizin altında.
             </p>
           </div>
 
@@ -240,7 +200,7 @@ export default function Home() {
               </div>
               <h3 className="text-base font-black text-slate-900 dark:text-white">Barkodlu Stok & Depo Takibi</h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
-                Ürünlerinizi barkod okuyucu veya seri no ile kaydedin. Kritik stok seviyesine düşen ürünleri anında takip edin.
+                Ürünlerinizi barkod okuyucu veya manuel seri no ile kaydedin. Kritik stok seviyelerine ulaşan ürünleri anında uyarır.
               </p>
             </div>
 
@@ -250,7 +210,7 @@ export default function Home() {
               </div>
               <h3 className="text-base font-black text-slate-900 dark:text-white">Müşteri Cari & Veresiye Takibi</h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
-                Müşterilerinize veresiye satış yapın, borç ve ödeme geçmişlerini tarihsel olarak döküm alın.
+                Müşterilerinize veresiye satış yapın, borç ve ödeme geçmişlerini tarihsel olarak tek tıkla döküm alın.
               </p>
             </div>
 
@@ -268,37 +228,37 @@ export default function Home() {
         </section>
 
         {/* ARTIFICIAL INTELLIGENCE STORE INSIGHTS */}
-        <section className="bg-slate-900 text-white rounded-2xl p-8 flex flex-col gap-6 shadow-xl border border-slate-800">
+        <section className="bg-slate-900 text-white rounded-xl p-8 flex flex-col gap-6 shadow-xl">
           <div className="flex flex-col gap-2">
             <span className="text-xs font-black text-blue-400 uppercase tracking-widest">AKILLI MAĞAZA ANALİZİ</span>
             <h2 className="text-2xl font-black text-white tracking-tight">
-              StokPro Yapay Zeka Mağaza Zekası
+              StokPro AI Mağaza Zekası
             </h2>
             <p className="text-xs text-slate-400 font-medium">
-              StokPro, verilerinizi işleyerek satılmayan ölü stokları ve en çok kazandıran şampiyon ürünleri otomatik tespit eder.
+              Verilerinizi işleyerek satılmayan ölü stokları ve en çok kazandıran şampiyon ürünleri tespit eder.
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-slate-800/80 border border-slate-700 p-4 rounded-xl flex flex-col gap-1">
+            <div className="bg-slate-800/80 border border-slate-700 p-4 rounded-lg flex flex-col gap-1">
               <FiSearch className="text-blue-400 text-xl" />
               <strong className="text-sm text-white">Hızlı Arama</strong>
               <span className="text-xs text-slate-400">Ürün ve müşterileri anında bulun.</span>
             </div>
 
-            <div className="bg-slate-800/80 border border-slate-700 p-4 rounded-xl flex flex-col gap-1">
+            <div className="bg-slate-800/80 border border-slate-700 p-4 rounded-lg flex flex-col gap-1">
               <FiAlertTriangle className="text-amber-400 text-xl" />
               <strong className="text-sm text-white">Kritik Stok Uyarısı</strong>
               <span className="text-xs text-slate-400">Tükenmek üzere olan ürün uyarısı.</span>
             </div>
 
-            <div className="bg-slate-800/80 border border-slate-700 p-4 rounded-xl flex flex-col gap-1">
+            <div className="bg-slate-800/80 border border-slate-700 p-4 rounded-lg flex flex-col gap-1">
               <FiTrendingDown className="text-red-400 text-xl" />
               <strong className="text-sm text-white">Ölü Stok Tespiti</strong>
               <span className="text-xs text-slate-400">Satılmayan ürünlerde indirim önerisi.</span>
             </div>
 
-            <div className="bg-slate-800/80 border border-slate-700 p-4 rounded-xl flex flex-col gap-1">
+            <div className="bg-slate-800/80 border border-slate-700 p-4 rounded-lg flex flex-col gap-1">
               <FiAward className="text-purple-400 text-xl" />
               <strong className="text-sm text-white">En Çok Kazandıranlar</strong>
               <span className="text-xs text-slate-400">Kar marjı en yüksek ürün listesi.</span>
@@ -315,7 +275,7 @@ export default function Home() {
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 bg-blue-600 text-white font-black rounded flex items-center justify-center text-xs">S</div>
             <strong className="text-slate-900 dark:text-white font-black text-sm">StokPro®</strong>
-            <span>— Ticari Stok & Ön Muhasebe Otomasyonu</span>
+            <span>— Ticari Stok & Ön Muhasebe Yazılımı</span>
           </div>
 
           <div className="flex items-center gap-6 font-bold">

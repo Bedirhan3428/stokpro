@@ -186,34 +186,12 @@ export default function Navbar() {
             />
           </div>
 
-          {user ? (
-            <nav className="nb-nav-masaustu"><NavLinks /></nav>
-          ) : (
-            <nav className="nb-nav-masaustu" style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-              <Link href="/privacy-policy" className="nb-link" style={{ fontSize: '0.85rem' }}>
-                Gizlilik Politikası
-              </Link>
-              <Link href="/terms-of-service" className="nb-link" style={{ fontSize: '0.85rem' }}>
-                Hizmet Şartları
-              </Link>
-            </nav>
-          )}
+          {user && <nav className="nb-nav-masaustu"><NavLinks /></nav>}
 
           <div className="nb-aksiyonlar">
             <button onClick={handleTheme} className="nb-icon-btn theme-toggle" title="Temayı Değiştir">
               {theme === "dark" ? <IoSunny size={18} /> : <FaMoon size={18} />}
             </button>
-
-            {!user && (
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <Link href="/login" className="modern-btn ghost" style={{ fontSize: '0.85rem', fontWeight: 800, padding: '6px 12px' }}>
-                  Giriş Yap
-                </Link>
-                <Link href="/register" className="modern-btn primary" style={{ fontSize: '0.85rem', fontWeight: 800, padding: '6px 14px' }}>
-                  Kayıt Ol
-                </Link>
-              </div>
-            )}
 
             {user && (
               <>
