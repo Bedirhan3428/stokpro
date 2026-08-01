@@ -253,7 +253,7 @@ export default function Settings() {
     <div className="page-container">
       <Toast note={note} onClose={() => setNote(null)} />
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
         
         {/* KART 1: KULLANICI & SATICI İŞLETME BİLGİLERİ */}
         <div className="card" style={{ gridColumn: 'span 1' }}>
@@ -269,7 +269,7 @@ export default function Settings() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               
               {/* İŞLETME LOGOSU VE KULLANICI ÖZETİ */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'var(--bg-subtle)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-main)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'var(--bg-subtle)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-main)', flexWrap: 'wrap' }}>
                 {logoUrl ? (
                   <div style={{ position: 'relative', display: 'inline-block', shrink: 0 }}>
                     <img 
@@ -292,7 +292,7 @@ export default function Settings() {
                 )}
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, minWidth: 0 }}>
-                  <strong style={{ fontSize: '0.95rem', color: 'var(--text-main)', truncate: true }}>{companyTitle || displayName || "İşletmeniz"}</strong>
+                  <strong style={{ fontSize: '0.95rem', color: 'var(--text-main)' }}>{companyTitle || displayName || "İşletmeniz"}</strong>
                   <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Firebase Storage bulutuna logonuzu yükleyin.</span>
                   
                   <label className="modern-btn secondary" style={{ cursor: 'pointer', display: 'inline-flex', width: 'fit-content', padding: '5px 12px', fontSize: '0.75rem', marginTop: '4px', fontWeight: 800 }}>
@@ -303,7 +303,7 @@ export default function Settings() {
               </div>
 
               {/* FORM ALANLARI */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+              <div className="settings-grid-2col">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label style={{ fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.5px' }}>Yetkili Adı</label>
                   <input 
@@ -335,7 +335,7 @@ export default function Settings() {
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+              <div className="settings-grid-2col">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label style={{ fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.5px' }}>Vergi Dairesi</label>
                   <input 
@@ -356,7 +356,7 @@ export default function Settings() {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '14px' }}>
+              <div className="settings-grid-3col">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label style={{ fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.5px' }}>İşletme Adresi</label>
                   <input 
@@ -477,14 +477,14 @@ export default function Settings() {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <label style={{ fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.5px' }}>Ürün Anahtarı Etkinleştir</label>
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div className="settings-key-row">
                   <input 
                     value={productKey} 
                     onChange={e => setProductKey(formatKeyForDisplay(e.target.value))} 
                     placeholder="XXXX-XXXX-XXXX-XXXX" 
                     maxLength={19} 
                     className="modern-input"
-                    style={{ fontFamily: 'monospace', letterSpacing: '1px', fontWeight: 800 }}
+                    style={{ fontFamily: 'monospace', letterSpacing: '1px', fontWeight: 800, flex: 1 }}
                   />
                   <button onClick={handleActivateKey} className="modern-btn success" disabled={saving}>
                     <FiKey size={18} /> Aktive Et

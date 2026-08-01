@@ -247,7 +247,7 @@ export default function Customers() {
       {/* MÜŞTERİ LİSTESİ TABLOSU */}
       <div className="prd-card">
         <div className="page-header-bar" style={{ marginBottom: '16px' }}>
-          <div className="input-icon-wrapper" style={{ width: '320px' }}>
+          <div className="input-icon-wrapper" style={{ width: '320px', maxWidth: '100%' }}>
             <FiSearch className="input-icon" />
             <input 
               placeholder="Müşteri adı veya telefon ile süzün..." 

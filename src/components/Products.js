@@ -20,8 +20,9 @@ import {
 import useSubscription from "../hooks/useSubscription";
 import Toast from "./Toast";
 import { 
-  FiTrash2, FiEdit2, FiSearch, FiPlus, FiAlertCircle, FiFilter, FiImage, FiPackage, FiX, FiRefreshCw, FiUploadCloud, FiLayers, FiFileText
+  FiTrash2, FiEdit2, FiSearch, FiPlus, FiAlertCircle, FiFilter, FiImage, FiPackage, FiX, FiRefreshCw, FiUploadCloud, FiLayers, FiFileText, FiDownload
 } from "react-icons/fi";
+import * as XLSX from "xlsx";
 
 function QtyStepper({ value, onChange, min = 0, disabled = false }) {
   return (
@@ -218,43 +219,153 @@ export default function Products() {
     }
   }
 
-  // TOPLU ÜRÜN CSV / EXCEL DOSYASI OKUYUCU
+  // ÖRNEK EXCEL ŞABLONU İNDİRME
+  function downloadSampleTemplate() {
+    try {
+      const sampleData = [
+        {
+          "Ürün Adı": "Örnek Çekiç 500g",
+          "Kategori": "El Aletleri",
+          "Fiyat": 150.00,
+          "Stok": 25,
+          "Barkod": "8690000000001",
+          "Görsel URL": ""
+        },
+        {
+          "Ürün Adı": "Matkap Ucu Seti 10lu",
+          "Kategori": "Aksesuarlar",
+          "Fiyat": 280.50,
+          "Stok": 50,
+          "Barkod": "8690000000002",
+          "Görsel URL": ""
+        }
+      ];
+      const worksheet = XLSX.utils.json_to_sheet(sampleData);
+      worksheet["!cols"] = [
+        { wch: 25 },
+        { wch: 15 },
+        { wch: 12 },
+        { wch: 10 },
+        { wch: 18 },
+        { wch: 30 }
+      ];
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Ürünler");
+      XLSX.writeFile(workbook, "StokPro_Ornek_Urun_Listesi.xlsx");
+      bildir({ type: "success", title: "Şablon İndirildi", message: "Örnek Excel şablonu bilgisayarınıza indirildi." });
+    } catch (err) {
+      console.error("Şablon oluşturma hatası:", err);
+      bildir({ type: "error", title: "İndirme Hatası", message: "Şablon dosyası oluşturulamadı." });
+    }
+  }
+
+  // TOPLU ÜRÜN CSV / EXCEL DOSYASI OKUYUCU (XLSX, XLS, CSV DESTEKLİ)
   function handleCsvUpload(e) {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      const text = event.target?.result || "";
-      const lines = String(text).split(/\r?\n/);
-      const parsed = [];
+      try {
+        const data = new Uint8Array(event.target?.result);
+        const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
 
-      lines.forEach((line, index) => {
-        if (!line.trim()) return;
-        const cols = line.split(/[,;\t]/).map(c => c.trim().replace(/^["']|["']$/g, ''));
-        if (index === 0 && (cols[0].toLowerCase().includes("ürün") || cols[0].toLowerCase().includes("name"))) {
+        const rawData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+        if (!rawData || rawData.length === 0) {
+          bildir({ type: "warning", title: "Boş Dosya", message: "Dosya içerisinde veri bulunamadı." });
           return;
         }
-        if (cols[0]) {
-          parsed.push({
-            name: cols[0] || "",
-            category: cols[1] || "Genel",
-            price: cols[2] || "0",
-            stock: cols[3] || "0",
-            barcode: cols[4] || "",
-            imageUrl: cols[5] || ""
-          });
-        }
-      });
 
-      if (parsed.length > 0) {
-        setBulkRows(parsed);
-        bildir({ type: "success", title: "Dosya Ayrıştırıldı", message: `${parsed.length} adet ürün satırı yüklendi.` });
-      } else {
-        bildir({ type: "warning", title: "Boş Dosya", message: "Uygun ürün satırı bulunamadı." });
+        // Dolu satırları süz
+        const rows = rawData.filter(r => Array.isArray(r) && r.some(cell => cell !== null && cell !== undefined && String(cell).trim() !== ""));
+
+        if (rows.length === 0) {
+          bildir({ type: "warning", title: "Boş Dosya", message: "Uygun ürün satırı bulunamadı." });
+          return;
+        }
+
+        // Başlık satırı & Sütun eşleşmesi tespiti
+        let headerRowIndex = -1;
+        let nameIdx = 0;
+        let categoryIdx = 1;
+        let priceIdx = 2;
+        let stockIdx = 3;
+        let barcodeIdx = 4;
+        let imageIdx = 5;
+
+        for (let i = 0; i < Math.min(3, rows.length); i++) {
+          const rowStr = rows[i].map(cell => String(cell).toLowerCase()).join(" ");
+          if (rowStr.includes("ürün") || rowStr.includes("urun") || rowStr.includes("name") || rowStr.includes("fiyat") || rowStr.includes("stok") || rowStr.includes("barkod")) {
+            headerRowIndex = i;
+            rows[i].forEach((colHeader, cIdx) => {
+              const h = String(colHeader).toLowerCase().trim();
+              if ((/ürün|urun|name|başlık|baslik/i.test(h) || h === "ad" || h === "ürün adı") && !/kategori|fiyat|stok|barkod/i.test(h)) nameIdx = cIdx;
+              else if (/kategori|category|tür|tur/i.test(h)) categoryIdx = cIdx;
+              else if (/fiyat|price|tutar/i.test(h)) priceIdx = cIdx;
+              else if (/stok|stock|miktar|mektar|adet/i.test(h)) stockIdx = cIdx;
+              else if (/barkod|barcode|sku|kod/i.test(h)) barcodeIdx = cIdx;
+              else if (/görsel|gorsel|resim|image|foto|url/i.test(h)) imageIdx = cIdx;
+            });
+            break;
+          }
+        }
+
+        const dataRows = headerRowIndex >= 0 ? rows.slice(headerRowIndex + 1) : rows;
+
+        const parsed = [];
+        dataRows.forEach((row) => {
+          const rawName = row[nameIdx] !== undefined ? String(row[nameIdx]).trim() : "";
+          if (!rawName) return;
+
+          let category = row[categoryIdx] !== undefined ? String(row[categoryIdx]).trim() : "Genel";
+          if (!category) category = "Genel";
+
+          // Temiz fiyat dönüşümü (ör: 1.250,50 ₺ veya 150,00)
+          let priceStr = row[priceIdx] !== undefined ? String(row[priceIdx]).trim() : "0";
+          priceStr = priceStr.replace(/[^0-9.,-]/g, '');
+          if (priceStr.includes(',') && priceStr.includes('.')) {
+            priceStr = priceStr.replace(/\./g, '').replace(',', '.');
+          } else if (priceStr.includes(',')) {
+            priceStr = priceStr.replace(',', '.');
+          }
+          const priceNum = parseFloat(priceStr);
+          const price = isNaN(priceNum) ? "0" : String(priceNum);
+
+          // Temiz stok dönüşümü
+          let stockStr = row[stockIdx] !== undefined ? String(row[stockIdx]).trim() : "0";
+          stockStr = stockStr.replace(/[^0-9-]/g, '');
+          const stockNum = parseInt(stockStr, 10);
+          const stock = isNaN(stockNum) ? "0" : String(stockNum);
+
+          const barcode = row[barcodeIdx] !== undefined ? String(row[barcodeIdx]).trim() : "";
+          const imageUrl = row[imageIdx] !== undefined ? String(row[imageIdx]).trim() : "";
+
+          parsed.push({
+            name: rawName,
+            category,
+            price,
+            stock,
+            barcode,
+            imageUrl
+          });
+        });
+
+        if (parsed.length > 0) {
+          setBulkRows(parsed);
+          bildir({ type: "success", title: "Dosya Ayrıştırıldı", message: `${parsed.length} adet ürün satırı yüklendi.` });
+        } else {
+          bildir({ type: "warning", title: "Boş veya Geçersiz Dosya", message: "Uygun ürün satırı bulunamadı." });
+        }
+      } catch (err) {
+        console.error("Excel/CSV okuma hatası:", err);
+        bildir({ type: "error", title: "Dosya Okuma Hatası", message: "Excel/CSV dosyası işlenirken hata oluştu. Lütfen geçerli bir dosya yükleyin." });
       }
     };
-    reader.readAsText(file, "UTF-8");
+
+    reader.readAsArrayBuffer(file);
+    e.target.value = "";
   }
 
   function handleBulkRowChange(index, field, value) {
@@ -490,10 +601,10 @@ export default function Products() {
       )}
 
       {/* HIZLI FİLTRELEME VE KATEGORİ ARAMA RIBBON BAR */}
-      <div className="prd-card" style={{ marginBottom: '16px', padding: '14px 16px' }}>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+      <div className="prd-card" style={{ marginBottom: '14px', padding: '12px 14px' }}>
+        <div className="prd-filter-bar">
           
-          <div className="input-icon-wrapper" style={{ flex: '1 1 220px', minWidth: '200px' }}>
+          <div className="input-icon-wrapper prd-search-wrapper">
             <FiSearch className="input-icon" />
             <input 
               placeholder="Ürün adı veya barkod ile hızlı arama..." 
@@ -503,63 +614,65 @@ export default function Products() {
             />
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <FiFilter size={14} style={{ color: 'var(--text-muted)' }} />
+          <div className="prd-filter-selects">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', width: '100%' }}>
+              <FiFilter size={14} style={{ color: 'var(--text-muted)', shrink: 0 }} />
+              <select 
+                value={selectedCategory} 
+                onChange={e => setSelectedCategory(e.target.value)} 
+                className="modern-input"
+                style={{ padding: '6px 10px', fontSize: '0.85rem' }}
+              >
+                <option value="">Tüm Kategoriler ({availableCategories.length})</option>
+                {availableCategories.map((c, i) => (
+                  <option key={i} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+
             <select 
-              value={selectedCategory} 
-              onChange={e => setSelectedCategory(e.target.value)} 
+              value={stockFilter} 
+              onChange={e => setStockFilter(e.target.value)} 
               className="modern-input"
-              style={{ width: '160px', padding: '6px 10px', fontSize: '0.85rem' }}
+              style={{ padding: '6px 10px', fontSize: '0.85rem' }}
             >
-              <option value="">Tüm Kategoriler ({availableCategories.length})</option>
-              {availableCategories.map((c, i) => (
-                <option key={i} value={c}>{c}</option>
-              ))}
+              <option value="all">Tüm Stok Durumları</option>
+              <option value="in_stock">✅ Stokta Var</option>
+              <option value="critical">⚠️ Kritik Stok (&lt;10)</option>
+              <option value="out_of_stock">❌ Tükenenler (0)</option>
             </select>
+
+            <select 
+              value={sortBy} 
+              onChange={e => setSortBy(e.target.value)} 
+              className="modern-input"
+              style={{ padding: '6px 10px', fontSize: '0.85rem' }}
+            >
+              <option value="name_asc">Sırala: A-Z</option>
+              <option value="price_desc">Fiyat: Azalan</option>
+              <option value="price_asc">Fiyat: Artan</option>
+              <option value="stock_asc">Stok: En Az</option>
+            </select>
+
+            {isFilterActive && (
+              <button 
+                onClick={() => { setSearchTerm(""); setSelectedCategory(""); setStockFilter("all"); setSortBy("name_asc"); }}
+                className="modern-btn ghost"
+                style={{ padding: '6px 10px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                title="Filtreleri Sıfırla"
+              >
+                <FiRefreshCw size={12} /> Sıfırla
+              </button>
+            )}
           </div>
 
-          <select 
-            value={stockFilter} 
-            onChange={e => setStockFilter(e.target.value)} 
-            className="modern-input"
-            style={{ width: '160px', padding: '6px 10px', fontSize: '0.85rem' }}
-          >
-            <option value="all">Tüm Stok Durumları</option>
-            <option value="in_stock">✅ Stokta Var</option>
-            <option value="critical">⚠️ Kritik Stok (&lt;10)</option>
-            <option value="out_of_stock">❌ Tükenenler (0)</option>
-          </select>
-
-          <select 
-            value={sortBy} 
-            onChange={e => setSortBy(e.target.value)} 
-            className="modern-input"
-            style={{ width: '140px', padding: '6px 10px', fontSize: '0.85rem' }}
-          >
-            <option value="name_asc">Sırala: A-Z</option>
-            <option value="price_desc">Fiyat: Azalan</option>
-            <option value="price_asc">Fiyat: Artan</option>
-            <option value="stock_asc">Stok: En Az</option>
-          </select>
-
-          {isFilterActive && (
-            <button 
-              onClick={() => { setSearchTerm(""); setSelectedCategory(""); setStockFilter("all"); setSortBy("name_asc"); }}
-              className="modern-btn ghost"
-              style={{ padding: '6px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}
-              title="Filtreleri Sıfırla"
-            >
-              <FiRefreshCw size={12} /> Sıfırla
-            </button>
-          )}
-
           {/* SAĞ TARAF: TOPLU EKLENME VE TEKİL EKLENME BUTONLARI */}
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <div className="prd-action-buttons">
             <button className="modern-btn secondary" onClick={() => setShowBulkModal(true)} disabled={!subActive}>
-              <FiLayers size={18} /> Toplu Ürün Ekle
+              <FiLayers size={16} /> Toplu Yükle
             </button>
             <button className="modern-btn primary" onClick={() => setShowAddModal(true)} disabled={!subActive}>
-              <FiPlus size={18} /> Yeni Ürün Ekle
+              <FiPlus size={16} /> Yeni Ürün
             </button>
           </div>
 
@@ -585,86 +698,157 @@ export default function Products() {
             )}
           </div>
         ) : (
-          <div className="table-responsive-wrapper">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th style={{ width: '50px' }}>Görsel</th>
-                  <th>Ürün Adı</th>
-                  <th>Kategori</th>
-                  <th>Barkod</th>
-                  <th style={{ textAlign: 'right' }}>Birim Fiyat</th>
-                  <th style={{ textAlign: 'center', width: '230px' }}>Stok Adedi</th>
-                  <th style={{ textAlign: 'center', width: '110px' }}>İşlemler</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(p => {
-                  const isTarget = highlightedId === p.id;
+          <>
+            {/* MASAÜSTÜ TABLO GÖRÜNÜMÜ */}
+            <div className="products-desktop-table table-responsive-wrapper">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '50px' }}>Görsel</th>
+                    <th>Ürün Adı</th>
+                    <th>Kategori</th>
+                    <th>Barkod</th>
+                    <th style={{ textAlign: 'right' }}>Birim Fiyat</th>
+                    <th style={{ textAlign: 'center', width: '230px' }}>Stok Adedi</th>
+                    <th style={{ textAlign: 'center', width: '110px' }}>İşlemler</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map(p => {
+                    const isTarget = highlightedId === p.id;
 
-                  return (
-                    <tr 
-                      key={p.id} 
-                      id={`prod-row-${p.id}`}
-                      className={isTarget ? "row-highlight-pulse" : ""}
-                    >
-                      <td>
+                    return (
+                      <tr 
+                        key={p.id} 
+                        id={`prod-row-${p.id}`}
+                        className={isTarget ? "row-highlight-pulse" : ""}
+                      >
+                        <td>
+                          {p.imageUrl ? (
+                            <img 
+                              src={p.imageUrl} 
+                              alt={p.name} 
+                              className="tbl-img"
+                              onError={(e) => { e.target.style.display = 'none'; }}
+                            />
+                          ) : (
+                            <div className="tbl-avatar" style={{ background: 'var(--bg-subtle)', color: 'var(--text-muted)' }}>
+                              <FiPackage />
+                            </div>
+                          )}
+                        </td>
+                        <td>
+                          <strong>{p.name}</strong>
+                          {isTarget && (
+                            <span className="table-badge purple" style={{ marginLeft: '8px' }}>AI ÖNERİSİ HEDEFİ</span>
+                          )}
+                        </td>
+                        <td>
+                          <span className="table-badge gray">{p.category || "Genel"}</span>
+                        </td>
+                        <td>
+                          {p.barcode ? <code>{p.barcode}</code> : <span style={{ color: 'var(--text-light)' }}>-</span>}
+                        </td>
+                        <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--success)' }}>
+                          {Number(p.price).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}
+                        </td>
+                        <td style={{ textAlign: 'center' }}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                            <QtyStepper 
+                              value={p.stock}
+                              onChange={(val) => hizliStok(p.id, val)}
+                              disabled={!subActive}
+                            />
+                            <span className={`table-badge ${Number(p.stock) <= 0 ? 'red' : Number(p.stock) < 10 ? 'orange' : 'green'}`}>
+                              {Number(p.stock) <= 0 ? 'Tükendi' : Number(p.stock) < 10 ? 'Kritik' : 'Stokta'}
+                            </span>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="table-actions" style={{ justifyContent: 'center' }}>
+                            <button onClick={() => duzenlemeAc(p)} className="tbl-btn secondary icon-only" title="Düzenle">
+                              <FiEdit2 />
+                            </button>
+                            <button onClick={() => setConfirmDelete({id: p.id, label: p.name})} className="tbl-btn danger icon-only" title="Sil">
+                              <FiTrash2 />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* MOBİL TAM GÖRÜNÜR (YANA KAYDIRMASIZ) DOKUNMATİK KART LİSTESİ */}
+            <div className="products-mobile-card-list">
+              {filtered.map(p => {
+                const isTarget = highlightedId === p.id;
+
+                return (
+                  <div key={p.id} className="prd-mobile-card" id={`prod-card-mob-${p.id}`}>
+                    <div className="prd-mobile-card-header">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
                         {p.imageUrl ? (
                           <img 
                             src={p.imageUrl} 
                             alt={p.name} 
                             className="tbl-img"
+                            style={{ width: '36px', height: '36px', borderRadius: '6px' }}
                             onError={(e) => { e.target.style.display = 'none'; }}
                           />
                         ) : (
-                          <div className="tbl-avatar" style={{ background: 'var(--bg-subtle)', color: 'var(--text-muted)' }}>
-                            <FiPackage />
+                          <div className="tbl-avatar" style={{ width: '36px', height: '36px', borderRadius: '6px', background: 'var(--bg-subtle)', color: 'var(--text-muted)' }}>
+                            <FiPackage size={18} />
                           </div>
                         )}
-                      </td>
-                      <td>
-                        <strong>{p.name}</strong>
-                        {isTarget && (
-                          <span className="table-badge purple" style={{ marginLeft: '8px' }}>AI ÖNERİSİ HEDEFİ</span>
-                        )}
-                      </td>
-                      <td>
+                        <div style={{ minWidth: 0 }}>
+                          <strong className="prd-mobile-card-title">{p.name}</strong>
+                          {isTarget && (
+                            <span className="table-badge purple" style={{ fontSize: '0.65rem' }}>AI ÖNERİSİ</span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="table-actions">
+                        <button onClick={() => duzenlemeAc(p)} className="tbl-btn secondary icon-only" title="Düzenle">
+                          <FiEdit2 size={14} />
+                        </button>
+                        <button onClick={() => setConfirmDelete({id: p.id, label: p.name})} className="tbl-btn danger icon-only" title="Sil">
+                          <FiTrash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="prd-mobile-card-info">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                         <span className="table-badge gray">{p.category || "Genel"}</span>
-                      </td>
-                      <td>
-                        {p.barcode ? <code>{p.barcode}</code> : <span style={{ color: 'var(--text-light)' }}>-</span>}
-                      </td>
-                      <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--success)' }}>
+                        {p.barcode && <code style={{ fontSize: '0.72rem' }}>{p.barcode}</code>}
+                      </div>
+                      <span className="prd-mobile-card-price">
                         {Number(p.price).toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}
-                      </td>
-                      <td style={{ textAlign: 'center' }}>
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                          <QtyStepper 
-                            value={p.stock}
-                            onChange={(val) => hizliStok(p.id, val)}
-                            disabled={!subActive}
-                          />
-                          <span className={`table-badge ${Number(p.stock) <= 0 ? 'red' : Number(p.stock) < 10 ? 'orange' : 'green'}`}>
-                            {Number(p.stock) <= 0 ? 'Tükendi' : Number(p.stock) < 10 ? 'Kritik' : 'Stokta'}
-                          </span>
-                        </div>
-                      </td>
-                      <td>
-                        <div className="table-actions" style={{ justifyContent: 'center' }}>
-                          <button onClick={() => duzenlemeAc(p)} className="tbl-btn secondary icon-only" title="Düzenle">
-                            <FiEdit2 />
-                          </button>
-                          <button onClick={() => setConfirmDelete({id: p.id, label: p.name})} className="tbl-btn danger icon-only" title="Sil">
-                            <FiTrash2 />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      </span>
+                    </div>
+
+                    <div className="prd-mobile-card-footer">
+                      <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700 }}>Hızlı Stok:</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <QtyStepper 
+                          value={p.stock}
+                          onChange={(val) => hizliStok(p.id, val)}
+                          disabled={!subActive}
+                        />
+                        <span className={`table-badge ${Number(p.stock) <= 0 ? 'red' : Number(p.stock) < 10 ? 'orange' : 'green'}`}>
+                          {Number(p.stock) <= 0 ? 'Tükendi' : Number(p.stock) < 10 ? 'Kritik' : `${p.stock} Adet`}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
 
@@ -681,17 +865,29 @@ export default function Products() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-subtle)', padding: '12px 16px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-main)', flexWrap: 'wrap', gap: '10px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                   <strong style={{ fontSize: '0.9rem' }}>Excel / CSV Dosyasından Aktar</strong>
-                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Sütunlar: ÜrünAdı, Kategori, Fiyat, Stok, Barkod, GörselURL</span>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Desteklenen Formatlar: .xlsx, .xls, .csv, .txt</span>
                 </div>
 
-                <label className="modern-btn secondary" style={{ cursor: 'pointer', padding: '6px 14px', fontSize: '0.8rem' }}>
-                  <FiFileText size={16} /> Excel / CSV Dosyası Yükle
-                  <input type="file" accept=".csv,.txt,.xlsx" onChange={handleCsvUpload} style={{ display: 'none' }} />
-                </label>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <button 
+                    type="button" 
+                    onClick={downloadSampleTemplate} 
+                    className="modern-btn outline" 
+                    style={{ padding: '6px 12px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                    title="Örnek Excel Şablonu İndir"
+                  >
+                    <FiDownload size={15} /> Örnek Şablon İndir
+                  </button>
+
+                  <label className="modern-btn secondary" style={{ cursor: 'pointer', padding: '6px 14px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <FiFileText size={16} /> Excel / CSV Yükle
+                    <input type="file" accept=".xlsx,.xls,.csv,.txt" onChange={handleCsvUpload} style={{ display: 'none' }} />
+                  </label>
+                </div>
               </div>
 
-              {/* DİNAMİK TOPLU ÜRÜN EDİTÖR TABLOSU */}
-              <div className="table-responsive-wrapper" style={{ maxHeight: '320px', overflowY: 'auto', marginTop: '12px' }}>
+              {/* DİNAMİK TOPLU ÜRÜN EDİTÖR MASAÜSTÜ TABLOSU */}
+              <div className="bulk-desktop-table table-responsive-wrapper" style={{ maxHeight: '320px', overflowY: 'auto', marginTop: '12px' }}>
                 <table className="data-table">
                   <thead>
                     <tr>
@@ -785,6 +981,125 @@ export default function Products() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+
+              {/* MOBİL DOKUNMATİK TOPLU ÜRÜN EDİTÖR KARTLARI */}
+              <div className="bulk-mobile-card-list" style={{ maxHeight: '360px', overflowY: 'auto', marginTop: '12px' }}>
+                {bulkRows.map((row, idx) => (
+                  <div key={idx} className="bulk-mobile-row-card">
+                    <div className="bulk-mobile-row-header">
+                      <span className="table-badge blue" style={{ fontSize: '0.78rem' }}>Ürün #{idx + 1}</span>
+                      {bulkRows.length > 1 && (
+                        <button 
+                          type="button"
+                          onClick={() => removeBulkRow(idx)} 
+                          className="tbl-btn danger icon-only" 
+                          style={{ width: '26px', height: '26px' }}
+                          title="Satırı Sil"
+                        >
+                          <FiTrash2 size={13} />
+                        </button>
+                      )}
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '2px', display: 'block' }}>
+                          Ürün Adı *
+                        </label>
+                        <input 
+                          placeholder="Örn: 10mm Matkap Ucu" 
+                          value={row.name} 
+                          onChange={e => handleBulkRowChange(idx, "name", e.target.value)} 
+                          className="modern-input"
+                          style={{ width: '100%', padding: '6px 10px', fontSize: '0.85rem' }}
+                        />
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                        <div>
+                          <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '2px', display: 'block' }}>
+                            Kategori
+                          </label>
+                          <input 
+                            placeholder="Genel" 
+                            value={row.category} 
+                            onChange={e => handleBulkRowChange(idx, "category", e.target.value)} 
+                            className="modern-input"
+                            style={{ width: '100%', padding: '6px 10px', fontSize: '0.85rem' }}
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '2px', display: 'block' }}>
+                            Fiyat (₺)
+                          </label>
+                          <input 
+                            type="number" 
+                            placeholder="0.00" 
+                            value={row.price} 
+                            onChange={e => handleBulkRowChange(idx, "price", e.target.value)} 
+                            className="modern-input"
+                            style={{ width: '100%', padding: '6px 10px', fontSize: '0.85rem' }}
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                        <div>
+                          <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '2px', display: 'block' }}>
+                            Stok Adedi
+                          </label>
+                          <input 
+                            type="number" 
+                            placeholder="0" 
+                            value={row.stock} 
+                            onChange={e => handleBulkRowChange(idx, "stock", e.target.value)} 
+                            className="modern-input"
+                            style={{ width: '100%', padding: '6px 10px', fontSize: '0.85rem' }}
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '2px', display: 'block' }}>
+                            Barkod
+                          </label>
+                          <input 
+                            placeholder="Barkod No" 
+                            value={row.barcode} 
+                            onChange={e => handleBulkRowChange(idx, "barcode", e.target.value)} 
+                            className="modern-input"
+                            style={{ width: '100%', padding: '6px 10px', fontSize: '0.85rem' }}
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '2px', display: 'block' }}>
+                          Ürün Görseli
+                        </label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <input 
+                            placeholder="Görsel URL veya Seçin" 
+                            value={row.imageUrl} 
+                            onChange={e => handleBulkRowChange(idx, "imageUrl", e.target.value)} 
+                            className="modern-input"
+                            style={{ padding: '6px 10px', fontSize: '0.8rem', flex: 1 }}
+                          />
+                          <label className="tbl-btn secondary" style={{ cursor: 'pointer', padding: '6px 10px', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '4px', shrink: 0 }}>
+                            <FiUploadCloud size={14} /> Fotoğraf
+                            <input 
+                              type="file" 
+                              accept="image/*" 
+                              onChange={e => handleProductImageUpload(e.target.files?.[0], false, idx)} 
+                              style={{ display: 'none' }} 
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
 
               <button onClick={addBulkRow} className="modern-btn secondary" style={{ marginTop: '10px', fontSize: '0.8rem', padding: '6px 12px' }}>

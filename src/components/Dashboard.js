@@ -265,31 +265,22 @@ export default function Dashboard() {
       )}
 
       {/* SAMSUNG NOW BRIEF - TEK VE CANLI YAPAY ZEKA ÖZET WIDGET'I (EĞER AYARLARDAN KAPATILMADIYSA) */}
+      {/* SAMSUNG NOW BRIEF - TEK VE CANLI YAPAY ZEKA ÖZET WIDGET'I (EĞER AYARLARDAN KAPATILMADIYSA) */}
       {showAiBrief && currentBrief && (
-        <div 
-          className="prd-card" 
-          style={{ 
-            marginBottom: '20px', 
-            background: 'linear-gradient(135deg, rgba(37,99,235,0.06) 0%, rgba(124,58,237,0.06) 100%)',
-            border: '1.5px solid var(--primary-light)',
-            borderRadius: 'var(--radius-lg)',
-            padding: '20px 24px',
-            position: 'relative'
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div className="prd-card now-brief-card">
+          <div className="now-brief-header">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               <span className={`table-badge ${currentBrief.badgeColor}`} style={{ fontSize: '0.75rem', letterSpacing: '0.5px' }}>
                 <FiZap size={13} style={{ marginRight: '4px' }} /> {currentBrief.badge}
               </span>
               <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                • StokPro AI Now Brief ({briefIndex + 1}/{aiBriefSlides.length})
+                • AI Now Brief ({briefIndex + 1}/{aiBriefSlides.length})
               </span>
             </div>
 
             {/* SLIDE DEĞİŞTİRME BUTONLARI */}
             {aiBriefSlides.length > 1 && (
-              <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginLeft: 'auto' }}>
                 <button 
                   onClick={() => setBriefIndex(prev => (prev === 0 ? aiBriefSlides.length - 1 : prev - 1))}
                   className="tbl-btn secondary icon-only" 
@@ -310,18 +301,17 @@ export default function Dashboard() {
             )}
           </div>
 
-          <h3 style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--text-main)', marginBottom: '6px', letterSpacing: '-0.3px' }}>
+          <h3 className="now-brief-title">
             {currentBrief.title}
           </h3>
-          <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '16px', lineHeight: 1.5, maxWidth: '90%' }}>
+          <p className="now-brief-desc">
             {currentBrief.desc}
           </p>
 
           <div>
             <Link 
               href={currentBrief.actionUrl} 
-              className="modern-btn primary"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', fontSize: '0.85rem' }}
+              className="modern-btn primary now-brief-action-btn"
             >
               {currentBrief.actionText} <FiArrowRight size={16} />
             </Link>

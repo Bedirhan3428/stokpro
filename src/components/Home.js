@@ -134,49 +134,49 @@ export default function Home() {
       <main className="flex-1 max-w-7xl mx-auto px-5 py-8 flex flex-col gap-14">
         
         {/* HERO SECTION WITH EXPLICIT APPLICATION PURPOSE */}
-        <section className="text-center flex flex-col items-center gap-6 max-w-4xl mx-auto pt-2">
+        <section className="text-center flex flex-col items-center gap-5 max-w-4xl mx-auto pt-2 px-2 sm:px-0">
           
           {/* OAUTH VERIFICATION VERBATIM BRAND BADGE */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 dark:bg-blue-950/80 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-900 text-xs font-extrabold tracking-wide">
-            <FiZap /> STOKPRO® BARKODLU STOK VE ÖN MUHASEBE UYGULAMASI
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-950/80 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-900 text-xs font-extrabold tracking-wide text-center">
+            <FiZap className="shrink-0" /> <span>STOKPRO® BARKODLU STOK VE ÖN MUHASEBE</span>
           </div>
 
-          <h1 className="text-3xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
-            StokPro ile İşletmenizi Dijitalleştirin <br />
+          <h1 className="text-2xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+            StokPro ile İşletmenizi Dijitalleştirin <br className="hidden sm:inline" />
             <span className="text-blue-600 dark:text-blue-500">Stok, Cari ve Kasa Yönetimi</span>
           </h1>
 
           {/* APPLICATION PURPOSE BANNER (GOOGLE OAUTH VERIFICATION REQUIREMENT) */}
-          <div className="w-full bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-900/60 rounded-xl p-6 shadow-sm text-left flex flex-col gap-3">
-            <h3 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
-              <FiShield className="text-blue-600" /> StokPro Uygulamasının Amacı Nedir?
+          <div className="w-full bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-900/60 rounded-xl p-4 sm:p-6 shadow-sm text-left flex flex-col gap-3">
+            <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+              <FiShield className="text-blue-600 shrink-0" /> StokPro Uygulamasının Amacı Nedir?
             </h3>
-            <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
               <strong>StokPro</strong>, küçük ve orta ölçekli ticari işletmeler (esnaf, hırdavat, perakende mağazaları) için geliştirilmiş <strong>bulut tabanlı barkodlu stok takip, müşteri cari alacak yönetimi ve ön muhasebe yazılımıdır</strong>. Kullanıcıların karmaşık defter hesaplarına son vererek; depolardaki ürün adetlerini anlık izlemelerini, kasaya nakit/veresiye satış kaydetmelerini ve dijital satış faturası kesmelerini sağlar.
             </p>
           </div>
 
           <TrustStats />
 
-          <div className="flex flex-wrap justify-center gap-4">
+          <div className="flex flex-col sm:flex-row justify-center gap-3 w-full sm:w-auto">
             <button 
               onClick={() => router.push(user ? "/dashboard" : "/register")} 
-              className="modern-btn primary"
-              style={{ padding: '12px 28px', fontSize: '1rem', fontWeight: 900 }}
+              className="modern-btn primary w-full sm:w-auto justify-center"
+              style={{ padding: '12px 28px', fontSize: '0.95rem', fontWeight: 900 }}
             >
               {user ? "Yönetim Paneline Geç" : "Hemen Ücretsiz Başla"} <FiArrowRight size={18} />
             </button>
 
             {!isStandalone && deferredPrompt && (
-              <button onClick={handleInstallClick} className="modern-btn secondary" style={{ padding: '12px 20px' }}>
-                <FiDownload size={18} /> Masaüstü / Mobil Uygulamayı İndir
+              <button onClick={handleInstallClick} className="modern-btn secondary w-full sm:w-auto justify-center" style={{ padding: '12px 20px' }}>
+                <FiDownload size={18} /> Uygulamayı İndir
               </button>
             )}
           </div>
 
           {!user && (
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-bold flex items-center gap-1.5">
-              <FiCheckCircle className="text-emerald-500" /> Kurulum veya Kredi Kartı Gerekmez — Anında Deneyin
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-bold flex items-center justify-center gap-1.5">
+              <FiCheckCircle className="text-emerald-500 shrink-0" /> Kurulum veya Kredi Kartı Gerekmez — Anında Deneyin
             </p>
           )}
         </section>

@@ -6,7 +6,8 @@ import { auth } from "../firebase";
 import { getUserProfile } from "../utils/firebaseHelpers";
 import { getMasterStoreSnapshot } from "../utils/masterDataCache";
 
-export default function InvoiceModal({ invoiceData, onClose }) {
+export default function InvoiceModal({ invoiceData: propInvoiceData, invoice: propInvoice, onClose }) {
+  const invoiceData = propInvoiceData || propInvoice;
   const [downloading, setDownloading] = useState(false);
   const [sellerInfo, setSellerInfo] = useState({
     name: "",

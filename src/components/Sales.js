@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef, useMemo } from "react";
 import { 
   FiShoppingCart, FiSearch, FiPlus, FiMinus, FiTrash2, 
   FiCreditCard, FiDollarSign, FiUser, FiCheckCircle, FiX, 
-  FiTrendingUp, FiTrendingDown, FiArchive, FiTag, FiPrinter, FiFileText, FiZap
+  FiTrendingUp, FiTrendingDown, FiArchive, FiTag, FiPrinter, FiFileText, FiZap, FiPackage
 } from "react-icons/fi";
 import { 
   finalizeSaleTransaction, 
@@ -69,6 +69,7 @@ export default function Sales() {
   const [cart, setCart] = useState([]);
   const [saleType, setSaleType] = useState("cash");
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
+  const [mobileTab, setMobileTab] = useState("catalog"); // "catalog" | "cart"
 
   // Modallar State
   const [showGelirModal, setShowGelirModal] = useState(false);
@@ -339,17 +340,10 @@ export default function Sales() {
     <div className="page-container">
       <Toast note={note} onClose={() => setNote(null)} />
 
-      {activeInvoice && (
-        <InvoiceModal 
-          invoice={activeInvoice} 
-          onClose={() => setActiveInvoice(null)} 
-        />
-      )}
-
       {/* ÜST BİLGİ VE HIZLI KASA İŞLEM BUTONLARI */}
-      <div className="prd-card" style={{ marginBottom: '16px', padding: '12px 16px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-          <form onSubmit={handleBarcodeSubmit} style={{ display: 'flex', gap: '8px', flex: '1 1 300px' }}>
+      <div className="prd-card pos-header-card" style={{ marginBottom: '12px', padding: '10px 14px' }}>
+        <div className="pos-header-row">
+          <form onSubmit={handleBarcodeSubmit} className="pos-barcode-form">
             <div className="input-icon-wrapper" style={{ width: '100%' }}>
               <FiZap className="input-icon" style={{ color: 'var(--warning)' }} />
               <input 
@@ -358,28 +352,48 @@ export default function Sales() {
                 value={barcodeInput} 
                 onChange={e => setBarcodeInput(e.target.value)} 
                 className="search-input"
+                style={{ padding: '8px 12px 8px 36px', fontSize: '0.85rem' }}
                 autoFocus 
               />
             </div>
           </form>
 
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button className="modern-btn success" onClick={() => setShowGelirModal(true)} disabled={!subActive}>
-              <FiTrendingUp size={16} /> + Kasa Ek Gelir
+          <div className="pos-action-btns">
+            <button className="modern-btn success" onClick={() => setShowGelirModal(true)} disabled={!subActive} style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
+              <FiTrendingUp size={15} /> + Ek Gelir
             </button>
-            <button className="modern-btn danger" onClick={() => setShowGiderModal(true)} disabled={!subActive}>
-              <FiTrendingDown size={16} /> - Kasa Gider Çıkışı
+            <button className="modern-btn danger" onClick={() => setShowGiderModal(true)} disabled={!subActive} style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
+              <FiTrendingDown size={15} /> - Gider Çıkışı
             </button>
           </div>
         </div>
       </div>
 
+      {/* MOBİL SEKME GEÇİŞİ (SADECE MOBİL EKRANDA GÖRÜNÜR) */}
+      <div className="pos-mobil-tabs">
+        <button 
+          type="button" 
+          className={`pos-tab-btn ${mobileTab === "catalog" ? "active" : ""}`}
+          onClick={() => setMobileTab("catalog")}
+        >
+          <FiPackage size={16} /> Ürün Kataloğu
+        </button>
+        <button 
+          type="button" 
+          className={`pos-tab-btn ${mobileTab === "cart" ? "active" : ""}`}
+          onClick={() => setMobileTab("cart")}
+        >
+          <FiShoppingCart size={16} /> Sepet
+          {cart.length > 0 && <span className="pos-cart-badge">{cart.length}</span>}
+        </button>
+      </div>
+
       {/* ANA POS İKİ KOLONLU DÜZEN */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '16px' }}>
+      <div className="pos-grid-container">
         
         {/* SOL KOLON: ÜRÜN KATALOĞU VE HIZLI ARAMA */}
-        <div className="prd-card">
-          <div className="input-icon-wrapper" style={{ marginBottom: '14px' }}>
+        <div className={`prd-card pos-column ${mobileTab === "catalog" ? "pos-mobile-show" : "pos-mobile-hide"}`}>
+          <div className="input-icon-wrapper" style={{ marginBottom: '12px' }}>
             <FiSearch className="input-icon" />
             <input 
               placeholder="Ürün adı, barkod veya kategori arayın..." 
@@ -389,7 +403,8 @@ export default function Sales() {
             />
           </div>
 
-          <div className="table-responsive-wrapper" style={{ maxHeight: '520px', overflowY: 'auto' }}>
+          {/* MASAÜSTÜ TABLO GÖRÜNÜMÜ */}
+          <div className="pos-desktop-table table-responsive-wrapper" style={{ maxHeight: '520px', overflowY: 'auto' }}>
             <table className="data-table">
               <thead>
                 <tr>
@@ -397,14 +412,14 @@ export default function Sales() {
                   <th>Kategori</th>
                   <th style={{ textAlign: 'right' }}>Fiyat</th>
                   <th style={{ textAlign: 'center' }}>Stok</th>
-                  <th style={{ textAlign: 'center', width: '90px' }}>Ekle</th>
+                  <th style={{ textAlign: 'center', width: '70px' }}>Ekle</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredProducts.map(p => (
                   <tr key={p.id}>
                     <td>
-                      <strong>{p.name}</strong>
+                      <strong style={{ fontSize: '0.88rem' }}>{p.name}</strong>
                     </td>
                     <td>
                       <span className="table-badge gray">{p.category || "Genel"}</span>
@@ -432,10 +447,43 @@ export default function Sales() {
               </tbody>
             </table>
           </div>
+
+          {/* MOBİL DOKUNMATİK FERAH ÜRÜN KART LİSTESİ */}
+          <div className="pos-mobile-product-list">
+            {filteredProducts.length === 0 ? (
+              <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                <FiSearch size={32} style={{ marginBottom: '8px' }} />
+                <p>Aranan kriterlere uygun ürün bulunamadı.</p>
+              </div>
+            ) : (
+              filteredProducts.map(p => (
+                <div key={p.id} className="pos-mobile-card">
+                  <div className="pos-mobile-card-main">
+                    <strong className="pos-mobile-card-title">{p.name}</strong>
+                    <div className="pos-mobile-card-sub">
+                      <span className="pos-mobile-card-price">{moneyFormat(p.price)}</span>
+                      <span className="pos-mobile-card-category">{p.category || "Genel"}</span>
+                      <span className={`table-badge ${Number(p.stock) <= 0 ? 'red' : Number(p.stock) < 10 ? 'orange' : 'green'}`}>
+                        {p.stock} Adet
+                      </span>
+                    </div>
+                  </div>
+                  <button 
+                    type="button"
+                    onClick={() => sepeteEkle(p)} 
+                    className="modern-btn primary pos-mobile-add-btn" 
+                    disabled={(p.stock || 0) <= 0 || !subActive}
+                  >
+                    <FiPlus size={16} /> Ekle
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
         </div>
 
         {/* SAĞ KOLON: SEPET VE ÖDEME SEÇENEKLERİ */}
-        <div className="prd-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+        <div className={`prd-card pos-column ${mobileTab === "cart" ? "pos-mobile-show" : "pos-mobile-hide"}`} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           <div>
             <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--border-main)', paddingBottom: '10px', marginBottom: '12px' }}>
               <FiShoppingCart style={{ color: 'var(--primary)' }} /> Satış Sepeti ({cart.length})
@@ -444,7 +492,7 @@ export default function Sales() {
             {cart.length === 0 ? (
               <div style={{ padding: '3rem 1rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                 <FiShoppingCart size={40} style={{ marginBottom: '8px' }} />
-                <p>Sepetiniz boş. Soldaki listeden ürün seçiniz.</p>
+                <p>Sepetiniz boş. Ürün eklemek için listeden ürün seçiniz.</p>
               </div>
             ) : (
               <div className="table-responsive-wrapper" style={{ maxHeight: '280px', overflowY: 'auto' }}>
@@ -588,6 +636,24 @@ export default function Sales() {
         </div>
 
       </div>
+
+      {/* MOBİL YAPISI İÇİN STICKY SEPET ALT BARI */}
+      {cart.length > 0 && mobileTab === "catalog" && (
+        <div className="pos-sticky-cart-bar">
+          <div>
+            <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.85)' }}>Sepet ({cart.length} Ürün):</span>
+            <strong style={{ fontSize: '1.15rem', display: 'block', color: '#ffffff' }}>{moneyFormat(cartTotal)}</strong>
+          </div>
+          <button 
+            type="button" 
+            onClick={() => setMobileTab("cart")} 
+            className="modern-btn success" 
+            style={{ padding: '8px 16px', fontSize: '0.85rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+          >
+            Sepete Git & Öde <FiShoppingCart size={16} />
+          </button>
+        </div>
+      )}
 
       {/* EK GELİR POPUP MODALI */}
       {showGelirModal && (
