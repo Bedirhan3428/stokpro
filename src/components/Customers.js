@@ -275,89 +275,160 @@ export default function Customers() {
             <p>Müşteri kaydı bulunamadı.</p>
           </div>
         ) : (
-          <div className="table-responsive-wrapper">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th style={{ width: '44px', textAlign: 'center' }}>İkon</th>
-                  <th>Müşteri / Firma Adı</th>
-                  <th>Telefon Numarası</th>
-                  <th style={{ textAlign: 'right' }}>Güncel Bakiye</th>
-                  <th style={{ textAlign: 'center' }}>Bakiye Durumu</th>
-                  <th style={{ textAlign: 'center', width: '200px' }}>İşlemler</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(c => {
-                  const bal = Number(c.balance || 0);
-                  const isTarget = highlightedId === c.id;
-                  const displayPhone = formatPhone(c.phone);
+          <>
+            {/* MASAÜSTÜ TABLOSU */}
+            <div className="table-responsive-wrapper cust-desktop-table">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '44px', textAlign: 'center' }}>İkon</th>
+                    <th>Müşteri / Firma Adı</th>
+                    <th>Telefon Numarası</th>
+                    <th style={{ textAlign: 'right' }}>Güncel Bakiye</th>
+                    <th style={{ textAlign: 'center' }}>Bakiye Durumu</th>
+                    <th style={{ textAlign: 'center', width: '200px' }}>İşlemler</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map(c => {
+                    const bal = Number(c.balance || 0);
+                    const isTarget = highlightedId === c.id;
+                    const displayPhone = formatPhone(c.phone);
 
-                  return (
-                    <tr 
-                      key={c.id}
-                      id={`cust-row-${c.id}`}
-                      className={isTarget ? "row-highlight-pulse" : ""}
-                    >
-                      <td style={{ textAlign: 'center' }}>
-                        <div className="tbl-avatar" style={{ background: 'var(--bg-subtle)', color: 'var(--text-muted)', width: '32px', height: '32px', borderRadius: '50%', margin: '0 auto' }}>
-                          <FiUser size={16} />
+                    return (
+                      <tr 
+                        key={c.id}
+                        id={`cust-row-${c.id}`}
+                        className={isTarget ? "row-highlight-pulse" : ""}
+                      >
+                        <td style={{ textAlign: 'center' }}>
+                          <div className="tbl-avatar" style={{ background: 'var(--bg-subtle)', color: 'var(--text-muted)', width: '32px', height: '32px', borderRadius: '50%', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <FiUser size={16} />
+                          </div>
+                        </td>
+                        <td>
+                          <strong>{c.name}</strong>
+                          {isTarget && (
+                            <span className="table-badge purple" style={{ marginLeft: '8px' }}>AI VURGULANAN MÜŞTERİ</span>
+                          )}
+                        </td>
+                        <td>
+                          {displayPhone ? (
+                            <a href={`tel:${c.phone}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--primary)', fontWeight: 600 }}>
+                              <FiPhone size={14} /> {displayPhone}
+                            </a>
+                          ) : <span style={{ color: 'var(--text-light)' }}>-</span>}
+                        </td>
+                        <td style={{ textAlign: 'right', fontWeight: 800, fontSize: '1rem', color: bal > 0 ? 'var(--danger)' : bal < 0 ? 'var(--success)' : 'var(--text-main)' }}>
+                          {bal.toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}
+                        </td>
+                        <td style={{ textAlign: 'center' }}>
+                          <span className={`table-badge ${bal > 0 ? 'red' : bal < 0 ? 'green' : 'gray'}`}>
+                            {bal > 0 ? 'Borçlu' : bal < 0 ? 'Alacaklı' : 'Dengede'}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="table-actions" style={{ justifyContent: 'center' }}>
+                            <button 
+                              onClick={() => detayAc(c)} 
+                              className="tbl-btn primary" 
+                              style={{ height: '30px', padding: '0 10px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}
+                            >
+                              <FiDollarSign size={14} /> Ekstre
+                            </button>
+                            <button 
+                              onClick={() => setEditingCust({ id: c.id, name: c.name, phone: c.phone || "" })} 
+                              className="tbl-btn secondary icon-only" 
+                              style={{ width: '30px', height: '30px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} 
+                              title="Müşteriyi Düzenle"
+                            >
+                              <FiEdit2 size={14} />
+                            </button>
+                            <button 
+                              onClick={() => setConfirmDelete(c)} 
+                              className="tbl-btn danger icon-only" 
+                              style={{ width: '30px', height: '30px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} 
+                              title="Müşteriyi Sil"
+                            >
+                              <FiTrash2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* MOBİL MÜŞTERİ KART LİSTESİ */}
+            <div className="cust-mobile-card-list">
+              {filtered.map(c => {
+                const bal = Number(c.balance || 0);
+                const isTarget = highlightedId === c.id;
+                const displayPhone = formatPhone(c.phone);
+
+                return (
+                  <div key={c.id} id={`cust-mob-${c.id}`} className={`cust-mobile-card ${isTarget ? "row-highlight-pulse" : ""}`}>
+                    <div className="cust-mobile-card-header">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div className="tbl-avatar" style={{ background: 'var(--bg-subtle)', color: 'var(--text-muted)', width: '30px', height: '30px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', shrink: 0 }}>
+                          <FiUser size={14} />
                         </div>
-                      </td>
-                      <td>
-                        <strong>{c.name}</strong>
-                        {isTarget && (
-                          <span className="table-badge purple" style={{ marginLeft: '8px' }}>AI VURGULANAN MÜŞTERİ</span>
-                        )}
-                      </td>
-                      <td>
+                        <strong style={{ fontSize: '0.95rem' }}>{c.name}</strong>
+                      </div>
+                      <span className={`table-badge ${bal > 0 ? 'red' : bal < 0 ? 'green' : 'gray'}`}>
+                        {bal > 0 ? 'Borçlu' : bal < 0 ? 'Alacaklı' : 'Dengede'}
+                      </span>
+                    </div>
+
+                    <div className="cust-mobile-card-body">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>Telefon:</span>
                         {displayPhone ? (
-                          <a href={`tel:${c.phone}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--primary)', fontWeight: 600 }}>
-                            <FiPhone size={14} /> {displayPhone}
+                          <a href={`tel:${c.phone}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--primary)', fontWeight: 700 }}>
+                            <FiPhone size={13} /> {displayPhone}
                           </a>
                         ) : <span style={{ color: 'var(--text-light)' }}>-</span>}
-                      </td>
-                      <td style={{ textAlign: 'right', fontWeight: 800, fontSize: '1rem', color: bal > 0 ? 'var(--danger)' : bal < 0 ? 'var(--success)' : 'var(--text-main)' }}>
-                        {bal.toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}
-                      </td>
-                      <td style={{ textAlign: 'center' }}>
-                        <span className={`table-badge ${bal > 0 ? 'red' : bal < 0 ? 'green' : 'gray'}`}>
-                          {bal > 0 ? 'Borçlu' : bal < 0 ? 'Alacaklı' : 'Dengede'}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="table-actions" style={{ justifyContent: 'center' }}>
-                          <button 
-                            onClick={() => detayAc(c)} 
-                            className="tbl-btn primary" 
-                            style={{ height: '30px', padding: '0 10px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}
-                          >
-                            <FiDollarSign size={14} /> Ekstre
-                          </button>
-                          <button 
-                            onClick={() => setEditingCust({ id: c.id, name: c.name, phone: c.phone || "" })} 
-                            className="tbl-btn secondary icon-only" 
-                            style={{ width: '30px', height: '30px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} 
-                            title="Müşteriyi Düzenle"
-                          >
-                            <FiEdit2 size={14} />
-                          </button>
-                          <button 
-                            onClick={() => setConfirmDelete(c)} 
-                            className="tbl-btn danger icon-only" 
-                            style={{ width: '30px', height: '30px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} 
-                            title="Müşteriyi Sil"
-                          >
-                            <FiTrash2 size={14} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', marginTop: '4px' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>Güncel Bakiye:</span>
+                        <strong style={{ fontSize: '0.95rem', color: bal > 0 ? 'var(--danger)' : bal < 0 ? 'var(--success)' : 'var(--text-main)' }}>
+                          {bal.toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}
+                        </strong>
+                      </div>
+                    </div>
+
+                    <div className="cust-mobile-card-actions">
+                      <button 
+                        onClick={() => detayAc(c)} 
+                        className="tbl-btn primary"
+                        style={{ flex: 1, justifyContent: 'center', padding: '7px 10px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        <FiDollarSign size={14} /> Ekstre
+                      </button>
+                      <button 
+                        onClick={() => setEditingCust({ id: c.id, name: c.name, phone: c.phone || "" })} 
+                        className="tbl-btn secondary"
+                        style={{ width: '34px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        title="Düzenle"
+                      >
+                        <FiEdit2 size={14} />
+                      </button>
+                      <button 
+                        onClick={() => setConfirmDelete(c)} 
+                        className="tbl-btn danger"
+                        style={{ width: '34px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        title="Sil"
+                      >
+                        <FiTrash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
 
@@ -444,7 +515,7 @@ export default function Customers() {
             </div>
 
             <div className="modal-body">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-subtle)', padding: '12px 16px', borderRadius: 'var(--radius-sm)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-subtle)', padding: '12px 16px', borderRadius: 'var(--radius-sm)', flexWrap: 'wrap', gap: '8px' }}>
                 <div>
                   <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>İletişim:</span>
                   <strong style={{ marginLeft: '6px', fontSize: '0.9rem' }}>{formatPhone(selectedCust.phone) || "Telefon Belirtilmedi"}</strong>
@@ -457,9 +528,9 @@ export default function Customers() {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end', marginTop: '10px' }}>
+              <div className="cust-pay-row" style={{ display: 'flex', gap: '10px', alignItems: 'flex-end', marginTop: '12px' }}>
                 <div style={{ flex: 1 }}>
-                  <label>Tahsilat Al (₺)</label>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase' }}>Tahsilat Al (₺)</label>
                   <input 
                     type="number" 
                     placeholder="0.00" 
@@ -468,7 +539,7 @@ export default function Customers() {
                     className="modern-input"
                   />
                 </div>
-                <button onClick={odemeAl} className="modern-btn success" disabled={!subActive}>
+                <button onClick={odemeAl} className="modern-btn success cust-pay-btn" disabled={!subActive}>
                   <FiCheckCircle size={18} /> Ödemeyi Al
                 </button>
               </div>

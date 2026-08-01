@@ -1863,3 +1863,69 @@
     width: 100% !important;
   }
 }
+
+/* CUSTOMERS PAGE MOBILE RESPONSIVE SYSTEM */
+.cust-desktop-table {
+  display: block;
+}
+
+.cust-mobile-card-list {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .cust-desktop-table {
+    display: none !important;
+  }
+
+  .cust-mobile-card-list {
+    display: flex !important;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .cust-mobile-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-main);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+
+  .cust-mobile-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: 8px;
+  }
+
+  .cust-mobile-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .cust-mobile-card-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 8px;
+  }
+
+  .cust-pay-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+
+  .cust-pay-btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}
