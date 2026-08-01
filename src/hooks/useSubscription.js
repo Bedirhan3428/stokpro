@@ -5,11 +5,18 @@ import { getMasterStoreSnapshot, subscribeToMasterStore } from "../utils/masterD
 import { getUserProfile } from "../utils/firebaseHelpers";
 
 function checkActiveStatus(p) {
-  if (!p) return false;
+  if (!p) return true;
   const status = (p.subscriptionStatus ?? p.subscription_status ?? "").toString().toLowerCase();
-  if (status === "premium" || status === "active") return true;
+  if (
+    status === "premium" || 
+    status === "active" || 
+    status === "active_lifetime" || 
+    status === "lifetime" || 
+    status === "free_forever" ||
+    p.plan === "free_forever"
+  ) return true;
 
-  const end = p.subscriptionEndDate ?? p.subscription_end_date ?? null;
+  const end = p.subscriptionEndDate ?? p.subscription_end_date ?? p.subscriptionEndsAt ?? null;
   if (end) {
     try {
       let d = end;
@@ -19,7 +26,7 @@ function checkActiveStatus(p) {
       if (!isNaN(d.getTime()) && d.getTime() > Date.now()) return true;
     } catch {}
   }
-  return false;
+  return true;
 }
 
 export default function useSubscription() {

@@ -591,13 +591,26 @@ export async function createUserProfile(profile = {}, targetUid = null) {
   ensureDb();
   const uid = targetUid || getUidOrThrow();
   const ref = doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "profile", "user_doc");
-  await setDoc(ref, {
+
+  const endDate = new Date();
+  endDate.setFullYear(endDate.getFullYear() + 100);
+
+  const defaultProfile = {
     name: profile.name ? String(profile.name) : "",
     email: profile.email ? String(profile.email) : null,
+    termsAccepted: true,
+    termsAcceptedAt: new Date().toISOString(),
+    privacyAccepted: true,
+    subscriptionStatus: "active_lifetime",
+    subscriptionEndDate: endDate.toISOString(),
+    plan: "free_forever",
     createdAt: new Date().toISOString(),
     ...profile
-  });
-  return { id: ref.id || "user_doc" };
+  };
+
+  await setDoc(ref, defaultProfile, { merge: true });
+  invalidateAndRefreshMasterCache().catch(() => {});
+  return { id: ref.id || "user_doc", ...defaultProfile };
 }
 
 export async function getUserProfile(targetUid = null) {
@@ -611,7 +624,54 @@ export async function getUserProfile(targetUid = null) {
 
   const ref = doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "profile", "user_doc");
   const snap = await getDoc(ref);
-  return snap.exists() ? { id: snap.id || "user_doc", ...snap.data() } : null;
+
+  const endDate = new Date();
+  endDate.setFullYear(endDate.getFullYear() + 100);
+  const lifetimeIso = endDate.toISOString();
+
+  if (!snap.exists()) {
+    const newProf = {
+      name: currentUser?.displayName || "İşletme Yetkilisi",
+      email: currentUser?.email || "",
+      termsAccepted: true,
+      termsAcceptedAt: new Date().toISOString(),
+      privacyAccepted: true,
+      subscriptionStatus: "active_lifetime",
+      subscriptionEndDate: lifetimeIso,
+      plan: "free_forever",
+      createdAt: new Date().toISOString()
+    };
+    await setDoc(ref, newProf, { merge: true }).catch(() => {});
+    return { id: "user_doc", ...newProf };
+  }
+
+  const data = snap.data() || {};
+  let needsUpdate = false;
+  const updates = {};
+
+  if (data.termsAccepted !== true) {
+    data.termsAccepted = true;
+    updates.termsAccepted = true;
+    updates.termsAcceptedAt = data.termsAcceptedAt || new Date().toISOString();
+    updates.privacyAccepted = true;
+    needsUpdate = true;
+  }
+
+  if (!data.subscriptionStatus || data.subscriptionStatus === "trial" || data.subscriptionStatus === "expired") {
+    data.subscriptionStatus = "active_lifetime";
+    data.subscriptionEndDate = lifetimeIso;
+    data.plan = "free_forever";
+    updates.subscriptionStatus = "active_lifetime";
+    updates.subscriptionEndDate = lifetimeIso;
+    updates.plan = "free_forever";
+    needsUpdate = true;
+  }
+
+  if (needsUpdate) {
+    await setDoc(ref, updates, { merge: true }).catch(() => {});
+  }
+
+  return { id: snap.id || "user_doc", ...data };
 }
 
 /* ------------------ PROFİL GÜNCELLEME (YENİ) ------------------ */
@@ -621,12 +681,12 @@ export async function updateUserProfile(uid, data = {}) {
 
   const ref = doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "profile", "user_doc");
 
-  // setDoc ile merge: true kullanarak yoksa oluşturur, varsa günceller
   await setDoc(ref, { 
     ...data, 
     updatedAt: new Date().toISOString() 
   }, { merge: true });
 
+  invalidateAndRefreshMasterCache().catch(() => {});
   return true;
 }
 

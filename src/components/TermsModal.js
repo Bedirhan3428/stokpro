@@ -52,10 +52,16 @@ const TermsModal = () => {
     setIsSubmitting(true);
 
     try {
+      const endDate = new Date();
+      endDate.setFullYear(endDate.getFullYear() + 100);
+
       await updateUserProfile(user.uid, {
         termsAccepted: true,
         termsAcceptedAt: new Date().toISOString(),
-        privacyAccepted: true
+        privacyAccepted: true,
+        subscriptionStatus: "active_lifetime",
+        subscriptionEndDate: endDate.toISOString(),
+        plan: "free_forever"
       });
 
       setShowModal(false);
