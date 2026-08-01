@@ -1,261 +1,74 @@
+"use client";
+
 import React from "react";
-import { FaArrowLeft, FaBookOpen } from "react-icons/fa";
+import Link from "next/link";
+import { FiPackage, FiHome, FiSearch, FiZap } from "react-icons/fi";
 
 export default function NotFound() {
-  const handleGoHome = () => {
-    window.location.href = "/";
-  };
-
   return (
-    <div className="not-found-container">
-      {/* CSS Kodlarını buraya yazdım, sen bunu NotFound.css dosyana taşıyabilirsin */}
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&display=swap');
-
-        /* Genel Sayfa Yapısı */
-        .not-found-container {
-          min-height: 100vh;
-          background-color: #2c241b;
-          background-image: radial-gradient(circle at center, #433022, #1a1612);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 20px;
-          font-family: 'Playfair Display', serif;
-          overflow: hidden;
-        }
-
-        /* Sayfa Perspektif Alanı */
-        .page-wrapper {
-          position: relative;
-          width: 100%;
-          max-width: 500px;
-          perspective: 1000px;
-        }
-
-        /* Yırtık Kağıt Efekti */
-        .torn-paper {
-          position: relative;
-          background-color: #fdfbf7;
-          color: #333;
-          padding: 40px;
-          box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-          transform: rotate(-2deg);
-          transition: transform 0.5s ease-out;
-          
-          /* Yırtık Kenar Oluşturma (CSS Clip-path) */
-          clip-path: polygon(
-            2% 0%, 98% 1%, 100% 100%, 0% 98%
-          );
-          
-          /* Hafif Satır Çizgileri */
-          background-image: linear-gradient(#e5e5e5 1px, transparent 1px);
-          background-size: 100% 2rem;
-        }
-
-        .torn-paper:hover {
-          transform: rotate(0deg) scale(1.02);
-        }
-
-        /* Sol Taraftaki Spiral Delikleri */
-        .holes {
-          position: absolute;
-          top: 0;
-          left: 15px;
-          height: 100%;
-          display: flex;
-          flex-direction: column;
-          justify-content: space-evenly;
-          align-items: center;
-        }
-
-        .hole {
-          width: 15px;
-          height: 15px;
-          background-color: #2c241b;
-          border-radius: 50%;
-          box-shadow: inset 2px 2px 5px rgba(0,0,0,0.5);
-          opacity: 0.8;
-        }
-
-        /* İçerik Kutusu (Çerçeve) */
-        .content-box {
-          border: 4px double #d6d3c9;
-          background-color: rgba(255, 254, 240, 0.9);
-          padding: 30px 20px;
-          text-align: center;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 20px;
-        }
-
-        /* Header: Bölüm Başlığı */
-        .chapter-header {
-          width: 100%;
-          display: flex;
-          justify-content: space-between;
-          border-bottom: 1px solid #d6d3c9;
-          padding-bottom: 10px;
-          color: #8c8880;
-          font-size: 0.8rem;
-          text-transform: uppercase;
-          letter-spacing: 2px;
-          font-family: sans-serif;
-        }
-
-        /* Büyük 404 Başlığı */
-        .title-404-container {
-          position: relative;
-          margin: 10px 0;
-        }
-
-        .title-404 {
-          font-size: 8rem;
-          line-height: 1;
-          font-weight: 900;
-          color: #2c241b;
-          margin: 0;
-          letter-spacing: -5px;
-        }
-
-        /* Kırmızı Kalem Çizgisi */
-        .red-line {
-          position: absolute;
-          bottom: 10px;
-          left: 0;
-          width: 100%;
-          height: 5px;
-          background-color: #8b0000;
-          opacity: 0.6;
-          border-radius: 50%;
-          transform: rotate(-2deg);
-        }
-
-        /* Alt Başlık */
-        .subtitle {
-          font-size: 1.8rem;
-          font-weight: 700;
-          margin: 0;
-          color: #1a1612;
-        }
-
-        /* Açıklama Metni */
-        .description {
-          font-size: 1.1rem;
-          color: #5d554a;
-          font-style: italic;
-          line-height: 1.6;
-          max-width: 300px;
-          margin: 0 auto;
-        }
-
-        .error-code {
-          font-size: 0.8rem;
-          color: #999;
-          font-family: sans-serif;
-          font-style: normal;
-          margin-top: 5px;
-        }
-
-        /* İkonlar */
-        .book-icon {
-          color: #d6d3c9;
-          margin: 10px 0;
-        }
-
-        /* Buton Stili */
-        .home-button {
-          display: inline-flex;
-          align-items: center;
-          gap: 10px;
-          padding: 12px 24px;
-          background-color: #2c241b;
-          color: #fdfbf7;
-          border: 1px solid #5d554a;
-          font-family: sans-serif;
-          font-size: 0.9rem;
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-        }
-
-        .home-button:hover {
-          background-color: #4a3b2f;
-          transform: translateY(-2px);
-          box-shadow: 0 6px 10px rgba(0,0,0,0.3);
-        }
-
-        /* Sayfa Numarası */
-        .page-number {
-          position: absolute;
-          bottom: 20px;
-          right: 30px;
-          font-size: 0.9rem;
-          color: #8c8880;
-          font-style: italic;
-        }
-
-        @media (max-width: 768px) {
-          .title-404 {
-            font-size: 5rem;
-          }
-          .torn-paper {
-            padding: 20px;
-          }
-        }
-      `}</style>
-
-      <div className="page-wrapper">
-        <div className="torn-paper">
-          {/* Sol Kenar Delikleri */}
-          <div className="holes">
-            {[...Array(10)].map((_, i) => (
-              <div key={i} className="hole" />
-            ))}
-          </div>
-
-          <div className="content-box">
-            <div className="chapter-header">
-              <span>Bölüm ??</span>
-              <span>Kayıp Sayfa</span>
-            </div>
-
-            <div className="title-404-container">
-              <h1 className="title-404">404</h1>
-              <div className="red-line"></div>
-            </div>
-
-            <div className="text-content">
-              <h2 id="nf-title" className="subtitle">
-                Sayfa Bulunamadı
-              </h2>
-              <p className="description">
-                "Aradığınız sayfa bu hikayenin bir parçası değil... Belki de rüzgar onu alıp götürmüştür."
-              </p>
-              <p className="error-code">
-                (Hata: Sayfa mevcut değil veya taşınmış olabilir)
-              </p>
-            </div>
-
-            <div className="book-icon">
-              <FaBookOpen size={40} />
-            </div>
-
-            <button onClick={handleGoHome} className="home-button">
-              <FaArrowLeft />
-              Ana Sayfaya Dön
-            </button>
-          </div>
-
-          <div className="page-number">Sayfa 404</div>
-        </div>
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-5 relative overflow-hidden font-sans">
+      
+      {/* ARKAPLANDA SAYDAM BÜYÜK BOŞ KUTU İKONU */}
+      <div 
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none select-none text-slate-700/20 dark:text-slate-800/20 animate-pulse"
+        style={{ fontSize: 'clamp(280px, 45vw, 520px)', opacity: 0.08, zIndex: 0 }}
+      >
+        <FiPackage />
       </div>
+
+      {/* 404 KART İÇERİĞİ */}
+      <div className="relative z-10 max-w-lg w-full bg-slate-900/90 border border-slate-800 backdrop-blur-xl rounded-2xl p-8 sm:p-10 shadow-2xl text-center flex flex-col items-center gap-6">
+        
+        {/* ÜST MARKA BADGE */}
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-950/80 text-blue-400 border border-blue-900/60 text-xs font-extrabold tracking-wider">
+          <FiZap size={14} /> STOKPRO® HATA 404
+        </div>
+
+        {/* ORTADAKİ KUTU VE 404 RAKAMI */}
+        <div className="flex flex-col items-center relative">
+          <div className="w-16 h-16 rounded-2xl bg-blue-600/10 border border-blue-500/30 flex items-center justify-center text-blue-400 text-3xl mb-2 shadow-lg shadow-blue-500/10">
+            <FiPackage />
+          </div>
+          <h1 className="text-6xl sm:text-8xl font-black tracking-tight leading-none bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent">
+            404
+          </h1>
+        </div>
+
+        {/* METİNLER */}
+        <div className="flex flex-col gap-2">
+          <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+            Aradığınız Sayfa veya Stok Bulunamadı
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-400 font-medium leading-relaxed max-w-sm mx-auto">
+            "İstediğiniz sayfa silinmiş, ismi değiştirilmiş veya depomuzda hiç var olmamış olabilir."
+          </p>
+        </div>
+
+        {/* BUTONLAR */}
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full mt-2">
+          <Link 
+            href="/"
+            className="modern-btn primary w-full justify-center"
+            style={{ padding: '12px 20px', fontSize: '0.9rem', fontWeight: 800 }}
+          >
+            <FiHome size={16} /> Ana Sayfaya Dön
+          </Link>
+
+          <Link 
+            href="/products"
+            className="modern-btn secondary w-full justify-center"
+            style={{ padding: '12px 20px', fontSize: '0.9rem', fontWeight: 800 }}
+          >
+            <FiSearch size={16} /> Stokları İncele
+          </Link>
+        </div>
+
+        <div className="text-[11px] text-slate-500 font-semibold pt-2 border-t border-slate-800/80 w-full">
+          StokPro Ticari Stok Takip & Ön Muhasebe Sistemleri
+        </div>
+
+      </div>
+
     </div>
   );
 }
-
-
