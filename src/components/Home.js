@@ -5,19 +5,19 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { 
-  ArrowRight, AlertTriangle, CheckCircle2, Download, 
-  Shield, Zap, Users, Lock, TrendingUp, Crosshair,
-  Slash, Radio
-} from "lucide-react";
+  FiArrowRight, FiAlertTriangle, FiCheckCircle, FiDownload, 
+  FiShield, FiZap, FiUsers, FiLock, FiTrendingUp, FiCrosshair,
+  FiSlash, FiRadio
+} from "react-icons/fi";
 
 const appId = (typeof window !== 'undefined' && window.__app_id) 
   ? window.__app_id 
   : (process.env.NEXT_PUBLIC_FIREBASE_ARTIFACTS_COLLECTION || 'stokpro-freedom-movement');
 
-// Sahte Konsensüs & Toplumsal Kanıt Sayacı (Gerçekçi & İnandırıcı Ölçekli Rakamlar)
+// Sahte Konsensüs & Toplumsal Kanıt Sayacı
 const TrustStats = () => {
   const [count, setCount] = useState(310);
-  const targetCount = 384; // Devasa yerine 350+ hissi veren, psikolojik olarak inandırıcı hedef sayı
+  const targetCount = 384; // Inandırıcı, ölçekli hedef sayı
 
   useEffect(() => {
     let start = 310;
@@ -62,7 +62,7 @@ const TrustStats = () => {
             <span className="text-emerald-400 text-2xl font-bold">+</span>
           </div>
           <div className="text-xs sm:text-sm font-black text-slate-300 mt-1 uppercase tracking-wide flex items-center justify-center sm:justify-start gap-2">
-            <Users className="text-emerald-400 shrink-0 size-4" />
+            <FiUsers className="text-emerald-400 shrink-0" size={18} />
             <span>Bağımsız Esnaf Konsensüsü — Treni Kaçırmayanlar Ağı</span>
           </div>
         </div>
@@ -112,11 +112,11 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-red-500 selection:text-white">
 
-      {/* ÜST ACİL DURUM VE SAVAŞ BARI */}
+      {/* ÜST ACİL DURUM BARI */}
       <div className="bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 text-white py-2 px-4 text-center text-xs font-black tracking-wider uppercase flex items-center justify-center gap-2 shadow-lg">
-        <AlertTriangle className="animate-bounce size-4" />
+        <FiAlertTriangle className="animate-bounce" size={16} />
         <span>KARTEL YAZILIMLARIN SÖMÜRÜSÜNE SON VER! 350+ SEÇKİN ESNAFA KATIL!</span>
-        <AlertTriangle className="animate-bounce size-4" />
+        <FiAlertTriangle className="animate-bounce" size={16} />
       </div>
 
       {/* ANA İÇERİK ALANI */}
@@ -127,7 +127,7 @@ export default function Home() {
 
           {/* MOBİLİZASYON ROZETİ */}
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900 border border-slate-700 text-slate-200 text-xs font-black tracking-wide shadow-inner">
-            <Radio className="text-red-500 animate-pulse size-4" /> 
+            <FiRadio className="text-red-500 animate-pulse" size={16} /> 
             <span>STOKPRO® ÖZGÜRLÜK VE ESNAF DİRENİŞ HAREKETİ</span>
           </div>
 
@@ -145,7 +145,7 @@ export default function Home() {
             </div>
             
             <h3 className="text-lg font-black text-white flex items-center gap-2.5">
-              <Crosshair className="text-red-500 size-5 shrink-0" /> 
+              <FiCrosshair className="text-red-500 shrink-0" size={20} /> 
               Dış Düşmanı Tanı: Küresel Yazılım Kartelleri Sizi Soyuyor!
             </h3>
             
@@ -156,14 +156,14 @@ export default function Home() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
               <div className="flex items-start gap-2 bg-red-950/40 border border-red-900/40 p-3 rounded-lg">
-                <Slash className="text-red-400 shrink-0 mt-0.5 size-4" />
+                <FiSlash className="text-red-400 shrink-0 mt-0.5" size={16} />
                 <span className="text-xs text-slate-300">
                   <strong className="text-red-400 block font-bold">Onlar Ne Yapıyor?</strong>
                   Verilerinizi satıyor, fahiş fiyat dayatıyor, sistemi kısıtlıyor.
                 </span>
               </div>
               <div className="flex items-start gap-2 bg-emerald-950/40 border border-emerald-900/40 p-3 rounded-lg">
-                <Shield className="text-emerald-400 shrink-0 mt-0.5 size-4" />
+                <FiShield className="text-emerald-400 shrink-0 mt-0.5" size={16} />
                 <span className="text-xs text-slate-300">
                   <strong className="text-emerald-400 block font-bold">StokPro Direnişi:</strong>
                   Şifrelenmiş bağımsız altyapı, tam veri gizliliği, esnafa özgürlük.
@@ -172,17 +172,17 @@ export default function Home() {
             </div>
           </div>
 
-          {/* SAHTE KONSENSÜS Sayacı */}
+          {/* SAHTE KONSENSÜS SAYACI */}
           <TrustStats />
 
-          {/* CTA BUTONLARI (FOMO DİLİYLE) */}
+          {/* HAREKETE GEÇİRİCİ BUTONLAR */}
           <div className="flex flex-col sm:flex-row justify-center gap-4 w-full sm:w-auto">
             <button 
               onClick={() => router.push(user ? "/dashboard" : "/register")} 
               className="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white px-8 py-4 rounded-xl font-black text-base shadow-xl shadow-red-950/50 flex items-center justify-center gap-3 transform hover:-translate-y-0.5 transition-all cursor-pointer"
             >
               <span>{user ? "Yönetim Paneline Geç" : "Treni Kaçırma — Savaşımıza Katıl"}</span> 
-              <ArrowRight className="size-5" />
+              <FiArrowRight size={20} />
             </button>
 
             {deferredPrompt && (
@@ -190,7 +190,7 @@ export default function Home() {
                 onClick={handleInstallClick}
                 className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-6 py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
-                <Download className="size-4" /> Direniş Uygulamasını İndir
+                <FiDownload size={18} /> Direniş Uygulamasını İndir
               </button>
             )}
           </div>
@@ -198,10 +198,10 @@ export default function Home() {
           {!user && (
             <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-slate-400 font-bold">
               <span className="flex items-center gap-1.5 text-emerald-400">
-                <CheckCircle2 className="size-4" /> 350+ Bilinçli Esnaf Yanılamaz
+                <FiCheckCircle size={16} /> 350+ Bilinçli Esnaf Yanılamaz
               </span>
               <span className="flex items-center gap-1.5 text-red-400">
-                <Lock className="size-4" /> Kredi Kartı Yok — Kartellere Geçit Yok
+                <FiLock size={16} /> Kredi Kartı Yok — Kartellere Geçit Yok
               </span>
             </div>
           )}
@@ -228,13 +228,13 @@ export default function Home() {
               <h3 className="text-xl font-black text-slate-300">Neden Onları Terk Etmelisin?</h3>
               <ul className="flex flex-col gap-3 text-xs text-slate-400 font-medium">
                 <li className="flex items-center gap-2 text-red-400/80">
-                  <Slash className="shrink-0 size-4" /> Verilerinizi işleyip reklam devlerine satarlar.
+                  <FiSlash className="shrink-0" size={16} /> Verilerinizi işleyip reklam devlerine satarlar.
                 </li>
                 <li className="flex items-center gap-2 text-red-400/80">
-                  <Slash className="shrink-0 size-4" /> Her yıl fahiş zamlarla paranızı emerler.
+                  <FiSlash className="shrink-0" size={16} /> Her yıl fahiş zamlarla paranızı emerler.
                 </li>
                 <li className="flex items-center gap-2 text-red-400/80">
-                  <Slash className="shrink-0 size-4" /> Karışık arayüzlerle sizi kendine mecbur bırakırlar.
+                  <FiSlash className="shrink-0" size={16} /> Karışık arayüzlerle sizi kendine mecbur bırakırlar.
                 </li>
               </ul>
             </div>
@@ -247,13 +247,13 @@ export default function Home() {
               <h3 className="text-xl font-black text-white">Neden Herkes Bize Katılıyor?</h3>
               <ul className="flex flex-col gap-3 text-xs text-slate-200 font-bold">
                 <li className="flex items-center gap-2 text-emerald-400">
-                  <CheckCircle2 className="shrink-0 size-4" /> %100 Veri Mahremiyeti: Bilgileriniz sadece size aittir.
+                  <FiCheckCircle className="shrink-0" size={16} /> %100 Veri Mahremiyeti: Bilgileriniz sadece size aittir.
                 </li>
                 <li className="flex items-center gap-2 text-emerald-400">
-                  <CheckCircle2 className="shrink-0 size-4" /> Esnaf Dayanışması: Sıfır gizli maliyet, tam şeffaflık.
+                  <FiCheckCircle className="shrink-0" size={16} /> Esnaf Dayanışması: Sıfır gizli maliyet, tam şeffaflık.
                 </li>
                 <li className="flex items-center gap-2 text-emerald-400">
-                  <CheckCircle2 className="shrink-0 size-4" /> Işık Hızında Barkod & Cari Takip: ZAMANINIZ SİZE KALIR.
+                  <FiCheckCircle className="shrink-0" size={16} /> Işık Hızında Barkod & Cari Takip: ZAMANINIZ SİZE KALIR.
                 </li>
               </ul>
             </div>
@@ -261,7 +261,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* YORUMLAR VE KİTLESEL AKIM ALANI */}
+        {/* YORUMLAR VE SAHTE KONSENSÜS ALANI */}
         <section className="flex flex-col gap-6">
           <div className="text-center flex flex-col gap-2">
             <span className="text-xs font-black text-emerald-400 uppercase tracking-widest">KİTLESEL AKIM</span>
@@ -319,13 +319,13 @@ export default function Home() {
             className="bg-white text-slate-950 hover:bg-slate-200 font-black px-10 py-4 rounded-xl text-base shadow-2xl transition-all flex items-center gap-3 transform hover:scale-105 cursor-pointer"
           >
             <span>Hemen Topluluğa Katıl & Ücretsiz Başla</span>
-            <ArrowRight className="size-5" />
+            <FiArrowRight size={20} />
           </button>
         </section>
 
       </main>
 
-      {/* FOOTER WITH NEXT.JS LINK COMPONENT */}
+      {/* FOOTER */}
       <footer className="w-full bg-slate-900 border-t border-slate-800 py-8 px-5 mt-auto">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
           <div className="flex items-center gap-2">
