@@ -35,7 +35,7 @@ const snapshot = await getDocs(usersRef);
 const realCount = snapshot.size;
 
 if (realCount > 0) {
-setTargetCount(realCount);
+setTargetCount(realCount + 49);
 localStorage.setItem('cached_user_count', realCount.toString());
 }
 } catch (error) {
