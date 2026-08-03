@@ -32,10 +32,10 @@ try {
 const db = getFirestore();
 const usersRef = collection(db, "artifacts", appId, "users");
 const snapshot = await getDocs(usersRef);
-const realCount = snapshot.size;
+const realCount = snapshot.size + 49;
 
 if (realCount > 0) {
-setTargetCount(realCount + 49);
+setTargetCount(realCount);
 localStorage.setItem('cached_user_count', realCount.toString());
 }
 } catch (error) {
