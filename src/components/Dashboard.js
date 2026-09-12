@@ -14,20 +14,31 @@ import {
   FiTrendingUp, FiTrendingDown, FiDollarSign, FiUsers, 
   FiAlertCircle, FiArrowUpRight, FiPackage, FiActivity,
   FiZap, FiAward, FiAlertTriangle, FiShoppingBag, FiInfo,
-  FiChevronLeft, FiChevronRight, FiArrowRight
+  FiChevronLeft, FiChevronRight, FiArrowRight, FiFileText,
+  FiLayers, FiSliders, FiCpu, FiTag, FiBox,
+  FiChevronDown, FiChevronUp
 } from "react-icons/fi";
 
 import { fetchDashboardDataSingleRequest } from "../utils/dashboardAggregator";
 import { getMasterStoreSnapshot, subscribeToMasterStore } from "../utils/masterDataCache";
 import useSubscription from "../hooks/useSubscription";
+import SectorSpecializedTools from "./SectorSpecializedTools";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-function moneyFormat(val) {
-  return Number(val || 0).toLocaleString("tr-TR", {
-    style: "currency",
-    currency: "TRY"
-  });
+function moneyFormat(val, customSymbol) {
+  let symbol = customSymbol;
+  if (!symbol && typeof window !== "undefined") {
+    symbol = localStorage.getItem("currencySymbol");
+  }
+  if (!symbol) symbol = "₺";
+
+  const num = Number(val || 0).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (symbol === "₺") return `${num} ₺`;
+  if (symbol === "$") return `$${num}`;
+  if (symbol === "€") return `€${num}`;
+  if (symbol === "£") return `£${num}`;
+  return `${num} ${symbol}`;
 }
 
 function calculateDashboardFromStore(store) {
@@ -69,8 +80,9 @@ function calculateDashboardFromStore(store) {
   const netKasa = toplamKasaGelir - totalGider; // KASA / BANKA DENGESİ
   const netKarZarar = totalCiro - totalGider - totalCost; // NET KÂR / ZARAR
 
-  const criticalStock = products.filter(p => Number(p.stock || 0) < 10).slice(0, 5);
-  const lowStockCount = products.filter(p => Number(p.stock || 0) < 10).length;
+  const lowStockThreshold = Number(store?.profile?.lowStockThreshold) || 10;
+  const criticalStock = products.filter(p => Number(p.stock || 0) < lowStockThreshold).slice(0, 5);
+  const lowStockCount = products.filter(p => Number(p.stock || 0) < lowStockThreshold).length;
 
   const recentSales = sales.slice(0, 5);
 
@@ -114,16 +126,38 @@ export default function Dashboard() {
 
   const [loading, setLoading] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
   const [showAiBrief, setShowAiBrief] = useState(true);
+  const [masterStore, setMasterStore] = useState(null);
 
   // Samsung Now Brief Carousel Slide Index
   const [briefIndex, setBriefIndex] = useState(0);
 
+  // Kestirilmiş / Kişiselleştirilmiş Hızlı Kısayollar Paneli (Varsayılan KAPALI)
+  const [isSpotlightOpen, setIsSpotlightOpen] = useState(false);
+
   // MASTER CACHE VE GİZLEME TERCİHİ OKUMASI (0MS HIZLI YÜKLEME)
   useEffect(() => {
+    try {
+      const savedSpotlight = localStorage.getItem("stokpro_spotlight_open");
+      if (savedSpotlight !== null) {
+        setIsSpotlightOpen(savedSpotlight === "true");
+      }
+    } catch {}
+
     const snap = getMasterStoreSnapshot();
-    if (snap?.profile?.showAiBrief !== undefined) {
-      setShowAiBrief(snap.profile.showAiBrief !== false);
+    if (snap) {
+      setMasterStore(snap);
+      if (snap.profile) {
+        setUserProfile(snap.profile);
+        if (snap.profile.showAiBrief !== undefined) {
+          setShowAiBrief(snap.profile.showAiBrief !== false);
+        }
+        if (typeof window !== "undefined") {
+          if (snap.profile.currencySymbol) localStorage.setItem("currencySymbol", snap.profile.currencySymbol);
+          if (snap.profile.defaultUnit) localStorage.setItem("defaultUnit", snap.profile.defaultUnit);
+        }
+      }
     }
 
     const initialCalc = calculateDashboardFromStore(snap);
@@ -135,8 +169,18 @@ export default function Dashboard() {
     }
 
     const unsub = subscribeToMasterStore((store) => {
-      if (store?.profile?.showAiBrief !== undefined) {
-        setShowAiBrief(store.profile.showAiBrief !== false);
+      if (store) {
+        setMasterStore(store);
+        if (store.profile) {
+          setUserProfile(store.profile);
+          if (store.profile.showAiBrief !== undefined) {
+            setShowAiBrief(store.profile.showAiBrief !== false);
+          }
+          if (typeof window !== "undefined") {
+            if (store.profile.currencySymbol) localStorage.setItem("currencySymbol", store.profile.currencySymbol);
+            if (store.profile.defaultUnit) localStorage.setItem("defaultUnit", store.profile.defaultUnit);
+          }
+        }
       }
       const calc = calculateDashboardFromStore(store);
       if (calc) {
@@ -184,6 +228,211 @@ export default function Dashboard() {
 
   const criticalStock = dashboardData?.criticalStock || [];
   const recentSales = dashboardData?.recentSales || [];
+
+  // SEKTÖRE VE ÖNCELİKLİ İHTİYACA GÖRE KİŞİSELLEŞTİRİLMİŞ HIZLI AKSİYONLAR
+  const personalizedConfig = useMemo(() => {
+    const sKey = userProfile?.sectorKey || "";
+    const nKey = userProfile?.needKey || "";
+    const sectorName = userProfile?.sector || "";
+
+    // 1. TEKSTİL / İMALAT
+    if (sKey === "tekstil" || nKey === "uretim_izleme") {
+      return {
+        badge: "🧵 TEKSTİL & İMALAT ODAKLI PANEL",
+        badgeColor: "blue",
+        title: "Tekstil ve Üretim Süreçleriniz İçin Hızlı Aksiyonlar",
+        desc: `Kayıtlı Sektörünüz: ${sectorName || "Tekstil / İmalat"}. Kumaş/model stokları, beden/renk varyantları ve müşteri siparişlerinizi hızlıca yönetin.`,
+        actions: [
+          {
+            title: "İlk Kumaş / Model Ürünü Ekle",
+            desc: "Renk ve beden varyantları tanımlayın",
+            url: "/products",
+            icon: FiPackage,
+            color: "#3b82f6"
+          },
+          {
+            title: "Toptan / Müşteri Satışı Yap",
+            desc: "İrsaliyeli veya peşin satış faturası kesin",
+            url: "/sales",
+            icon: FiShoppingBag,
+            color: "#10b981"
+          },
+          {
+            title: "Fasoncu / Müşteri Kartı Aç",
+            desc: "Müşteri ve tedarikçi hesaplarını izleyin",
+            url: "/customers",
+            icon: FiUsers,
+            color: "#8b5cf6"
+          },
+          {
+            title: "Üretim & Malzeme Gideri Ekle",
+            desc: "Kumaş, aksesuar ve işçilik harcamaları",
+            url: "/accounting",
+            icon: FiDollarSign,
+            color: "#f59e0b"
+          }
+        ]
+      };
+    }
+
+    // 2. PERAKENDE / MAĞAZA & BARKODLU HIZLI STOK
+    if (sKey === "perakende" || nKey === "barkod_stok") {
+      return {
+        badge: "🛍️ PERAKENDE & BARKODLU HIZLI SATIŞ",
+        badgeColor: "green",
+        title: "Barkodlu Hızlı Satış ve Mağaza Masanız Hazır",
+        desc: `Kayıtlı Sektörünüz: ${sectorName || "Perakende / Mağaza"}. Barkod okutarak hızlı perakende satışı yapın, anlık kasa ve kritik stokları izleyin.`,
+        actions: [
+          {
+            title: "Barkodlu Yeni Ürün Ekle",
+            desc: "Barkod okuyucu veya seri no ile kaydedin",
+            url: "/products",
+            icon: FiPackage,
+            color: "#3b82f6"
+          },
+          {
+            title: "Hızlı Kasa & Barkod Satışı",
+            desc: "Sepete ekleyin ve saniyeler içinde tamamlayın",
+            url: "/sales",
+            icon: FiShoppingBag,
+            color: "#10b981"
+          },
+          {
+            title: "Müşteri Veresiye / Cari Aç",
+            desc: "Düzenli müşteriler için borç hesabı açın",
+            url: "/customers",
+            icon: FiUsers,
+            color: "#8b5cf6"
+          },
+          {
+            title: "Kritik Stokları Filtrele",
+            desc: "Tükenmek üzere olan ürünleri görün",
+            url: "/products?stockFilter=critical",
+            icon: FiAlertTriangle,
+            color: "#ef4444"
+          }
+        ]
+      };
+    }
+
+    // 3. CARİ, FATURA VE KASA TAKİBİ
+    if (nKey === "cari_kasa") {
+      return {
+        badge: "🧾 CARİ, VERESİYE & ÖN MUHASEBE ODAKLI",
+        badgeColor: "purple",
+        title: "Müşteri Alacakları ve Kasa Takibi Masanız",
+        desc: "Veresiye borç bakiyeleri, müşteri tahsilatları ve resmi PDF satış faturalarınızı tek ekrandan yönetin.",
+        actions: [
+          {
+            title: "Yeni Müşteri / Cari Kartı Aç",
+            desc: "Bakiye ve iletişim bilgilerini kaydedin",
+            url: "/customers",
+            icon: FiUsers,
+            color: "#3b82f6"
+          },
+          {
+            title: "Resmi PDF Satış Faturası Kes",
+            desc: "Faturayı anında yazdırın veya indirin",
+            url: "/sales",
+            icon: FiFileText,
+            color: "#10b981"
+          },
+          {
+            title: "Kasa Gelir-Gider Kaydı Ekle",
+            desc: "Nakit giriş ve harcamaları işleyin",
+            url: "/accounting",
+            icon: FiDollarSign,
+            color: "#8b5cf6"
+          },
+          {
+            title: "Müşteri Alacaklarını İncele",
+            desc: "Açık hesap ve veresiye bakiyeleri",
+            url: "/customers",
+            icon: FiAward,
+            color: "#f59e0b"
+          }
+        ]
+      };
+    }
+
+    // 4. TOPTAN / DAĞITIM & ÇOKLU ŞUBE / DEPO
+    if (sKey === "toptan" || nKey === "depo_sube") {
+      return {
+        badge: "📦 TOPTAN, DAĞITIM & DEPO YÖNETİMİ",
+        badgeColor: "purple",
+        title: "Toptan Dağıtım ve Depo Envanteri Masanız",
+        desc: `Kayıtlı Sektörünüz: ${sectorName || "Toptan / Dağıtım"}. Toplu ürün girişleri, tedarikçi cari hesapları ve sevkiyat faturalarını yönetin.`,
+        actions: [
+          {
+            title: "Toplu Stok & Ürün Girişi",
+            desc: "Depoya yeni parti ve malzeme ekleyin",
+            url: "/products",
+            icon: FiPackage,
+            color: "#3b82f6"
+          },
+          {
+            title: "Toptan Satış & İrsaliye Kes",
+            desc: "Toplu sipariş ve sevk çıkışı yapın",
+            url: "/sales",
+            icon: FiShoppingBag,
+            color: "#10b981"
+          },
+          {
+            title: "Toptancı / Cari Hesabı Ekle",
+            desc: "Tedarikçi ve bayi kartlarını açın",
+            url: "/customers",
+            icon: FiUsers,
+            color: "#8b5cf6"
+          },
+          {
+            title: "Envanter ve Kasa Durumu",
+            desc: "Likit durum ve stok maliyetlerini görün",
+            url: "/accounting",
+            icon: FiDollarSign,
+            color: "#f59e0b"
+          }
+        ]
+      };
+    }
+
+    // 5. GENEL / DİĞER
+    return {
+      badge: "⚡ HIZLI BAŞLANGIÇ AKSIYONLARI",
+      badgeColor: "blue",
+      title: "İşletmeniz İçin Hızlı Başlangıç Kılavuzu",
+      desc: "Ürünlerinizi kaydedin, satışlarınızı işleyin ve müşteri hesaplarınızı anında takip edin.",
+      actions: [
+        {
+          title: "İlk Ürününüzü Tanımlayın",
+          desc: "Stok adedi ve satış fiyatını girin",
+          url: "/products",
+          icon: FiPackage,
+          color: "#3b82f6"
+        },
+        {
+          title: "Hızlı Satış Yapın",
+          desc: "Nakit veya veresiye satış kaydedin",
+          url: "/sales",
+          icon: FiShoppingBag,
+          color: "#10b981"
+        },
+        {
+          title: "Müşteri / Cari Kartı Açın",
+          desc: "Müşteri borç ve bakiyelerini takip edin",
+          url: "/customers",
+          icon: FiUsers,
+          color: "#8b5cf6"
+        },
+        {
+          title: "Kasa Gelir-Gideri Girin",
+          desc: "İşletme harcamalarını kaydedin",
+          url: "/accounting",
+          icon: FiDollarSign,
+          color: "#f59e0b"
+        }
+      ]
+    };
+  }, [userProfile]);
 
   // SAMSUNG NOW BRIEF WIDGET - CANLI VE DEĞİŞKEN DİNAMİK YAPAY ZEKA SLIDE'LARI
   const aiBriefSlides = useMemo(() => {
@@ -264,7 +513,96 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* SAMSUNG NOW BRIEF - TEK VE CANLI YAPAY ZEKA ÖZET WIDGET'I (EĞER AYARLARDAN KAPATILMADIYSA) */}
+      {/* SEKTÖRE VE İHTİYACA ÖZEL KİŞİSELLEŞTİRİLMİŞ HIZLI BAŞLANGIÇ & AKSİYON PANELİ (VARSAYILAN KAPALI / AÇILIP KAPANABİLİR) */}
+      {personalizedConfig && (
+        <div className="prd-card onb-spotlight-card" style={{ padding: isSpotlightOpen ? '20px' : '14px 20px', transition: 'padding 0.2s ease' }}>
+          <div className="onb-spotlight-header">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <span className={`table-badge ${personalizedConfig.badgeColor}`} style={{ fontSize: '0.75rem', letterSpacing: '0.5px' }}>
+                {personalizedConfig.badge}
+              </span>
+              <span style={{ fontSize: '0.82rem', color: 'var(--text-main)', fontWeight: 800 }}>
+                Kişiselleştirilmiş Hızlı Kısayollar
+              </span>
+              {!isSpotlightOpen && (
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  ({personalizedConfig.actions.length} Kısayol)
+                </span>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <Link 
+                href="/settings" 
+                className="tbl-btn secondary"
+                style={{ fontSize: '0.75rem', padding: '4px 8px', gap: '4px', textDecoration: 'none' }}
+                title="Sektör ve Öncelikli İhtiyaç Tercihlerini Ayarla"
+              >
+                <FiSliders size={13} /> Tercihleri Değiştir
+              </Link>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSpotlightOpen(prev => {
+                    const next = !prev;
+                    try { localStorage.setItem("stokpro_spotlight_open", String(next)); } catch {}
+                    return next;
+                  });
+                }}
+                className="tbl-btn secondary"
+                style={{ fontSize: '0.75rem', padding: '4px 10px', gap: '5px', cursor: 'pointer' }}
+                title={isSpotlightOpen ? "Kısayolları Gizle" : "Kısayolları Göster"}
+              >
+                {isSpotlightOpen ? (
+                  <>Gizle <FiChevronUp size={14} /></>
+                ) : (
+                  <>Kısayolları Göster <FiChevronDown size={14} /></>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {isSpotlightOpen && (
+            <div style={{ animation: 'fadeIn 0.2s ease-out' }}>
+              <div style={{ marginTop: '10px', marginBottom: '14px' }}>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 900, color: 'var(--text-main)', margin: '0 0 4px 0' }}>
+                  {personalizedConfig.title}
+                </h3>
+                <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>
+                  {personalizedConfig.desc}
+                </p>
+              </div>
+
+              <div className="onb-actions-grid">
+                {personalizedConfig.actions.map((act, idx) => {
+                  const ActionIcon = act.icon;
+                  return (
+                    <Link 
+                      key={idx} 
+                      href={act.url} 
+                      className="onb-action-item"
+                    >
+                      <div 
+                        className="onb-action-icon"
+                        style={{ color: act.color, backgroundColor: `${act.color}15` }}
+                      >
+                        <ActionIcon size={18} />
+                      </div>
+                      <div className="onb-action-text">
+                        <strong className="onb-act-name">{act.title}</strong>
+                        <span className="onb-act-desc">{act.desc}</span>
+                      </div>
+                      <FiArrowRight className="onb-act-arrow" size={15} />
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* SAMSUNG NOW BRIEF - TEK VE CANLI YAPAY ZEKA ÖZET WIDGET'I (EĞER AYARLARDAN KAPATILMADIYSA) */}
       {showAiBrief && currentBrief && (
         <div className="prd-card now-brief-card">
@@ -318,6 +656,15 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* SEKTÖRE VE FAALİYET ALANINA ÖZEL AMACA UYGUN AKILLI ARAÇ MASASI */}
+      <SectorSpecializedTools 
+        currentSector={userProfile?.sectorKey || "perakende"}
+        products={masterStore?.products || []}
+        customers={masterStore?.customers || []}
+        currencySymbol={userProfile?.currencySymbol || "₺"}
+        onNavigate={(path) => router.push(path)}
+      />
 
       {/* 4 ETKİLEŞİMLİ KPI ÖZET KARTI (HOVER AŞAĞI AÇILAN POPUP DETAY MENÜLÜ) */}
       <div className="kpi-grid">

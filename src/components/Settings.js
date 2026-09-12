@@ -13,7 +13,8 @@ import {
   FiUser, FiKey, FiShield, FiMoon, FiSun, 
   FiSave, FiLock, FiAward, FiBriefcase, FiUploadCloud, FiTrash2, FiFileText, FiZap
 } from "react-icons/fi";
-import { initTheme, toggleTheme } from "../utils/theme";
+import { initTheme, toggleTheme, initAccent, setAccent, ACCENT_PALETTES } from "../utils/theme";
+import { logUserActivity } from "../utils/telemetryLogger";
 
 function fmtDate(d) {
   if (!d) return "—";
@@ -55,6 +56,19 @@ export default function Settings() {
   const [logoUrl, setLogoUrl] = useState("");
   const [uploadingLogo, setUploadingLogo] = useState(false);
 
+  // KİŞİSELLEŞTİRME & SEKTÖR TERCİHLERİ
+  const [sectorKey, setSectorKey] = useState("perakende");
+  const [customSector, setCustomSector] = useState("");
+  const [needKey, setNeedKey] = useState("barkod_stok");
+
+  // ÇALIŞMA ALANI & ARAYÜZ ÖZELLEŞTİRMELERİ
+  const [accentColor, setAccentColor] = useState("blue");
+  const [currencySymbol, setCurrencySymbol] = useState("₺");
+  const [defaultUnit, setDefaultUnit] = useState("Adet");
+  const [lowStockThreshold, setLowStockThreshold] = useState("10");
+  const [receiptFooterNote, setReceiptFooterNote] = useState("Bizi tercih ettiğiniz için teşekkür ederiz.");
+  const [soundEffectsEnabled, setSoundEffectsEnabled] = useState(true);
+
   // DASHBOARD AI NOW BRIEF GÖSTER/GİZLE TERCİHİ
   const [showAiBrief, setShowAiBrief] = useState(true);
 
@@ -67,6 +81,7 @@ export default function Settings() {
 
   useEffect(() => {
     setTheme(initTheme());
+    setAccentColor(initAccent());
     let mounted = true;
     (async () => {
       setLoading(true);
@@ -82,7 +97,19 @@ export default function Settings() {
         setInvoicePrefix(p?.invoicePrefix || "GIB2026");
         setVatRate(p?.vatRate !== undefined ? String(p.vatRate) : "20");
         setLogoUrl(p?.logoUrl || "");
+        setSectorKey(p?.sectorKey || "perakende");
+        setCustomSector(p?.customSector || "");
+        setNeedKey(p?.needKey || "barkod_stok");
         setShowAiBrief(p?.showAiBrief !== false);
+        setCurrencySymbol(p?.currencySymbol || "₺");
+        setDefaultUnit(p?.defaultUnit || "Adet");
+        setLowStockThreshold(p?.lowStockThreshold !== undefined ? String(p.lowStockThreshold) : "10");
+        setReceiptFooterNote(p?.receiptFooterNote || "Bizi tercih ettiğiniz için teşekkür ederiz.");
+        setSoundEffectsEnabled(p?.soundEffectsEnabled !== false);
+        if (p?.accentColor) {
+          setAccent(p.accentColor);
+          setAccentColor(p.accentColor);
+        }
         setProductKey(formatKeyForDisplay(p?.productKey || ""));
       } catch (err) {
         bildir({ type: "error", title: "Yükleme Hatası", message: "Profil bilgileri çekilemedi." });
@@ -102,6 +129,7 @@ export default function Settings() {
     const current = document.documentElement.getAttribute("data-theme") || theme || "light";
     const nextTheme = toggleTheme(current);
     setTheme(nextTheme);
+    logUserActivity("THEME_CHANGE", `Tema Değiştirildi: ${nextTheme}`, { theme: nextTheme }).catch(() => {});
     bildir({ type: "info", title: "Tema Değişti", message: `Uygulama teması ${nextTheme === 'dark' ? 'Koyu Gece' : 'Aydınlık Gündüz'} moduna alındı.` });
   }
 
@@ -157,6 +185,19 @@ export default function Settings() {
       const uid = auth.currentUser?.uid;
       if (!uid) throw new Error("Oturum bulunamadı. Lütfen giriş yapın.");
       
+      const SECTOR_TITLES = {
+        tekstil: "Tekstil / İmalat",
+        perakende: "Perakende / Mağaza",
+        toptan: "Toptan / Dağıtım",
+        diger: customSector.trim() || "Diğer"
+      };
+      const NEED_TITLES = {
+        barkod_stok: "Barkodlu hızlı stok ve varyant takibi",
+        cari_kasa: "Cari, fatura ve kasa takibi",
+        uretim_izleme: "Üretim / imalat süreçlerini izleme",
+        depo_sube: "Çoklu şube / depo yönetimi"
+      };
+
       const profileRef = doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "profile", "user_doc");
       await runTransaction(db, async (tx) => {
         const snap = await tx.get(profileRef);
@@ -170,8 +211,21 @@ export default function Settings() {
           taxNumber: taxNumber.trim(),
           companyAddress: companyAddress.trim(),
           invoicePrefix: invoicePrefix.trim() || "GIB2026",
+          vatRate: vatRate,
           logoUrl: logoUrl,
           showAiBrief: Boolean(showAiBrief),
+          sectorKey: sectorKey,
+          sector: sectorKey === "diger" && customSector.trim() ? customSector.trim() : (SECTOR_TITLES[sectorKey] || "Genel"),
+          customSector: customSector.trim(),
+          needKey: needKey,
+          primaryNeed: NEED_TITLES[needKey] || "Genel Stok & Satış",
+          accentColor: accentColor || "blue",
+          currencySymbol: currencySymbol || "₺",
+          defaultUnit: defaultUnit || "Adet",
+          lowStockThreshold: Number(lowStockThreshold) || 10,
+          receiptFooterNote: receiptFooterNote || "",
+          soundEffectsEnabled: Boolean(soundEffectsEnabled),
+          onboardingCompleted: true,
           updatedAt: new Date().toISOString()
         };
         tx.set(profileRef, merged);
@@ -180,7 +234,14 @@ export default function Settings() {
       const p = await getUserProfile();
       setProfile(p);
       invalidateAndRefreshMasterCache().catch(() => {});
-      bildir({ type: "success", title: "Ayarlar Güncellendi", message: "Fatura, logo ve tercihleriniz başarıyla kaydedildi." });
+      logUserActivity("SETTINGS_UPDATE", "İşletme ve Profil Ayarları Güncellendi", {
+        companyTitle: companyTitle.trim(),
+        displayName: displayName.trim(),
+        sectorKey,
+        needKey,
+        invoicePrefix: invoicePrefix.trim()
+      }).catch(() => {});
+      bildir({ type: "success", title: "Ayarlar Güncellendi", message: "Fatura, logo, sektör ve tercihleriniz başarıyla kaydedildi." });
     } catch (err) {
       bildir({ type: "error", title: "Güncelleme Hatası", message: err.message });
     } finally {
@@ -231,6 +292,7 @@ export default function Settings() {
       setProfile(p);
       setProductKey("");
       invalidateAndRefreshMasterCache().catch(() => {});
+      logUserActivity("LICENSE_ACTIVATE", "Lisans Anahtarı Etkinleştirildi", { key }).catch(() => {});
       bildir({ type: "success", title: "Lisans Etkinleştirildi", message: "Abonelik süreniz başarıyla uzatıldı." });
     } catch (err) {
       bildir({ type: "error", title: "Aktivasyon Hatası", message: err.message });
@@ -391,6 +453,63 @@ export default function Settings() {
                 </div>
               </div>
 
+              {/* İŞLETME SEKTÖRÜ VE ÖNCELİKLİ İHTİYAÇ (KİŞİSELLEŞTİRME) */}
+              <div style={{ borderTop: '1px solid var(--border-main)', paddingTop: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 900, color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  🎯 İşletme Sektörü & Panel Kişiselleştirmesi
+                </span>
+
+                <div className="settings-grid-2col">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.5px' }}>
+                      Ana Faaliyet Alanı (Sektör)
+                    </label>
+                    <select
+                      value={sectorKey}
+                      onChange={e => setSectorKey(e.target.value)}
+                      className="modern-input"
+                      style={{ cursor: 'pointer', height: '42px', fontWeight: 700 }}
+                    >
+                      <option value="tekstil">🧵 Tekstil / İmalat</option>
+                      <option value="perakende">🛍️ Perakende / Mağaza</option>
+                      <option value="toptan">📦 Toptan / Dağıtım</option>
+                      <option value="diger">🔧 Diğer</option>
+                    </select>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.5px' }}>
+                      Öncelikli İhtiyaç
+                    </label>
+                    <select
+                      value={needKey}
+                      onChange={e => setNeedKey(e.target.value)}
+                      className="modern-input"
+                      style={{ cursor: 'pointer', height: '42px', fontWeight: 700 }}
+                    >
+                      <option value="barkod_stok">🏷️ Barkodlu Hızlı Stok & Varyant</option>
+                      <option value="cari_kasa">🧾 Cari, Fatura & Kasa Takibi</option>
+                      <option value="uretim_izleme">⚙️ Üretim / İmalat Süreçleri</option>
+                      <option value="depo_sube">🏢 Çoklu Şube & Depo Yönetimi</option>
+                    </select>
+                  </div>
+                </div>
+
+                {sectorKey === "diger" && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.5px' }}>
+                      Özel Sektör Açıklaması
+                    </label>
+                    <input
+                      value={customSector}
+                      onChange={e => setCustomSector(e.target.value)}
+                      placeholder="Örn: Oto Yedek Parça, Mobilya, E-ticaret..."
+                      className="modern-input"
+                    />
+                  </div>
+                )}
+              </div>
+
               <button onClick={handleSaveProfile} className="modern-btn primary" disabled={saving || uploadingLogo} style={{ marginTop: '6px' }}>
                 <FiSave size={18} /> {saving ? "Kaydediliyor..." : "Ayarları Kaydet"}
               </button>
@@ -445,6 +564,128 @@ export default function Settings() {
                 <button onClick={handleToggleTheme} className="modern-btn secondary">
                   Temayı Değiştir
                 </button>
+              </div>
+
+              {/* VURGU RENGİ (ACCENT COLOR PALETİ) */}
+              <div style={{ background: 'var(--bg-subtle)', padding: '14px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-main)' }}>
+                <div style={{ marginBottom: '10px' }}>
+                  <strong style={{ fontSize: '0.95rem', display: 'block' }}>🎨 Marka & Vurgu Rengi</strong>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Butonlar, rozetler ve grafiklerde kullanılan ana renk.</span>
+                </div>
+
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  {Object.entries(ACCENT_PALETTES).map(([key, pal]) => {
+                    const isSelected = accentColor === key;
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => {
+                          setAccent(key);
+                          setAccentColor(key);
+                          bildir({ type: "success", title: "Renk Değiştirildi", message: `${pal.name} temaya uygulandı.` });
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '6px 12px',
+                          borderRadius: '999px',
+                          border: isSelected ? `2px solid ${pal.hex}` : '1px solid var(--border-main)',
+                          background: isSelected ? pal.bg : 'var(--card-bg)',
+                          cursor: 'pointer',
+                          fontWeight: 700,
+                          fontSize: '0.78rem',
+                          color: 'var(--text-main)',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: pal.hex, display: 'inline-block' }} />
+                        {pal.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* ÇALIŞMA ALANI PARAMETRELERİ */}
+              <div style={{ background: 'var(--bg-subtle)', padding: '14px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-main)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <strong style={{ fontSize: '0.95rem' }}>⚙️ Çalışma Alanı & Satış Parametreleri</strong>
+
+                <div className="settings-grid-2col">
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Para Birimi Simgesi</label>
+                    <select
+                      value={currencySymbol}
+                      onChange={e => setCurrencySymbol(e.target.value)}
+                      className="modern-input"
+                      style={{ fontWeight: 700, height: '40px' }}
+                    >
+                      <option value="₺">₺ - Türk Lirası (TRY)</option>
+                      <option value="$">$ - ABD Doları (USD)</option>
+                      <option value="€">€ - Euro (EUR)</option>
+                      <option value="£">£ - İngiliz Sterlini (GBP)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Varsayılan Ürün Birimi</label>
+                    <select
+                      value={defaultUnit}
+                      onChange={e => setDefaultUnit(e.target.value)}
+                      className="modern-input"
+                      style={{ fontWeight: 700, height: '40px' }}
+                    >
+                      <option value="Adet">Adet (Standart)</option>
+                      <option value="Metre">Metre (Kumaş / Kablo / Profil)</option>
+                      <option value="Top">Top / Rulo (Tekstil Kumaş)</option>
+                      <option value="Kg">Kilogram (Ağırlık)</option>
+                      <option value="Paket">Paket (Ambalaj)</option>
+                      <option value="Koli">Koli (Toptan Dağıtım)</option>
+                      <option value="Çift">Çift (Ayakkabı / Çorap)</option>
+                      <option value="Litre">Litre (Sıvı)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="settings-grid-2col">
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Düşük Stok Uyarı Eşiği</label>
+                    <select
+                      value={lowStockThreshold}
+                      onChange={e => setLowStockThreshold(e.target.value)}
+                      className="modern-input"
+                      style={{ fontWeight: 700, height: '40px' }}
+                    >
+                      <option value="3">Kalan Stok &lt; 3 Adet</option>
+                      <option value="5">Kalan Stok &lt; 5 Adet</option>
+                      <option value="10">Kalan Stok &lt; 10 Adet (Önerilen)</option>
+                      <option value="20">Kalan Stok &lt; 20 Adet</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Sesli İşlem Onayları</label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', height: '40px', cursor: 'pointer' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={soundEffectsEnabled} 
+                        onChange={e => setSoundEffectsEnabled(e.target.checked)} 
+                        style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                      />
+                      <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>Barkod & Satış Bip Sesi</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Fiş / Fatura Dipnot Mesajı</label>
+                  <input
+                    value={receiptFooterNote}
+                    onChange={e => setReceiptFooterNote(e.target.value)}
+                    placeholder="Örn: Bizi tercih ettiğiniz için teşekkür ederiz. Değişim 14 gün içindedir."
+                    className="modern-input"
+                  />
+                </div>
               </div>
 
               <div style={{ borderTop: '1px solid var(--border-main)', paddingTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>

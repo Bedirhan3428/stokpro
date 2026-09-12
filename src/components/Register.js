@@ -4,11 +4,13 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../contexts/AuthContext";
-import { createUserProfile } from "../utils/firebaseHelpers";
+import { createUserProfile, getUserProfile } from "../utils/firebaseHelpers";
+import OnboardingSurvey from "./OnboardingSurvey";
 
 export default function Register() {
   const { signup, user, signInWithGoogle } = useAuth();
   const router = useRouter();
+  const [step, setStep] = useState("register"); // 'register' | 'onboarding'
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -17,10 +19,27 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      router.replace("/dashboard");
+    if (user && step !== "onboarding") {
+      // Check if user already completed onboarding
+      let mounted = true;
+      getUserProfile(user.uid)
+        .then((p) => {
+          if (!mounted) return;
+          if (p?.onboardingCompleted) {
+            router.replace("/dashboard");
+          } else {
+            setStep("onboarding");
+          }
+        })
+        .catch(() => {
+          if (mounted) router.replace("/dashboard");
+        });
+
+      return () => {
+        mounted = false;
+      };
     }
-  }, [user, router]);
+  }, [user, step, router]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -46,7 +65,9 @@ export default function Register() {
       } catch (storageErr) {
         console.warn("localStorage yazılamadı:", storageErr);
       }
-      router.push("/dashboard");
+      
+      // Geçiş: Size en uygun deneyimi hazırlayalım (Onboarding Adımı)
+      setStep("onboarding");
     } catch (err) {
       setError(err.message || "Kayıt başarısız.");
     } finally {
@@ -56,25 +77,41 @@ export default function Register() {
 
   async function handleGoogle() {
     setError("");
+    setLoading(true);
     try {
-      await signInWithGoogle();
+      const result = await signInWithGoogle();
+      let profile = null;
       try {
-        await createUserProfile({ lastLogin: new Date().toISOString() });
+        profile = await getUserProfile(result.user.uid);
+        if (!profile) {
+          profile = await createUserProfile({ lastLogin: new Date().toISOString() }, result.user.uid);
+        }
       } catch (profileErr) {
-        console.warn("Profil kaydı yapılamadı:", profileErr);
+        console.warn("Profil kaydı kontrolü:", profileErr);
       }
+
       try {
         localStorage.setItem("user", "true");
       } catch (storageErr) {
         console.warn("localStorage yazılamadı:", storageErr);
       }
-      router.push("/dashboard");
+
+      if (profile?.onboardingCompleted) {
+        router.push("/dashboard");
+      } else {
+        setStep("onboarding");
+      }
     } catch (err) {
       setError(err.message || "Google ile kayıt başarısız.");
+    } finally {
+      setLoading(false);
     }
   }
 
-  if (user) return null;
+  // ONBOARDING ADIMI AKTİF İSE ANKETİ GÖSTER
+  if (step === "onboarding") {
+    return <OnboardingSurvey onCompleted={() => router.push("/dashboard")} />;
+  }
 
   return (
     <div className="reg-kapsul" role="main">

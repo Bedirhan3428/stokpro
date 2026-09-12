@@ -6,6 +6,16 @@ import { auth } from "../firebase";
 import { getUserProfile } from "../utils/firebaseHelpers";
 import { getMasterStoreSnapshot } from "../utils/masterDataCache";
 
+function formatInvoiceMoney(val, customSymbol) {
+  const symbol = customSymbol || "₺";
+  const num = Number(val || 0).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (symbol === "₺") return `${num} ₺`;
+  if (symbol === "$") return `$${num}`;
+  if (symbol === "€") return `€${num}`;
+  if (symbol === "£") return `£${num}`;
+  return `${num} ${symbol}`;
+}
+
 export default function InvoiceModal({ invoiceData: propInvoiceData, invoice: propInvoice, onClose }) {
   const invoiceData = propInvoiceData || propInvoice;
   const [downloading, setDownloading] = useState(false);
@@ -17,7 +27,9 @@ export default function InvoiceModal({ invoiceData: propInvoiceData, invoice: pr
     address: "",
     logoUrl: "",
     email: "",
-    invoicePrefix: "GIB2026"
+    invoicePrefix: "GIB2026",
+    receiptFooterNote: "",
+    currencySymbol: "₺"
   });
 
   useEffect(() => {
@@ -39,6 +51,8 @@ export default function InvoiceModal({ invoiceData: propInvoiceData, invoice: pr
       let addr = snap?.profile?.companyAddress || snap?.profile?.address || "";
       let invPrefix = snap?.profile?.invoicePrefix || "GIB2026";
       let vRate = snap?.profile?.vatRate !== undefined ? Number(snap.profile.vatRate) : 20;
+      let rNote = snap?.profile?.receiptFooterNote || "";
+      let cSymbol = snap?.profile?.currencySymbol || "₺";
 
       let sEmail = u?.email || "";
       if (sEmail.endsWith("gmailcom")) {
@@ -56,6 +70,8 @@ export default function InvoiceModal({ invoiceData: propInvoiceData, invoice: pr
           if (prof.logoUrl) logo = prof.logoUrl;
           if (prof.invoicePrefix) invPrefix = prof.invoicePrefix;
           if (prof.vatRate !== undefined) vRate = Number(prof.vatRate);
+          if (prof.receiptFooterNote) rNote = prof.receiptFooterNote;
+          if (prof.currencySymbol) cSymbol = prof.currencySymbol;
         }
       } catch (e) {
         console.error(e);
@@ -79,7 +95,9 @@ export default function InvoiceModal({ invoiceData: propInvoiceData, invoice: pr
         logoUrl: logo,
         email: sEmail,
         invoicePrefix: invPrefix || "GIB2026",
-        vatRate: isNaN(vRate) ? 20 : vRate
+        vatRate: isNaN(vRate) ? 20 : vRate,
+        receiptFooterNote: rNote,
+        currencySymbol: cSymbol
       });
     }
 
@@ -248,8 +266,8 @@ export default function InvoiceModal({ invoiceData: propInvoiceData, invoice: pr
                   <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
                     <td style={{ padding: '10px 0' }}>{invoiceData.label || invoiceData.description || "Genel Satış İşlemi"}</td>
                     <td style={{ textAlign: 'center', padding: '10px 0' }}>1 Adet</td>
-                    <td style={{ textAlign: 'right', padding: '10px 0' }}>{total.toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</td>
-                    <td style={{ textAlign: 'right', padding: '10px 0', fontWeight: 'bold' }}>{total.toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</td>
+                    <td style={{ textAlign: 'right', padding: '10px 0' }}>{formatInvoiceMoney(total, sellerInfo.currencySymbol)}</td>
+                    <td style={{ textAlign: 'right', padding: '10px 0', fontWeight: 'bold' }}>{formatInvoiceMoney(total, sellerInfo.currencySymbol)}</td>
                   </tr>
                 ) : (
                   items.map((it, idx) => {
@@ -262,10 +280,10 @@ export default function InvoiceModal({ invoiceData: propInvoiceData, invoice: pr
                         <td style={{ padding: '10px 0', wordBreak: 'break-word' }}>{it.name || "Ürün"}</td>
                         <td style={{ textAlign: 'center', padding: '10px 0' }}>{qty} {it.unit || "Adet"}</td>
                         <td style={{ textAlign: 'right', padding: '10px 0' }}>
-                          {price.toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}
+                          {formatInvoiceMoney(price, sellerInfo.currencySymbol)}
                         </td>
                         <td style={{ textAlign: 'right', padding: '10px 0', fontWeight: 'bold' }}>
-                          {lineTotal.toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}
+                          {formatInvoiceMoney(lineTotal, sellerInfo.currencySymbol)}
                         </td>
                       </tr>
                     );
@@ -278,21 +296,21 @@ export default function InvoiceModal({ invoiceData: propInvoiceData, invoice: pr
           {/* HESAP TOPLAMLARI & KELİMELERİ ASLA BİRLEŞMEYEN NET DİPNOT METNİ */}
           <div className="flex flex-col-reverse sm:flex-row print:flex-row justify-between items-start pt-2 gap-4 sm:gap-2">
             <div style={{ fontSize: '0.8rem', color: '#555555', maxWidth: '340px', lineHeight: 1.6, wordSpacing: '2px' }}>
-              Bu belge StokPro® Otomasyonu (stokpro.shop) üzerinden dijital olarak oluşturulmuştur.
+              {sellerInfo.receiptFooterNote || "Bu belge StokPro® Otomasyonu (stokpro.shop) üzerinden dijital olarak oluşturulmuştur."}
             </div>
 
             <div className="w-full sm:w-[240px] print:w-[240px] flex flex-col gap-1.5 text-sm">
               <div style={{ display: 'flex', justifyContent: 'space-between', color: '#444444' }}>
                 <span>Matrah (KDV Hariç):</span>
-                <span>{araToplam.toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</span>
+                <span>{formatInvoiceMoney(araToplam, sellerInfo.currencySymbol)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', color: '#444444' }}>
                 <span>KDV (%{currentVatRate}):</span>
-                <span>{kdv.toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</span>
+                <span>{formatInvoiceMoney(kdv, sellerInfo.currencySymbol)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.05rem', fontWeight: 'bold', borderTop: '1px solid #000000', paddingTop: '6px', marginTop: '4px' }}>
                 <span>Genel Toplam (KDV Dahil):</span>
-                <span>{total.toLocaleString("tr-TR", { style: "currency", currency: "TRY" })}</span>
+                <span>{formatInvoiceMoney(total, sellerInfo.currencySymbol)}</span>
               </div>
             </div>
           </div>

@@ -4,13 +4,15 @@ import React, { useEffect, useState, useRef, useMemo } from "react";
 import { 
   FiShoppingCart, FiSearch, FiPlus, FiMinus, FiTrash2, 
   FiCreditCard, FiDollarSign, FiUser, FiCheckCircle, FiX, 
-  FiTrendingUp, FiTrendingDown, FiArchive, FiTag, FiPrinter, FiFileText, FiZap, FiPackage
+  FiTrendingUp, FiTrendingDown, FiArchive, FiTag, FiPrinter, FiFileText, FiZap, FiPackage,
+  FiChevronDown, FiChevronUp
 } from "react-icons/fi";
 import { 
   finalizeSaleTransaction, 
   addLegacyIncome, 
   addLegacyExpense 
 } from "../utils/firebaseHelpers";
+import { playCashRegisterSound, playScanBeep } from "../utils/audioEffects";
 import { updateProduct } from "../utils/artifactUserProducts";
 import { 
   syncFullMasterStore, 
@@ -79,6 +81,14 @@ export default function Sales() {
   const [expenseAmount, setExpenseAmount] = useState("");
   const [expenseDesc, setExpenseDesc] = useState("");
 
+  // Kullanıcı Profili, Para Birimi ve Anket Entegrasyonu
+  const [userProfile, setUserProfile] = useState(null);
+  const [currencySymbol, setCurrencySymbol] = useState("₺");
+
+  // Para Üstü Asistanı State (O anki satış ile senkronize & ankete göre ayarlı)
+  const [tenderAmount, setTenderAmount] = useState("");
+  const [isChangeCalcOpen, setIsChangeCalcOpen] = useState(true);
+
   // Fatura Modal State
   const [activeInvoice, setActiveInvoice] = useState(null);
 
@@ -99,14 +109,31 @@ export default function Sales() {
       setProducts(initialSnap.products);
       setCustomers(initialSnap.customers || []);
       setSalesHistory(initialSnap.sales || []);
+      if (initialSnap.profile) {
+        setUserProfile(initialSnap.profile);
+        if (initialSnap.profile.currencySymbol) {
+          setCurrencySymbol(initialSnap.profile.currencySymbol);
+        }
+      }
       setLoading(false);
     }
+
+    try {
+      const savedSymbol = localStorage.getItem("currencySymbol");
+      if (savedSymbol) setCurrencySymbol(savedSymbol);
+    } catch {}
 
     const unsubscribe = subscribeToMasterStore((store) => {
       if (store) {
         setProducts(store.products || []);
         setCustomers(store.customers || []);
         setSalesHistory(store.sales || []);
+        if (store.profile) {
+          setUserProfile(store.profile);
+          if (store.profile.currencySymbol) {
+            setCurrencySymbol(store.profile.currencySymbol);
+          }
+        }
         setLoading(false);
       }
     });
@@ -116,6 +143,12 @@ export default function Sales() {
         setProducts(store.products || []);
         setCustomers(store.customers || []);
         setSalesHistory(store.sales || []);
+        if (store.profile) {
+          setUserProfile(store.profile);
+          if (store.profile.currencySymbol) {
+            setCurrencySymbol(store.profile.currencySymbol);
+          }
+        }
       }
       setLoading(false);
     }).catch(() => setLoading(false));
@@ -123,8 +156,40 @@ export default function Sales() {
     return () => unsubscribe();
   }, []);
 
+  // ANKETE GÖRE: Perakende / Mağaza veya Barkodlu Satış odaklı işletmeler
+  const isRetailSurvey = useMemo(() => {
+    const sKey = userProfile?.sectorKey || "";
+    const nKey = userProfile?.needKey || "";
+    const sName = (userProfile?.sector || "").toLowerCase();
+    return sKey === "perakende" || nKey === "barkod_stok" || sName.includes("perakende") || sName.includes("mağaza");
+  }, [userProfile]);
+
+  // Ankete göre varsayılan açık/kapalı davranışı:
+  // Perakende/mağaza ise açık gelir, tekstil/toptan ise yer kaplamasın diye kapalı başlar
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("stokpro_pos_change_open");
+      if (saved !== null) {
+        setIsChangeCalcOpen(saved === "true");
+      } else if (userProfile) {
+        setIsChangeCalcOpen(isRetailSurvey);
+      }
+    } catch {}
+  }, [userProfile, isRetailSurvey]);
+
+  const toggleChangeCalc = () => {
+    setIsChangeCalcOpen(prev => {
+      const next = !prev;
+      try { localStorage.setItem("stokpro_pos_change_open", String(next)); } catch {}
+      return next;
+    });
+  };
+
   function moneyFormat(val) {
-    return Number(val || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" });
+    if (currencySymbol === "₺" || currencySymbol === "TRY") {
+      return Number(val || 0).toLocaleString("tr-TR", { style: "currency", currency: "TRY" });
+    }
+    return `${Number(val || 0).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currencySymbol}`;
   }
 
   const selectedCustomer = useMemo(() => {
@@ -184,6 +249,7 @@ export default function Sales() {
 
     const found = products.find(p => p.barcode === code);
     if (found) {
+      playScanBeep();
       sepeteEkle(found);
       setBarcodeInput("");
       bildir({ type: "success", title: "Barkod Okutuldu", message: `"${found.name}" sepete eklendi.` });
@@ -195,6 +261,46 @@ export default function Sales() {
   const cartTotal = useMemo(() => {
     return cart.reduce((sum, item) => sum + (Number(item.price) * item.qty), 0);
   }, [cart]);
+
+  // CANLI VE SENKRONİZE PARA ÜSTÜ HESAPLAMALARI
+  const numericTender = parseFloat(tenderAmount) || 0;
+  const changeDue = numericTender >= cartTotal ? (numericTender - cartTotal) : 0;
+  const remainingDue = (numericTender < cartTotal && numericTender > 0) ? (cartTotal - numericTender) : 0;
+
+  // DİNAMİK VE AKILLI BANKNOT BUTONLARI (O ANKİ cartTotal İLE TAM SENKRONİZE)
+  const quickTenderOptions = useMemo(() => {
+    const sym = currencySymbol || "₺";
+    const standardNotes = [20, 50, 100, 200];
+    const candidates = new Set();
+
+    if (cartTotal > 0) {
+      const next10 = Math.ceil(cartTotal / 10) * 10;
+      if (next10 > cartTotal) candidates.add(next10);
+
+      const next50 = Math.ceil(cartTotal / 50) * 50;
+      if (next50 > cartTotal) candidates.add(next50);
+
+      const next100 = Math.ceil(cartTotal / 100) * 100;
+      if (next100 > cartTotal) candidates.add(next100);
+
+      standardNotes.forEach(n => {
+        if (n >= cartTotal) candidates.add(n);
+      });
+
+      if (cartTotal > 200) {
+        const next200 = Math.ceil(cartTotal / 200) * 200;
+        if (next200 > cartTotal) candidates.add(next200);
+      }
+    } else {
+      standardNotes.forEach(n => candidates.add(n));
+    }
+
+    const sorted = Array.from(candidates).sort((a, b) => a - b).slice(0, 4);
+    return sorted.map(val => ({
+      label: `${val} ${sym}`,
+      value: val
+    }));
+  }, [cartTotal, currencySymbol]);
 
   async function satisiTamamla() {
     if (!subActive) return;
@@ -209,6 +315,8 @@ export default function Sales() {
     const currentCustId = selectedCustomerId;
     const currentCustName = selectedCustomer?.name;
     const currentCustPhone = selectedCustomer?.phone;
+    const recordedTender = parseFloat(tenderAmount) || 0;
+    const recordedChange = (currentSaleType === "cash" && recordedTender >= currentTotal) ? (recordedTender - currentTotal) : 0;
 
     const saleItems = currentCart.map(item => ({
       id: item.id,
@@ -222,6 +330,8 @@ export default function Sales() {
     setCart([]);
     setSelectedCustomerId("");
     setCustSearchTerm("");
+    setTenderAmount(""); // Yeni satış için nakit girişini temizle
+    playCashRegisterSound(); // POS Yazar Kasa Çanı
 
     const isVeresiye = currentSaleType === "credit";
     const tempSaleId = `sale_${Date.now()}`;
@@ -269,7 +379,9 @@ export default function Sales() {
     bildir({
       type: "success",
       title: "Satış Tamamlandı",
-      message: `${moneyFormat(currentTotal)} tutarındaki satış başarıyla işlendi.`,
+      message: recordedChange > 0 
+        ? `${moneyFormat(currentTotal)} tutarındaki satış işlendi. Para Üstü: ${moneyFormat(recordedChange)}`
+        : `${moneyFormat(currentTotal)} tutarındaki satış başarıyla işlendi.`,
       actionText: "Faturayı Görüntüle",
       onAction: () => setActiveInvoice(invoiceData)
     });
@@ -554,6 +666,188 @@ export default function Sales() {
                 <FiUser /> Veresiye Satış
               </button>
             </div>
+
+            {/* PEŞİN / NAKİT SATIŞ İÇİN YER KAPLAMAYAN VE ANLIK SATIŞLA SENKRONİZE PARA ÜSTÜ ASİSTANI (ANKETE GÖRE DİNAMİK) */}
+            {saleType === "cash" && (
+              <div style={{
+                background: 'var(--bg-subtle)',
+                borderRadius: '8px',
+                border: '1px solid var(--border-main)',
+                padding: isChangeCalcOpen ? '10px 12px' : '7px 10px',
+                transition: 'all 0.15s ease'
+              }}>
+                {/* BAŞLIK & TOGGLE ÇUBUĞU */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <div style={{ 
+                      width: '22px', 
+                      height: '22px', 
+                      borderRadius: '5px', 
+                      background: 'rgba(16, 185, 129, 0.15)', 
+                      color: '#10b981', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center' 
+                    }}>
+                      <FiDollarSign size={13} />
+                    </div>
+                    <span style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                      Para Üstü Asistanı
+                    </span>
+                    {isRetailSurvey && (
+                      <span className="table-badge green" style={{ fontSize: '0.66rem', padding: '1px 5px' }}>
+                        Ankete Özel
+                      </span>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={toggleChangeCalc}
+                    className="tbl-btn secondary"
+                    style={{ padding: '2px 8px', fontSize: '0.72rem', height: '24px', gap: '3px', cursor: 'pointer' }}
+                    title={isChangeCalcOpen ? "Para üstü kutusunu gizle" : "Para üstü kutusunu göster"}
+                  >
+                    {isChangeCalcOpen ? (
+                      <>Gizle <FiChevronUp size={12} /></>
+                    ) : (
+                      <>
+                        {numericTender > 0 ? `Üst: +${changeDue.toFixed(2)} ${currencySymbol}` : "Hesapla"} <FiChevronDown size={12} />
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* AÇIK İKEN GÖSTERİLEN KOMPAKT GÖVDE */}
+                {isChangeCalcOpen && (
+                  <div style={{ marginTop: '9px', display: 'flex', flexDirection: 'column', gap: '8px', animation: 'fadeIn 0.15s ease-out' }}>
+                    
+                    {/* GİRİŞ VE TAM TUTAR BUTONU */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <div style={{ position: 'relative', flex: 1 }}>
+                        <input
+                          type="number"
+                          placeholder="Alınan nakit tutar..."
+                          value={tenderAmount}
+                          onChange={(e) => setTenderAmount(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '6px 26px 6px 8px',
+                            borderRadius: '6px',
+                            border: '1.5px solid var(--border-main)',
+                            background: 'var(--bg-card)',
+                            color: 'var(--text-main)',
+                            fontSize: '0.88rem',
+                            fontWeight: 800,
+                            outline: 'none'
+                          }}
+                        />
+                        {tenderAmount && (
+                          <button
+                            type="button"
+                            onClick={() => setTenderAmount("")}
+                            style={{
+                              position: 'absolute',
+                              right: '6px',
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              background: 'transparent',
+                              border: 'none',
+                              color: 'var(--text-muted)',
+                              cursor: 'pointer',
+                              padding: '2px'
+                            }}
+                            title="Temizle"
+                          >
+                            <FiX size={13} />
+                          </button>
+                        )}
+                      </div>
+                      
+                      {/* TAM TUTAR BUTONU (1-TIKLA cartTotal ATAR) */}
+                      <button
+                        type="button"
+                        onClick={() => setTenderAmount(String(cartTotal))}
+                        disabled={cartTotal <= 0}
+                        style={{
+                          padding: '6px 10px',
+                          borderRadius: '6px',
+                          border: '1px solid var(--border-main)',
+                          background: tenderAmount === String(cartTotal) ? 'var(--primary)' : 'var(--bg-card)',
+                          color: tenderAmount === String(cartTotal) ? '#ffffff' : 'var(--text-main)',
+                          fontSize: '0.76rem',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap'
+                        }}
+                        title="Müşteri tam tutar verdi (0₺ Para Üstü)"
+                      >
+                        Tam Tutar
+                      </button>
+                    </div>
+
+                    {/* DİNAMİK BANKNOT SEÇENEKLERİ (O ANKİ SATIŞLA SENKRONİZE) */}
+                    <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                      {quickTenderOptions.map((opt) => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setTenderAmount(String(opt.value))}
+                          style={{
+                            padding: '3px 8px',
+                            borderRadius: '5px',
+                            border: '1px solid var(--border-main)',
+                            background: tenderAmount === String(opt.value) ? 'var(--primary)' : 'var(--bg-card)',
+                            color: tenderAmount === String(opt.value) ? '#ffffff' : 'var(--text-muted)',
+                            fontSize: '0.73rem',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            transition: 'all 0.1s ease'
+                          }}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* ÇERÇEVELİ PARA ÜSTÜ VEYA EKSİK KUTUCUĞU */}
+                    {numericTender > 0 ? (
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '7px 10px',
+                        borderRadius: '6px',
+                        background: numericTender >= cartTotal ? 'rgba(16, 185, 129, 0.12)' : 'rgba(245, 158, 11, 0.12)',
+                        border: `1px solid ${numericTender >= cartTotal ? 'rgba(16, 185, 129, 0.35)' : 'rgba(245, 158, 11, 0.35)'}`
+                      }}>
+                        <span style={{
+                          fontSize: '0.78rem',
+                          fontWeight: 800,
+                          color: numericTender >= cartTotal ? '#10b981' : '#f59e0b'
+                        }}>
+                          {numericTender >= cartTotal ? "Verilecek Para Üstü:" : "Kalan Eksik Tutar:"}
+                        </span>
+                        <span style={{
+                          fontSize: '1.25rem',
+                          fontWeight: 900,
+                          color: numericTender >= cartTotal ? '#10b981' : '#f59e0b'
+                        }}>
+                          {numericTender >= cartTotal 
+                            ? `+${changeDue.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ${currencySymbol}`
+                            : `-${remainingDue.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ${currencySymbol}`
+                          }
+                        </span>
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textAlign: 'center', padding: '2px 0' }}>
+                        Alınan banknotu seçin veya kutuya yazın.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* VERESİYE SATIŞ İÇİN ARANABİLİR VE OKUNAKLI MÜŞTERİ SEÇİCİ */}
             {saleType === "credit" && (

@@ -3,7 +3,14 @@ export default function robots() {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/api/", "/admin/"],
+      disallow: [
+        "/api/",
+        "/admin",
+        "/admin/",
+        "/anket",
+        "/anket/",
+        "/verify-email"
+      ],
     },
     sitemap: "https://www.stokpro.shop/sitemap.xml",
   };

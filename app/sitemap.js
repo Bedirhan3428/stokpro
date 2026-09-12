@@ -14,8 +14,7 @@ export default function sitemap() {
     "/sales",
     "/customers",
     "/accounting",
-    "/settings",
-    "/admin"
+    "/settings"
   ];
 
   return routes.map((route) => ({

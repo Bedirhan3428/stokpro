@@ -15,6 +15,7 @@ import {
 } from "firebase/auth";
 import { doc, setDoc, getDoc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { ARTIFACT_DOC_ID } from "../config";
+import { recordUserLogin, logUserActivity } from "../utils/telemetryLogger";
 
 const AuthContext = createContext();
 export function useAuth() { return useContext(AuthContext); }
@@ -60,17 +61,22 @@ export function AuthProvider({ children }) {
       }
     } catch (e) {}
     await createProfileIfMissing(cred.user.uid, { email: cred.user.email, displayName: displayName || cred.user.displayName });
-    try {
-      await sendEmailVerification(cred.user).catch(() => {});
-    } catch {}
+    recordUserLogin(cred.user, "email_signup").catch(() => {});
+    logUserActivity("AUTH_SIGNUP", "Yeni Kullanıcı Kaydı", { email, displayName }, { uid: cred.user.uid, email: cred.user.email }).catch(() => {});
     return cred;
   }
 
   async function login(email, password) {
-    return signInWithEmailAndPassword(auth, email, password);
+    const cred = await signInWithEmailAndPassword(auth, email, password);
+    recordUserLogin(cred.user, "email_password").catch(() => {});
+    return cred;
   }
 
   async function logout() {
+    const u = auth.currentUser;
+    if (u) {
+      logUserActivity("AUTH_LOGOUT", "Kullanıcı Çıkış Yaptı", {}, { uid: u.uid, email: u.email }).catch(() => {});
+    }
     return signOut(auth);
   }
 
@@ -80,6 +86,7 @@ export function AuthProvider({ children }) {
       const result = await signInWithPopup(auth, provider);
       const uid = result.user.uid;
       await createProfileIfMissing(uid, { email: result.user.email, displayName: result.user.displayName });
+      recordUserLogin(result.user, "google_sso").catch(() => {});
       return result;
     } catch (err) {
       throw err;

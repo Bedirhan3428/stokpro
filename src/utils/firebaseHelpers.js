@@ -15,6 +15,7 @@ import {
 
 import { db, firebaseEnabled, auth } from "../firebase";
 import { invalidateAndRefreshMasterCache } from "./masterDataCache";
+import { logUserActivity } from "./telemetryLogger";
 
 const ARTIFACT_DOC_ID =
   process.env.NEXT_PUBLIC_FIREBASE_ARTIFACTS_COLLECTION ||
@@ -63,6 +64,13 @@ export async function addCustomer(customer = {}) {
     createdAt: new Date().toISOString(),
     balance: 0
   });
+
+  logUserActivity("CUSTOMER_CREATE", `Yeni Cari/Müşteri Eklendi: ${customer.name || 'İsimsiz'}`, {
+    customerId: ref.id,
+    name: customer.name || "",
+    phone: customer.phone || null
+  }).catch(() => {});
+
   return ref.id;
 }
 
@@ -96,7 +104,7 @@ export async function addCustomerPayment(customerId, { amount = 0, note = "" } =
   const uid = getUidOrThrow();
   if (!customerId) throw new Error("customerId gerekli.");
 
-  return runTransaction(db, async (tx) => {
+  const res = await runTransaction(db, async (tx) => {
     const custRef = doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "customers", customerId);
     const custSnap = await tx.get(custRef);
     if (!custSnap.exists()) throw new Error("Müşteri bulunamadı.");
@@ -130,8 +138,17 @@ export async function addCustomerPayment(customerId, { amount = 0, note = "" } =
       createdAt: new Date().toISOString()
     });
 
-    return { paymentId: paymentRef.id, newBalance: yeniBakiye };
+    return { paymentId: paymentRef.id, newBalance: yeniBakiye, customerName: musteriAdi };
   });
+
+  logUserActivity("CUSTOMER_PAYMENT", `Tahsilat Alındı: ${amount} ₺ (${res.customerName || customerId})`, {
+    customerId,
+    amount: Number(amount || 0),
+    note: String(note || ""),
+    newBalance: res.newBalance
+  }).catch(() => {});
+
+  return { paymentId: res.paymentId, newBalance: res.newBalance };
 }
 
 /* ------------------ SATIŞ TAMAMLAMA ------------------ */
@@ -142,7 +159,7 @@ export async function finalizeSaleTransaction({ items = [], paymentType = "cash"
 
   const activePayType = saleType || paymentType || "cash";
 
-  return runTransaction(db, async (tx) => {
+  const saleResult = await runTransaction(db, async (tx) => {
     // 1. Ürün ID'lerini güvenli çöz (eski veriler ve yeni verilerle %100 uyumluluk)
     const validItems = items.map((it) => {
       const pId = String(it.productId || it.id || "").trim();
@@ -254,6 +271,18 @@ export async function finalizeSaleTransaction({ items = [], paymentType = "cash"
       customerName: finalCustName
     };
   });
+
+  const payLabel = saleResult.saleType === "credit" ? "Veresiye" : saleResult.saleType === "card" ? "Kredi Kartı" : "Nakit";
+  logUserActivity("SALE_CREATE", `Yeni Satış: ${saleResult.total} ₺ (${payLabel})`, {
+    saleId: saleResult.id,
+    total: saleResult.total,
+    saleType: saleResult.saleType,
+    customerName: saleResult.customerName || null,
+    itemsCount: saleResult.items?.length || 0,
+    itemsSummary: saleResult.items?.map(it => `${it.name} x${it.qty} (${it.price}₺)`).join(", ")
+  }).catch(() => {});
+
+  return saleResult;
 }
 
 /* ------------------ OKUMALAR ------------------ */
@@ -301,6 +330,15 @@ export async function addLedgerEntry(entry = {}) {
     amount: Number(entry.amount || 0),
     createdAt: new Date().toISOString()
   });
+
+  const entryType = entry.type === "expense" ? "Gider" : "Gelir";
+  logUserActivity(entry.type === "expense" ? "EXPENSE_CREATE" : "INCOME_CREATE", `Kasa/Muhasebe ${entryType} Kaydı: ${entry.amount} ₺`, {
+    ledgerId: ref.id,
+    type: entry.type || "income",
+    amount: Number(entry.amount || 0),
+    description: entry.description || ""
+  }).catch(() => {});
+
   return ref.id;
 }
 
@@ -311,6 +349,8 @@ export async function updateSale(saleId, updates = {}) {
   if (!saleId) throw new Error("saleId gerekli.");
   const ref = doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "sales", saleId);
   await updateDoc(ref, { ...updates, updatedAt: new Date().toISOString() });
+
+  logUserActivity("SALE_UPDATE", `Satış Güncellendi (ID: ${saleId})`, { saleId, updates }).catch(() => {});
   return true;
 }
 
@@ -332,6 +372,8 @@ export async function deleteSale(saleId) {
       await deleteDoc(doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "customers", c.id, "sales", sdoc.id));
     }
   }
+
+  logUserActivity("SALE_DELETE", `Satış Silindi (ID: ${saleId})`, { saleId }).catch(() => {});
   return true;
 }
 
@@ -350,6 +392,8 @@ export async function deleteLedgerEntry(ledgerId) {
   if (!ledgerId) throw new Error("ledgerId gerekli.");
   const ref = doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "ledger", ledgerId);
   await deleteDoc(ref);
+
+  logUserActivity("TRANSACTION_DELETE", `Kasa/Muhasebe Kaydı Silindi (ID: ${ledgerId})`, { ledgerId }).catch(() => {});
   return true;
 }
 
@@ -447,6 +491,9 @@ export async function deleteCustomer(customerId) {
 
   await deleteDoc(doc(db, ...base));
   invalidateAndRefreshMasterCache().catch(() => {});
+
+  logUserActivity("CUSTOMER_DELETE", `Müşteri Silindi (ID: ${customerId})`, { customerId }).catch(() => {});
+
   return true;
 }
 
@@ -690,6 +737,100 @@ export async function updateUserProfile(uid, data = {}) {
   return true;
 }
 
+/* ------------------ ONBOARDING ANKETİ KAYIT VE LİSTELEME ------------------ */
+export async function saveSurveyResponse(surveyData = {}, targetUid = null) {
+  ensureDb();
+  const currentUser = auth.currentUser;
+  const uid = targetUid || (currentUser ? currentUser.uid : null);
+  if (!uid) throw new Error("Kullanıcı ID (uid) bulunamadı.");
+
+  const payload = {
+    uid,
+    email: currentUser?.email || surveyData.email || "",
+    displayName: currentUser?.displayName || surveyData.displayName || surveyData.name || "",
+    sector: surveyData.sector || "Genel",
+    sectorKey: surveyData.sectorKey || "genel",
+    customSector: surveyData.customSector || "",
+    primaryNeed: surveyData.primaryNeed || "Genel",
+    needKey: surveyData.needKey || "genel",
+    skipped: Boolean(surveyData.onboardingSkipped || surveyData.skipped),
+    completedAt: surveyData.completedAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  // 1. Profil altına yaz
+  const profileRef = doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "profile", "user_doc");
+  await setDoc(profileRef, {
+    ...payload,
+    onboardingCompleted: true,
+    onboardingSkipped: payload.skipped,
+    onboardingCompletedAt: payload.completedAt
+  }, { merge: true });
+
+  // 2. Global anketler havuzuna yaz (artifacts/{ARTIFACT_DOC_ID}/surveys/{uid})
+  try {
+    const surveyDocRef = doc(db, "artifacts", ARTIFACT_DOC_ID, "surveys", uid);
+    await setDoc(surveyDocRef, payload, { merge: true });
+  } catch (err) {
+    console.warn("Global survey doc kaydedilemedi:", err);
+  }
+
+  invalidateAndRefreshMasterCache().catch(() => {});
+  return payload;
+}
+
+export async function listAllSurveys() {
+  ensureDb();
+  let list = [];
+  try {
+    const surveysRef = collection(db, "artifacts", ARTIFACT_DOC_ID, "surveys");
+    const snap = await getDocs(surveysRef);
+    list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch (err) {
+    console.warn("Surveys koleksiyonu okunamadı:", err);
+  }
+
+  // Eğer surveys koleksiyonu boş veya kullanıcılar doğrudan profilde kayıtlıysa users'ı da tara
+  try {
+    const usersRef = collection(db, "artifacts", ARTIFACT_DOC_ID, "users");
+    const usersSnap = await getDocs(usersRef);
+    const existingUids = new Set(list.map(s => s.uid || s.id));
+
+    for (const uDoc of usersSnap.docs) {
+      if (!existingUids.has(uDoc.id)) {
+        try {
+          const pRef = doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uDoc.id, "profile", "user_doc");
+          const pSnap = await getDoc(pRef);
+          if (pSnap.exists()) {
+            const pData = pSnap.data();
+            if (pData.sector || pData.onboardingCompleted || pData.primaryNeed) {
+              list.push({
+                id: uDoc.id,
+                uid: uDoc.id,
+                email: pData.email || uDoc.data()?.email || "—",
+                displayName: pData.name || pData.displayName || "—",
+                sector: pData.sector || "Genel",
+                sectorKey: pData.sectorKey || "genel",
+                customSector: pData.customSector || "",
+                primaryNeed: pData.primaryNeed || "Genel",
+                needKey: pData.needKey || "genel",
+                skipped: Boolean(pData.onboardingSkipped),
+                completedAt: pData.onboardingCompletedAt || pData.createdAt || new Date().toISOString()
+              });
+            }
+          }
+        } catch {}
+      }
+    }
+  } catch (err) {
+    console.warn("Users koleksiyonu taranırken hata:", err);
+  }
+
+  // Tarihe göre yeniden eskiye sırala
+  list.sort((a, b) => new Date(b.completedAt || 0).getTime() - new Date(a.completedAt || 0).getTime());
+  return list;
+}
+
 const firebaseHelpers = {
   listCustomers,
   addCustomer,
@@ -717,6 +858,8 @@ const firebaseHelpers = {
   createUserProfile,
   getUserProfile,
   updateUserProfile, 
+  saveSurveyResponse,
+  listAllSurveys,
   updateLegacyDocument,
   deleteLegacyDocument
 };

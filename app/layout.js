@@ -3,6 +3,7 @@ import "../src/styles/global.css";
 import { AuthProvider } from "../src/contexts/AuthContext";
 import Navbar from "../src/components/Navbar";
 import TermsModal from "../src/components/TermsModal";
+import TelemetryTracker from "../src/components/TelemetryTracker";
 
 export const metadata = {
   metadataBase: new URL("https://www.stokpro.shop"),
@@ -44,6 +45,7 @@ export default function RootLayout({ children }) {
     <html lang="tr">
       <body>
         <AuthProvider>
+          <TelemetryTracker />
           <TermsModal />
           <Navbar />
           <main className="app-container">

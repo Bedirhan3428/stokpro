@@ -227,6 +227,61 @@ Kasa gelir-gider hesaplarınızı tutun. Tamamlanan her satış için resmi PDF 
 </div>
 </section>
 
+        {/* SEKTÖREL ÇÖZÜMLER VİTRİNİ */}
+        <section className="flex flex-col gap-6">
+          <div className="text-center flex flex-col gap-1.5">
+            <span className="text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider">SEKTÖRE ÖZEL DENEYİM</span>
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+              Her Sektörün İhtiyacına <span className="text-blue-600">Uyarlanabilir Esnek Panel</span>
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
+              Kayıt anındaki tercihlerinize göre yönetim paneliniz otomatik şekillenir.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="card border-l-4 border-l-blue-500 flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🧵</span>
+                <strong className="text-sm text-slate-900 dark:text-white">Tekstil & İmalat</strong>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                Kumaş stokları, renk/beden varyantları, fason ve toptan müşteri takibi.
+              </p>
+            </div>
+
+            <div className="card border-l-4 border-l-emerald-500 flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🛍️</span>
+                <strong className="text-sm text-slate-900 dark:text-white">Perakende & Mağaza</strong>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                Kamera & el okuyucu ile barkodlu satış, anlık kasa ve kritik stok uyarıları.
+              </p>
+            </div>
+
+            <div className="card border-l-4 border-l-purple-500 flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">📦</span>
+                <strong className="text-sm text-slate-900 dark:text-white">Toptan & Dağıtım</strong>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                Toplu ürün girişleri, tedarikçi carileri ve toptan sevkiyat faturaları.
+              </p>
+            </div>
+
+            <div className="card border-l-4 border-l-amber-500 flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🏢</span>
+                <strong className="text-sm text-slate-900 dark:text-white">Çoklu Şube & Depo</strong>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                Merkez-şube envanter dökümü, depo sayımları ve konsolide finansal raporlar.
+              </p>
+            </div>
+          </div>
+        </section>
+
 {/* ARTIFICIAL INTELLIGENCE STORE INSIGHTS */}
 <section className="bg-slate-900 text-white rounded-xl p-8 flex flex-col gap-6 shadow-xl">
 <div className="flex flex-col gap-2">

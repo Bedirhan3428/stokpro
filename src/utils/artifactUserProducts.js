@@ -15,6 +15,7 @@ import { db, firebaseEnabled } from "../firebase";
 import { auth } from "../firebase";
 import { ARTIFACT_DOC_ID } from "../config";
 import { invalidateAndRefreshMasterCache } from "./masterDataCache";
+import { logUserActivity } from "./telemetryLogger";
 
 function ensureDb() {
   if (!firebaseEnabled || !db) throw new Error("Firestore not initialized.");
@@ -58,6 +59,16 @@ export async function addProduct(product) {
 
   // Master Cache Yenile
   invalidateAndRefreshMasterCache().catch(() => {});
+
+  logUserActivity("PRODUCT_CREATE", `Ürün Eklendi: ${product.name || 'İsimsiz'}`, {
+    productId: ref.id,
+    name: product.name || "",
+    barcode: product.barcode || null,
+    price: Number(product.price || 0),
+    stock: Number(product.stock || 0),
+    category: product.category || null
+  }).catch(() => {});
+
   return ref.id;
 }
 
@@ -83,6 +94,12 @@ export async function updateProduct(productId, updates = {}) {
 
   // Master Cache Yenile
   invalidateAndRefreshMasterCache().catch(() => {});
+
+  logUserActivity("PRODUCT_UPDATE", `Ürün Güncellendi: ${updates.name || productId}`, {
+    productId,
+    updates
+  }).catch(() => {});
+
   return true;
 }
 
@@ -95,6 +112,11 @@ export async function deleteProduct(productId) {
 
   // Master Cache Yenile
   invalidateAndRefreshMasterCache().catch(() => {});
+
+  logUserActivity("PRODUCT_DELETE", `Ürün Silindi (ID: ${productId})`, {
+    productId
+  }).catch(() => {});
+
   return true;
 }
 
