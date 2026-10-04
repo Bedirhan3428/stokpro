@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '../../../src/firebase';
-import { doc, getDoc, setDoc, writeBatch } from 'firebase/firestore';
+import { doc, getDoc, setDoc, writeBatch, collection, getDocs } from 'firebase/firestore';
 import { hashKeySync } from '../../../src/utils/cryptoUtils';
 
 const ARTIFACT_DOC_ID =
@@ -121,7 +121,36 @@ export async function POST(req) {
       { merge: true }
     );
 
-    // c) Ürünleri koleksiyona 400'erli batch'lerle yaz
+    // c) Ürünleri eşitle: Firestore'da olup masaüstünde silinmiş olanları temizle
+    const incomingProductIds = new Set(allProducts.map(p => String(p.id)).filter(Boolean));
+    let cleanedProductsCount = 0;
+    try {
+      const prodCollRef = collection(db, 'artifacts', ARTIFACT_DOC_ID, 'users', uid, 'products');
+      const existingProdsSnap = await getDocs(prodCollRef);
+      if (!existingProdsSnap.empty) {
+        let delBatch = writeBatch(db);
+        let delCount = 0;
+        for (const docSnap of existingProdsSnap.docs) {
+          if (!incomingProductIds.has(docSnap.id)) {
+            delBatch.delete(docSnap.ref);
+            cleanedProductsCount++;
+            delCount++;
+            if (delCount >= 300) {
+              await delBatch.commit();
+              delBatch = writeBatch(db);
+              delCount = 0;
+            }
+          }
+        }
+        if (delCount > 0) {
+          await delBatch.commit();
+        }
+      }
+    } catch (cleanProdErr) {
+      console.warn('Masaüstünden silinen ürünler Firestore temizleme uyarısı:', cleanProdErr);
+    }
+
+    // Güncel ürünleri koleksiyona 400'erli batch'lerle yaz
     for (let i = 0; i < allProducts.length; i += 400) {
       const chunk = allProducts.slice(i, i + 400);
       const batch = writeBatch(db);
@@ -134,7 +163,36 @@ export async function POST(req) {
       await batch.commit();
     }
 
-    // d) Carileri koleksiyona 400'erli batch'lerle yaz
+    // d) Carileri eşitle: Firestore'da olup masaüstünde silinmiş olanları temizle
+    const incomingCustIds = new Set(allCustomers.map(c => String(c.id)).filter(Boolean));
+    let cleanedCustomersCount = 0;
+    try {
+      const custCollRef = collection(db, 'artifacts', ARTIFACT_DOC_ID, 'users', uid, 'customers');
+      const existingCustsSnap = await getDocs(custCollRef);
+      if (!existingCustsSnap.empty) {
+        let delBatch = writeBatch(db);
+        let delCount = 0;
+        for (const docSnap of existingCustsSnap.docs) {
+          if (!incomingCustIds.has(docSnap.id)) {
+            delBatch.delete(docSnap.ref);
+            cleanedCustomersCount++;
+            delCount++;
+            if (delCount >= 300) {
+              await delBatch.commit();
+              delBatch = writeBatch(db);
+              delCount = 0;
+            }
+          }
+        }
+        if (delCount > 0) {
+          await delBatch.commit();
+        }
+      }
+    } catch (cleanCustErr) {
+      console.warn('Masaüstünden silinen cariler Firestore temizleme uyarısı:', cleanCustErr);
+    }
+
+    // Güncel carileri koleksiyona 400'erli batch'lerle yaz
     for (let i = 0; i < allCustomers.length; i += 400) {
       const chunk = allCustomers.slice(i, i + 400);
       const batch = writeBatch(db);
@@ -147,7 +205,13 @@ export async function POST(req) {
       await batch.commit();
     }
 
-    // e) Kök kullanıcı dokümanını güncelle
+    // e) Web önbelleklerinin anında düşmesi için versiyon belgesini yenile
+    try {
+      const versionRef = doc(db, 'artifacts', ARTIFACT_DOC_ID, 'users', uid, 'sync_meta', 'version_doc');
+      await setDoc(versionRef, { versionTag: `v_${Date.now()}`, updatedAt: new Date().toISOString() }, { merge: true });
+    } catch {}
+
+    // f) Kök kullanıcı dokümanını güncelle
     try {
       await setDoc(
         userRef,
