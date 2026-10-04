@@ -413,7 +413,8 @@ export default function Products() {
   }
 
   const availableCategories = useMemo(() => {
-    const cats = new Set(products.map(p => p.category || "Genel").filter(Boolean));
+    const activeList = products.filter(p => p.isActive !== false && !p.deletedAt);
+      const cats = new Set(activeList.map(p => p.category || "Genel").filter(Boolean));
     return Array.from(cats).sort();
   }, [products]);
 
@@ -426,6 +427,8 @@ export default function Products() {
 
   const filtered = useMemo(() => {
     return products.filter(p => {
+      // Soft-Delete Filtresi: Masaustunde silinmis/pasife alinmis urunleri listeden kaldir
+      if (p.isActive === false || p.deletedAt) return false;
       const t = searchTerm.toLowerCase();
       const matchesSearch = !t || (
         (p.name || "").toLowerCase().includes(t) ||

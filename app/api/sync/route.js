@@ -83,6 +83,8 @@ export async function POST(req) {
     // 3. YETKİ VERİLDİ -> VERİLERİ DOĞRUDAN FIRESTORE VERİTABANINA YAZ
     const allProducts = Array.isArray(masterData.products) ? masterData.products : [];
     const allCustomers = Array.isArray(masterData.customers) ? masterData.customers : [];
+    const activeProductsCount = allProducts.filter(p => p.isActive !== false && !p.deletedAt).length;
+    const activeCustomersCount = allCustomers.filter(c => c.isActive !== false && !c.deletedAt).length;
     const lastBackupAt = masterData.lastBackupAt || new Date().toISOString();
 
     // a) Tek parça Master Yedek Dokümanı (artifacts/.../master_backup/latest)
@@ -92,8 +94,8 @@ export async function POST(req) {
       {
         lastBackupAt,
         appVersion: masterData.appVersion || '1.0.0',
-        productsCount: allProducts.length,
-        customersCount: allCustomers.length,
+        productsCount: activeProductsCount,
+        customersCount: activeCustomersCount,
         salesCount: masterData.sales?.length || 0,
         expensesCount: masterData.expenses?.length || 0,
         masterJsonString: JSON.stringify(masterData),

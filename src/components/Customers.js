@@ -236,8 +236,9 @@ export default function Customers() {
   }
 
   const filtered = customers.filter(c => 
-    (c.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (c.phone || "").includes(searchTerm)
+    (c.isActive !== false && !c.deletedAt) &&
+    ((c.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (c.phone || "").includes(searchTerm))
   );
 
   return (
