@@ -8,6 +8,19 @@ const ARTIFACT_DOC_ID =
   process.env.REACT_APP_FIREBASE_ARTIFACTS_COLLECTION ||
   '1:330292329201:web:d19827937fb863ea490750';
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-requested-with',
+};
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: corsHeaders,
+  });
+}
+
 export async function POST(req) {
   try {
     const body = await req.json();
@@ -16,7 +29,7 @@ export async function POST(req) {
     if (!uid || !keyHash || !masterData) {
       return NextResponse.json(
         { error: 'Eksik parametreler (uid, keyHash ve masterData gereklidir).' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -63,7 +76,7 @@ export async function POST(req) {
       console.warn(`Yetkisiz senkronizasyon denemesi: UID ${uid}`);
       return NextResponse.json(
         { error: 'Yetki reddedildi: Terminal anahtar hash\'i eşleşmedi.' },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       );
     }
 
@@ -146,21 +159,24 @@ export async function POST(req) {
       );
     } catch {}
 
-    return NextResponse.json({
-      success: true,
-      message: `Yetki onaylandı: ${allProducts.length} ürün ve ${allCustomers.length} cari başarıyla veritabanına yazıldı.`,
-      productsCount: allProducts.length,
-      customersCount: allCustomers.length,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        message: `Yetki onaylandı: ${allProducts.length} ürün ve ${allCustomers.length} cari başarıyla veritabanına yazıldı.`,
+        productsCount: allProducts.length,
+        customersCount: allCustomers.length,
+      },
+      { status: 200, headers: corsHeaders }
+    );
   } catch (err) {
     console.error('API /api/sync hatası:', err);
     return NextResponse.json(
       { error: 'Sunucu hatası: ' + (err?.message || err) },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
 
 export async function GET() {
-  return NextResponse.json({ status: 'ok', endpoint: '/api/sync' });
+  return NextResponse.json({ status: 'ok', endpoint: '/api/sync' }, { status: 200, headers: corsHeaders });
 }

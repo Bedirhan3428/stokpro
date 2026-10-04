@@ -2,8 +2,8 @@
   "framework": "nextjs",
   "redirects": [
     {
-      "source": "/(.*)",
-      "destination": "https://www.stokpro.shop/$1",
+      "source": "/((?!api/).*)",
+      "destination": "https://stokpro.shop/$1",
       "permanent": true,
       "has": [
         {
