@@ -23,9 +23,9 @@ export async function fetchDashboardDataSingleRequest() {
   // 1. Master Data Cache motorundan verileri çek (Sunucu versiyonu değişmediyse 0ms hafızadan!)
   const masterStore = await syncFullMasterStore(false);
 
-  const products = masterStore.products || [];
+  const products = (masterStore.products || []).filter(p => p.isActive !== false && !p.deletedAt);
   const sales = masterStore.sales || [];
-  const customers = masterStore.customers || [];
+  const customers = (masterStore.customers || []).filter(c => c.isActive !== false && !c.deletedAt);
   const custPayments = masterStore.custPayments || [];
   const incomes = masterStore.incomes || [];
   const expenses = masterStore.expenses || [];

@@ -196,10 +196,11 @@ export default function Sales() {
     return customers.find(c => c.id === selectedCustomerId);
   }, [customers, selectedCustomerId]);
 
-  const filteredCustomers = useMemo(() => {
-    if (!custSearchTerm) return customers;
+    const filteredCustomers = useMemo(() => {
+    const activeCusts = customers.filter(c => c.isActive !== false && !c.deletedAt);
+    if (!custSearchTerm) return activeCusts;
     const t = custSearchTerm.toLowerCase();
-    return customers.filter(c => (c.name || "").toLowerCase().includes(t) || (c.phone || "").includes(t));
+    return activeCusts.filter(c => (c.name || "").toLowerCase().includes(t) || (c.phone || "").includes(t));
   }, [customers, custSearchTerm]);
 
   function sepeteEkle(product) {
@@ -247,7 +248,7 @@ export default function Sales() {
     const code = barcodeInput.trim();
     if (!code) return;
 
-    const found = products.find(p => p.barcode === code);
+    const found = products.find(p => p.barcode === code && p.isActive !== false && !p.deletedAt);
     if (found) {
       playScanBeep();
       sepeteEkle(found);
@@ -439,14 +440,19 @@ export default function Sales() {
     addLegacyExpense({ amount, description: desc }).catch(err => console.error("Arka plan gider hatası:", err));
   }
 
-  const filteredProducts = products.filter(p => {
-    const t = searchTerm.toLowerCase();
-    return (
-      (p.name || "").toLowerCase().includes(t) ||
-      (p.barcode || "").toLowerCase().includes(t) ||
-      (p.category || "").toLowerCase().includes(t)
-    );
-  });
+    const filteredProducts = useMemo(() => {
+    return products.filter(p => {
+      // Pasif veya silinmiş ürünleri filtrele
+      if (p.isActive === false || p.deletedAt) return false;
+      const t = searchTerm.toLowerCase();
+      if (!t) return true;
+      return (
+        (p.name || "").toLowerCase().includes(t) ||
+        (p.barcode || "").toLowerCase().includes(t) ||
+        (p.category || "").toLowerCase().includes(t)
+      );
+    });
+  }, [products, searchTerm]);
 
   return (
     <div className="page-container">

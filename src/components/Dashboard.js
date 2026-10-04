@@ -43,9 +43,9 @@ function moneyFormat(val, customSymbol) {
 
 function calculateDashboardFromStore(store) {
   if (!store) return null;
-  const products = store.products || [];
+  const products = (store.products || []).filter(p => p.isActive !== false && !p.deletedAt);
   const sales = store.sales || [];
-  const customers = store.customers || [];
+  const customers = (store.customers || []).filter(c => c.isActive !== false && !c.deletedAt);
   const custPayments = store.custPayments || [];
   const incomes = store.incomes || [];
   const expenses = store.expenses || [];

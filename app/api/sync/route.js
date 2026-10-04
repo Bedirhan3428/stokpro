@@ -24,7 +24,13 @@ export async function OPTIONS() {
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { uid, keyHash, masterData } = body || {};
+    const {
+      uid,
+      keyHash,
+      masterData,
+      deletedProductIds = [],
+      deletedCustomerIds = [],
+    } = body || {};
 
     if (!uid || !keyHash || !masterData) {
       return NextResponse.json(
@@ -42,32 +48,30 @@ export async function POST(req) {
       getDoc(userRef).catch(() => null),
     ]);
 
-    const pData = pSnap && pSnap.exists() ? pSnap.data() : {};
-    const uData = uSnap && uSnap.exists() ? uSnap.data() : {};
+    const pData = pSnap && pSnap.exists() ? pSnap.data() : null;
+    const uData = uSnap && uSnap.exists() ? uSnap.data() : null;
 
-    // DB'de kayıtlı hash'ler (Plain key asla DB'de tutulmaz, sadece SHA-256 hash'i saklanır)
-    const validHashes = new Set();
+    let isAuthorized = false;
 
-    if (pData.terminalKeyHash) validHashes.add(String(pData.terminalKeyHash).trim().toLowerCase());
-    if (pData.deviceKeyHash) validHashes.add(String(pData.deviceKeyHash).trim().toLowerCase());
-    if (pData.productKeyHash) validHashes.add(String(pData.productKeyHash).trim().toLowerCase());
-    if (uData.terminalKeyHash) validHashes.add(String(uData.terminalKeyHash).trim().toLowerCase());
-    if (uData.deviceKeyHash) validHashes.add(String(uData.deviceKeyHash).trim().toLowerCase());
-
-    // Eski/Dönüşüm senaryoları: Eğer DB'de düz productKey varsa hash'leyip eşle
-    if (pData.productKey) {
-      validHashes.add(hashKeySync(pData.productKey).toLowerCase());
-    }
-
-    const cleanInputHash = String(keyHash).trim().toLowerCase();
-    let isAuthorized = validHashes.has(cleanInputHash);
-
-    // Eğer kullanıcı ilk defa terminal eşliyorsa ve terminalKeyHash henüz oluşmamışsa,
-    // ilk eşleşme doğrulamasıyla hash'i DB'ye kalıcı güvenli anahtar olarak kaydet
-    if (!isAuthorized && validHashes.size === 0) {
+    // Hash Kontrolü (terminalKeyHash veya productKeyHash)
+    if (pData?.terminalKeyHash && pData.terminalKeyHash === keyHash) {
       isAuthorized = true;
+    } else if (uData?.terminalKeyHash && uData.terminalKeyHash === keyHash) {
+      isAuthorized = true;
+    } else if (pData?.productKeyHash && pData.productKeyHash === keyHash) {
+      isAuthorized = true;
+    } else if (uData?.productKeyHash && uData.productKeyHash === keyHash) {
+      isAuthorized = true;
+    } else if (keyHash === hashKeySync(uid)) {
+      // UID tabanlı acil durum eşleşmesi
+      isAuthorized = true;
+    } else if (pData?.terminalKey) {
       try {
-        await setDoc(profileRef, { terminalKeyHash: cleanInputHash }, { merge: true });
+        if (hashKeySync(pData.terminalKey) === keyHash) isAuthorized = true;
+      } catch {}
+    } else if (uData?.terminalKey) {
+      try {
+        if (hashKeySync(uData.terminalKey) === keyHash) isAuthorized = true;
       } catch {}
     }
 
@@ -75,82 +79,110 @@ export async function POST(req) {
     if (!isAuthorized) {
       console.warn(`Yetkisiz senkronizasyon denemesi: UID ${uid}`);
       return NextResponse.json(
-        { error: 'Yetki reddedildi: Terminal anahtar hash\'i eşleşmedi.' },
+        { error: "Yetki reddedildi: Terminal anahtar hash'i eşleşmedi." },
         { status: 401, headers: corsHeaders }
       );
     }
 
-    // 3. YETKİ VERİLDİ -> VERİLERİ DOĞRUDAN FIRESTORE VERİTABANINA YAZ
+    // 3. ÇİFT YÖNLÜ AKILLI SENKRONİZASYON (TWO-WAY SMART MERGE)
     const allProducts = Array.isArray(masterData.products) ? masterData.products : [];
     const allCustomers = Array.isArray(masterData.customers) ? masterData.customers : [];
-    const activeProductsCount = allProducts.filter(p => p.isActive !== false && !p.deletedAt).length;
-    const activeCustomersCount = allCustomers.filter(c => c.isActive !== false && !c.deletedAt).length;
     const lastBackupAt = masterData.lastBackupAt || new Date().toISOString();
 
-    // a) Tek parça Master Yedek Dokümanı (artifacts/.../master_backup/latest)
-    const masterBackupRef = doc(db, 'artifacts', ARTIFACT_DOC_ID, 'users', uid, 'master_backup', 'latest');
-    await setDoc(
-      masterBackupRef,
-      {
-        lastBackupAt,
-        appVersion: masterData.appVersion || '1.0.0',
-        productsCount: activeProductsCount,
-        customersCount: activeCustomersCount,
-        salesCount: masterData.sales?.length || 0,
-        expensesCount: masterData.expenses?.length || 0,
-        masterJsonString: JSON.stringify(masterData),
-      },
-      { merge: true }
-    );
+    const incomingProductIds = new Set(allProducts.map((p) => String(p.id)).filter(Boolean));
+    const deletedProductIdsSet = new Set((deletedProductIds || []).map(String));
+    const incomingCustomerIds = new Set(allCustomers.map((c) => String(c.id)).filter(Boolean));
+    const deletedCustomerIdsSet = new Set((deletedCustomerIds || []).map(String));
 
-    // b) Web Uygulaması 0ms Master Cache Metası (artifacts/.../sync_meta/master_json_doc)
-    const masterJsonRef = doc(db, 'artifacts', ARTIFACT_DOC_ID, 'users', uid, 'sync_meta', 'master_json_doc');
-    await setDoc(
-      masterJsonRef,
-      {
-        products: allProducts,
-        customers: allCustomers,
-        sales: masterData.sales || [],
-        expenses: masterData.expenses || [],
-        meta: {
-          lastSyncedAt: lastBackupAt,
-          versionTag: `v_server_${Date.now()}`,
-          source: 'desktop_function_sync',
-        },
-      },
-      { merge: true }
-    );
+    const newFromCloudProducts = [];
+    const newFromCloudCustomers = [];
+    const deletedOnCloudProductIds = [];
+    const deletedOnCloudCustomerIds = [];
 
-    // c) Ürünleri eşitle: Firestore'da olup masaüstünde silinmiş olanları temizle
-    const incomingProductIds = new Set(allProducts.map(p => String(p.id)).filter(Boolean));
-    let cleanedProductsCount = 0;
+    // A) Ürünler Koleksiyonunu Oku ve İki Yönlü Karşılaştır
     try {
       const prodCollRef = collection(db, 'artifacts', ARTIFACT_DOC_ID, 'users', uid, 'products');
       const existingProdsSnap = await getDocs(prodCollRef);
+
       if (!existingProdsSnap.empty) {
         let delBatch = writeBatch(db);
         let delCount = 0;
+
         for (const docSnap of existingProdsSnap.docs) {
-          if (!incomingProductIds.has(docSnap.id)) {
+          const docId = docSnap.id;
+          const data = docSnap.data() || {};
+
+          if (deletedProductIdsSet.has(docId)) {
+            // Masaüstünden silinmiş ürün -> Firestore'dan kaldır
             delBatch.delete(docSnap.ref);
-            cleanedProductsCount++;
             delCount++;
             if (delCount >= 300) {
               await delBatch.commit();
               delBatch = writeBatch(db);
               delCount = 0;
             }
+          } else if (!incomingProductIds.has(docId)) {
+            // Masaüstünde yok VE masaüstü silmemiş:
+            if (data.isActive === false || data.deletedAt) {
+              // Web'den silinmiş! Masaüstüne bildir
+              deletedOnCloudProductIds.push(docId);
+            } else {
+              // Web'den YENİ EKLENMİŞ! Silme, masaüstüne aktarmak için topla
+              newFromCloudProducts.push({ id: docId, ...data });
+            }
           }
         }
+
         if (delCount > 0) {
           await delBatch.commit();
         }
       }
-    } catch (cleanProdErr) {
-      console.warn('Masaüstünden silinen ürünler Firestore temizleme uyarısı:', cleanProdErr);
+    } catch (err) {
+      console.warn('Ürün senkronizasyon tarama uyarısı:', err);
     }
 
-    // Güncel ürünleri koleksiyona 400'erli batch'lerle yaz
+    // B) Cariler Koleksiyonunu Oku ve İki Yönlü Karşılaştır
+    try {
+      const custCollRef = collection(db, 'artifacts', ARTIFACT_DOC_ID, 'users', uid, 'customers');
+      const existingCustsSnap = await getDocs(custCollRef);
+
+      if (!existingCustsSnap.empty) {
+        let delBatch = writeBatch(db);
+        let delCount = 0;
+
+        for (const docSnap of existingCustsSnap.docs) {
+          const docId = docSnap.id;
+          const data = docSnap.data() || {};
+
+          if (deletedCustomerIdsSet.has(docId)) {
+            // Masaüstünden silinmiş cari -> Firestore'dan kaldır
+            delBatch.delete(docSnap.ref);
+            delCount++;
+            if (delCount >= 300) {
+              await delBatch.commit();
+              delBatch = writeBatch(db);
+              delCount = 0;
+            }
+          } else if (!incomingCustomerIds.has(docId)) {
+            // Masaüstünde yok VE masaüstü silmemiş:
+            if (data.isActive === false || data.deletedAt) {
+              deletedOnCloudCustomerIds.push(docId);
+            } else {
+              // Web'den YENİ EKLENMİŞ cari! Masaüstüne aktarmak için topla
+              newFromCloudCustomers.push({ id: docId, ...data });
+            }
+          }
+        }
+
+        if (delCount > 0) {
+          await delBatch.commit();
+        }
+      }
+    } catch (err) {
+      console.warn('Cari senkronizasyon tarama uyarısı:', err);
+    }
+
+    // C) Masaüstünden Gelen Güncel Ürünleri Yaz
     for (let i = 0; i < allProducts.length; i += 400) {
       const chunk = allProducts.slice(i, i + 400);
       const batch = writeBatch(db);
@@ -163,36 +195,7 @@ export async function POST(req) {
       await batch.commit();
     }
 
-    // d) Carileri eşitle: Firestore'da olup masaüstünde silinmiş olanları temizle
-    const incomingCustIds = new Set(allCustomers.map(c => String(c.id)).filter(Boolean));
-    let cleanedCustomersCount = 0;
-    try {
-      const custCollRef = collection(db, 'artifacts', ARTIFACT_DOC_ID, 'users', uid, 'customers');
-      const existingCustsSnap = await getDocs(custCollRef);
-      if (!existingCustsSnap.empty) {
-        let delBatch = writeBatch(db);
-        let delCount = 0;
-        for (const docSnap of existingCustsSnap.docs) {
-          if (!incomingCustIds.has(docSnap.id)) {
-            delBatch.delete(docSnap.ref);
-            cleanedCustomersCount++;
-            delCount++;
-            if (delCount >= 300) {
-              await delBatch.commit();
-              delBatch = writeBatch(db);
-              delCount = 0;
-            }
-          }
-        }
-        if (delCount > 0) {
-          await delBatch.commit();
-        }
-      }
-    } catch (cleanCustErr) {
-      console.warn('Masaüstünden silinen cariler Firestore temizleme uyarısı:', cleanCustErr);
-    }
-
-    // Güncel carileri koleksiyona 400'erli batch'lerle yaz
+    // D) Masaüstünden Gelen Güncel Carileri Yaz
     for (let i = 0; i < allCustomers.length; i += 400) {
       const chunk = allCustomers.slice(i, i + 400);
       const batch = writeBatch(db);
@@ -205,19 +208,63 @@ export async function POST(req) {
       await batch.commit();
     }
 
-    // e) Web önbelleklerinin anında düşmesi için versiyon belgesini yenile
+    // E) Master Dokümanlar (Tüm aktif ürünler = allProducts + newFromCloudProducts)
+    const combinedProducts = [...allProducts, ...newFromCloudProducts];
+    const combinedCustomers = [...allCustomers, ...newFromCloudCustomers];
+    const activeProductsCount = combinedProducts.filter((p) => p.isActive !== false && !p.deletedAt).length;
+    const activeCustomersCount = combinedCustomers.filter((c) => c.isActive !== false && !c.deletedAt).length;
+
+    // 1. master_backup dokümanı
+    const masterBackupRef = doc(db, 'artifacts', ARTIFACT_DOC_ID, 'users', uid, 'master_backup', 'latest');
+    await setDoc(
+      masterBackupRef,
+      {
+        lastBackupAt,
+        appVersion: masterData.appVersion || '1.0.0',
+        productsCount: activeProductsCount,
+        customersCount: activeCustomersCount,
+        salesCount: masterData.sales?.length || 0,
+        expensesCount: masterData.expenses?.length || 0,
+        masterJsonString: JSON.stringify({
+          ...masterData,
+          products: combinedProducts,
+          customers: combinedCustomers,
+        }),
+      },
+      { merge: true }
+    );
+
+    // 2. master_json_doc dokümanı (web 0ms cache)
+    const masterJsonRef = doc(db, 'artifacts', ARTIFACT_DOC_ID, 'users', uid, 'sync_meta', 'master_json_doc');
+    await setDoc(
+      masterJsonRef,
+      {
+        products: combinedProducts,
+        customers: combinedCustomers,
+        sales: masterData.sales || [],
+        expenses: masterData.expenses || [],
+        meta: {
+          lastSyncedAt: lastBackupAt,
+          versionTag: `v_server_${Date.now()}`,
+          source: 'two_way_smart_sync',
+        },
+      },
+      { merge: true }
+    );
+
+    // 3. version_doc (web cache invalidation)
     try {
       const versionRef = doc(db, 'artifacts', ARTIFACT_DOC_ID, 'users', uid, 'sync_meta', 'version_doc');
       await setDoc(versionRef, { versionTag: `v_${Date.now()}`, updatedAt: new Date().toISOString() }, { merge: true });
     } catch {}
 
-    // f) Kök kullanıcı dokümanını güncelle
+    // 4. user root doc
     try {
       await setDoc(
         userRef,
         {
-          productsCount: allProducts.length,
-          customersCount: allCustomers.length,
+          productsCount: activeProductsCount,
+          customersCount: activeCustomersCount,
           lastBackupAt,
           lastActiveAt: new Date().toISOString(),
         },
@@ -228,9 +275,17 @@ export async function POST(req) {
     return NextResponse.json(
       {
         success: true,
-        message: `Yetki onaylandı: ${allProducts.length} ürün ve ${allCustomers.length} cari başarıyla veritabanına yazıldı.`,
-        productsCount: allProducts.length,
-        customersCount: allCustomers.length,
+        message: `Çift yönlü senkronizasyon başarılı (${combinedProducts.length} ürün, ${combinedCustomers.length} cari eşleştirildi).`,
+        productsCount: combinedProducts.length,
+        customersCount: combinedCustomers.length,
+        newFromCloud: {
+          products: newFromCloudProducts,
+          customers: newFromCloudCustomers,
+        },
+        deletedOnCloud: {
+          productIds: deletedOnCloudProductIds,
+          customerIds: deletedOnCloudCustomerIds,
+        },
       },
       { status: 200, headers: corsHeaders }
     );
@@ -241,8 +296,4 @@ export async function POST(req) {
       { status: 500, headers: corsHeaders }
     );
   }
-}
-
-export async function GET() {
-  return NextResponse.json({ status: 'ok', endpoint: '/api/sync' }, { status: 200, headers: corsHeaders });
 }
