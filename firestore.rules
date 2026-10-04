@@ -1,0 +1,147 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ==========================================
+    // --- YARDIMCI GÜVENLİK FONKSİYONLARI ---
+    // ==========================================
+
+    // Oturum açılmış mı?
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Veri sahibi oturum açan kullanıcı mı?
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Yalnızca Sistem Yöneticisi (Admin Bedirhan - abimer2350@gmail.com)
+    function isAuthorizedUid() {
+      return isSignedIn() && request.auth.uid == "p4h4hZYTtaPBk6kp1UUfRA7z2px2";
+    }
+
+    // Veri doğrulama kuralları
+    function isNonEmptyString(v) {
+      return v is string && v.size() > 0;
+    }
+
+    function isNonNegativeNumber(v) {
+      return v is number && v >= 0;
+    }
+
+    // ==========================================
+    // --- CİHAZ YETKİLENDİRME (DEVICE FLOW) ---
+    // ==========================================
+    match /device_sessions/{sessionId} {
+      // Masaüstü terminali oturum açabilmesi ve webin onaylayabilmesi için
+      allow read, write: if true;
+    }
+
+    // ==========================================
+    // --- LİSANS İŞLEMLERİ (LİSANS ANAHTARLARI) ---
+    // ==========================================
+    match /licenses/{licenseId} {
+      // Lisans anahtarı kontrolü ve doğrulama için okuma izni
+      allow read: if true;
+
+      // Kullanıcı yalnızca henüz kullanılmamış bir lisansı kendi adına aktive edebilir
+      allow update: if (isSignedIn()
+                        && resource.data.status == "unused"
+                        && request.resource.data.status == "activated"
+                        && request.resource.data.activatedBy == request.auth.uid)
+                    || isAuthorizedUid();
+
+      // Lisans oluşturma ve silme yetkisi sadece Yöneticidedir
+      allow create, delete: if isAuthorizedUid();
+    }
+
+    // ==========================================
+    // --- KULLANICI VERİLERİ (ARTIFACTS KOLEKSİYONU) ---
+    // ==========================================
+    match /artifacts/{artifactId} {
+
+      // KULLANICILAR KOLEKSİYONU
+      match /users/{userId} {
+
+        // Masaüstü terminali ve Web uygulaması kullanıcı dokümanını senkronize edebilsin diye açık
+        allow read, write: if true;
+
+        // 1. PROFİL VE FİRMA AYARLARI
+        match /profile/{profileDocId} {
+          allow read, write: if true;
+        }
+
+        // 2. ÜRÜNLER (ENVANTER) KOLEKSİYONU
+        match /products/{productId} {
+          allow read, write: if true;
+        }
+
+        // 3. SATIŞLAR KOLEKSİYONU
+        match /sales/{saleId} {
+          allow read, write: if true;
+        }
+
+        // 4. KASA VE MUHASEBE DEFTERİ
+        match /ledger/{entryId} {
+          allow read, write: if true;
+        }
+
+        // 5. MÜŞTERİLER VE CARİ HESAPLAR
+        match /customers/{customerId} {
+          allow read, write: if true;
+
+          match /sales/{saleSubId} {
+            allow read, write: if true;
+          }
+
+          match /payments/{paymentId} {
+            allow read, write: if true;
+          }
+        }
+
+        // 6. UYGULAMA TERCİHLERİ VE AYARLARI
+        match /settings/{settingId} {
+          allow read, write: if true;
+        }
+
+        // 7. MASTER YEDEKLEME DOKÜMANI
+        match /master_backup/{backupId} {
+          allow read, write: if true;
+        }
+
+        // 8. MASTER SENKRONİZASYON (WEB & DESKTOP CACHE)
+        match /sync_meta/{metaId} {
+          allow read, write: if true;
+        }
+
+        // 9. MİRAS FİNANSAL KAYITLAR
+        match /legacy_incomes/{docId} {
+          allow read, write: if true;
+        }
+        match /legacy_expenses/{docId} {
+          allow read, write: if true;
+        }
+
+        // DİĞER TÜM ALT KOLEKSİYONLAR
+        match /{other=**} {
+          allow read, write: if true;
+        }
+      }
+
+      // ANKETLER KOLEKSİYONU
+      match /surveys/{surveyId} {
+        allow read, write: if true;
+      }
+    }
+
+    // ==========================================
+    // --- GLOBAL ADMİN PANEL ERİŞİMİ ---
+    // ==========================================
+    // Admin Dashboard (Collection Group Query) tüm verileri okuyup/yazabilir
+    match /{document=**} {
+      allow read, write: if isAuthorizedUid();
+    }
+  }
+}

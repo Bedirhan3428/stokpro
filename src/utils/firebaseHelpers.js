@@ -1,3 +1,4 @@
+import { hashKey, generateTerminalKey, maskKey } from './cryptoUtils';
 import {
   collection,
   addDoc,
@@ -642,7 +643,12 @@ export async function createUserProfile(profile = {}, targetUid = null) {
   const endDate = new Date();
   endDate.setFullYear(endDate.getFullYear() + 100);
 
+  const initialTerminalKey = profile.terminalKey || generateTerminalKey();
+  const terminalKeyHash = profile.terminalKeyHash || (await hashKey(initialTerminalKey));
+
   const defaultProfile = {
+    terminalKeyHash,
+    terminalKeyMasked: maskKey(initialTerminalKey),
     name: profile.name ? String(profile.name) : "",
     email: profile.email ? String(profile.email) : null,
     termsAccepted: true,

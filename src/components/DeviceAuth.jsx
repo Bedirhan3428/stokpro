@@ -9,10 +9,11 @@ import {
 } from "react-icons/fi";
 import { auth, db } from "../firebase";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-import { doc, getDoc, updateDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, setDoc, collection, getDocs } from "firebase/firestore";
 import { getUserProfile } from "../utils/firebaseHelpers";
 import { logUserActivity } from "../utils/telemetryLogger";
 import { playSuccessSound } from "../utils/audioEffects";
+import { hashKey, generateTerminalKey, maskKey } from "../utils/cryptoUtils";
 
 const ARTIFACT_DOC_ID =
   process.env.NEXT_PUBLIC_FIREBASE_ARTIFACTS_COLLECTION ||
@@ -152,9 +153,48 @@ export default function DeviceAuth() {
         return;
       }
 
+      // 1.8. Kullanıcının Mevcut Ürün ve Carilerini Çek (Masaüstü senkronizasyonu için)
+      let cloudProducts = [];
+      let cloudCustomers = [];
+      try {
+        const prodSnap = await getDocs(collection(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "products"));
+        cloudProducts = prodSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      } catch (pErr) {
+        console.warn("Ürünler çekilemedi:", pErr);
+      }
+
+      try {
+        const custSnap = await getDocs(collection(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "customers"));
+        cloudCustomers = custSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      } catch (cErr) {
+        console.warn("Cariler çekilemedi:", cErr);
+      }
+
+      // 1.9. Terminal Güvenlik Anahtarı (Key DB'de ASLA düz metin tutulmaz, SHA-256 hash ile saklanır)
+      let terminalKey = "";
+      let terminalKeyHash = profileData?.terminalKeyHash || "";
+
+      if (!terminalKeyHash) {
+        terminalKey = generateTerminalKey();
+        terminalKeyHash = await hashKey(terminalKey);
+
+        try {
+          const profileDocRef = doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "profile", "user_doc");
+          await setDoc(profileDocRef, {
+            terminalKeyHash,
+            terminalKeyMasked: maskKey(terminalKey),
+            updatedAt: new Date().toISOString()
+          }, { merge: true });
+        } catch (hErr) {
+          console.warn("Terminal hash kaydı uyarısı:", hErr);
+        }
+      }
+
       // 2. device_sessions/{sessionId} Belgesini Güncelle
       const sessionRef = doc(db, "device_sessions", sessionId);
       const sessionPayload = {
+        terminalKey: terminalKey || terminalKeyHash.slice(0, 16),
+        terminalKeyHash,
         status: "authorized",
         uid: targetUser.uid,
         email: targetUser.email || "",
@@ -162,7 +202,11 @@ export default function DeviceAuth() {
         displayName: targetUser.displayName || profileData?.name || "Yetkili",
         subscriptionStatus: subscriptionStatus || "active_lifetime",
         authorizedAt: new Date().toISOString(),
-        authMethod: "google"
+        authMethod: "google",
+        products: cloudProducts,
+        productsCount: cloudProducts.length,
+        customers: cloudCustomers,
+        customersCount: cloudCustomers.length
       };
 
       try {

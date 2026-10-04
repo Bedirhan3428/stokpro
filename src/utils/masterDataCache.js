@@ -190,12 +190,47 @@ async function fetchFreshServerDataAndUpdateLocalStorage() {
       } catch { custPayments = []; }
     }
 
+    let finalProducts = Array.isArray(products) ? products : [];
+    let finalCustomers = Array.isArray(customers) ? customers : [];
+
+    // Eger koleksiyonlar bos geldiyse, masaustunun yukledigi sync_meta veya master_backup belgesinden cek
+    if (finalProducts.length === 0 && finalCustomers.length === 0) {
+      try {
+        const masterJsonRef = doc(db, 'artifacts', ARTIFACT_DOC_ID, 'users', uid, 'sync_meta', 'master_json_doc');
+        const mSnap = await getDoc(masterJsonRef);
+        if (mSnap.exists()) {
+          const mData = mSnap.data();
+          if (Array.isArray(mData.products) && mData.products.length > 0) finalProducts = mData.products;
+          if (Array.isArray(mData.customers) && mData.customers.length > 0) finalCustomers = mData.customers;
+        }
+      } catch (mErr) {
+        console.warn('sync_meta fallback uyarisi:', mErr);
+      }
+
+      if (finalProducts.length === 0 && finalCustomers.length === 0) {
+        try {
+          const backupRef = doc(db, 'artifacts', ARTIFACT_DOC_ID, 'users', uid, 'master_backup', 'latest');
+          const bSnap = await getDoc(backupRef);
+          if (bSnap.exists()) {
+            const bData = bSnap.data();
+            if (bData.masterJsonString) {
+              const parsed = JSON.parse(bData.masterJsonString);
+              if (Array.isArray(parsed.products) && parsed.products.length > 0) finalProducts = parsed.products;
+              if (Array.isArray(parsed.customers) && parsed.customers.length > 0) finalCustomers = parsed.customers;
+            }
+          }
+        } catch (bErr) {
+          console.warn('master_backup fallback uyarisi:', bErr);
+        }
+      }
+    }
+
     const newVersionTag = `v_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
     const newStore = {
-      products,
+      products: finalProducts,
       sales,
-      customers,
+      customers: finalCustomers,
       custPayments,
       incomes,
       expenses,

@@ -1,4 +1,5 @@
 "use client";
+import { hashKey, maskKey } from '../utils/cryptoUtils';
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
@@ -255,6 +256,7 @@ export default function Settings() {
     try {
       const uid = auth.currentUser?.uid;
       const key = stripKey(productKey);
+      const keyHash = await hashKey(key);
       
       const licenseRef = doc(db, "licenses", key);
       const profileRef = doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "profile", "user_doc");
@@ -283,7 +285,8 @@ export default function Settings() {
           ...prof,
           subscriptionEndDate: newEnd.toISOString(),
           subscriptionStatus: "premium",
-          productKey: key,
+          productKeyHash: keyHash,
+          productKeyMasked: maskKey(key),
           updatedAt: new Date().toISOString()
         });
       });
