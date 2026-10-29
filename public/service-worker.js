@@ -1,4 +1,4 @@
-const CACHE_NAME = "stokpro-v3"; // Sürümü artırdık ki yenilensin
+const CACHE_NAME = "stokpro-v4"; // Sürümü artırdık ki yenilensin
 
 const urlsToCache = [
   "/",
@@ -41,8 +41,14 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const requestUrl = new URL(event.request.url);
 
+  if (
+    requestUrl.pathname.startsWith("/downloads/") ||
+    requestUrl.pathname.startsWith("/api/")
+  ) {
+    return;
+  }
+
   // 1. MANIFEST VE İKONLAR İÇİN: Cache First (Hafızadan Oku)
-  // Bu kural PWABuilder hatasını çözen kısımdır.
   if (
     requestUrl.pathname.includes("manifest.json") ||
     requestUrl.pathname.includes("logo") ||
@@ -57,8 +63,7 @@ self.addEventListener("fetch", (event) => {
   }
 
   // 2. SAYFA GEÇİŞLERİ İÇİN: Network First (Önce İnternet)
-  // Beyaz ekran sorununu çözen kural.
-  if (event.request.mode === 'navigate' || requestUrl.pathname === '/') {
+  if (event.request.mode === "navigate" || requestUrl.pathname === "/") {
     event.respondWith(
       fetch(event.request)
         .then((networkResponse) => {
@@ -68,7 +73,6 @@ self.addEventListener("fetch", (event) => {
           });
         })
         .catch(() => {
-          // İnternet yoksa hafızadaki index.html'i ver
           return caches.match("/index.html");
         })
     );
@@ -76,7 +80,6 @@ self.addEventListener("fetch", (event) => {
   }
 
   // 3. DİĞER HER ŞEY (CSS, JS, Resimler): Stale-While-Revalidate
-  // Önce hafızadakini göster, arkada yenisini çekip güncelle.
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       const fetchPromise = fetch(event.request).then((networkResponse) => {

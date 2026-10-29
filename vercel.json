@@ -2,13 +2,41 @@
   "framework": "nextjs",
   "redirects": [
     {
-      "source": "/((?!api/).*)",
+      "source": "/((?!api/|downloads/).*)",
       "destination": "https://stokpro.shop/$1",
       "permanent": true,
       "has": [
         {
           "type": "host",
           "value": "stokpro.vercel.app"
+        }
+      ]
+    }
+  ],
+  "headers": [
+    {
+      "source": "/downloads/latest.json",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, no-cache, must-revalidate, max-age=0"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        }
+      ]
+    },
+    {
+      "source": "/downloads/(.*\\.exe)",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/octet-stream"
+        },
+        {
+          "key": "Content-Disposition",
+          "value": "attachment"
         }
       ]
     }

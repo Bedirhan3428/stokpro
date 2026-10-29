@@ -1,0 +1,10 @@
+{
+    "version":  "1.0.0",
+    "url":  "https://stokpro.shop/downloads/StokPro-POS-Full-Setup.exe",
+    "sha256":  "44e84c82e7ae137c99e7e78cbad0fe8c0d4be6c857a118c7eaf97d7bd72464cf",
+    "size":  6577747,
+    "silentArgs":  [
+                       "/S"
+                   ],
+    "publishedAt":  "2026-10-29T16:14:16Z"
+}

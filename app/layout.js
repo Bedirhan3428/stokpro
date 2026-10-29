@@ -3,6 +3,7 @@ import "../src/styles/global.css";
 import { AuthProvider } from "../src/contexts/AuthContext";
 import Navbar from "../src/components/Navbar";
 import TermsModal from "../src/components/TermsModal";
+import DesktopMigrationModal from "../src/components/DesktopMigrationModal";
 import TelemetryTracker from "../src/components/TelemetryTracker";
 
 export const metadata = {
@@ -47,6 +48,7 @@ export default function RootLayout({ children }) {
         <AuthProvider>
           <TelemetryTracker />
           <TermsModal />
+          <DesktopMigrationModal />
           <Navbar />
           <main className="app-container">
             {children}
