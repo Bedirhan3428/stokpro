@@ -7,12 +7,10 @@ service cloud.firestore {
     // --- YARDIMCI GÜVENLİK FONKSİYONLARI ---
     // ==========================================
 
-    // Oturum açılmış mı?
     function isSignedIn() {
       return request.auth != null;
     }
 
-    // Veri sahibi oturum açan kullanıcı mı?
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
@@ -22,7 +20,6 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == "p4h4hZYTtaPBk6kp1UUfRA7z2px2";
     }
 
-    // Veri doğrulama kuralları
     function isNonEmptyString(v) {
       return v is string && v.size() > 0;
     }
@@ -35,22 +32,69 @@ service cloud.firestore {
     // --- CİHAZ YETKİLENDİRME (DEVICE FLOW) ---
     // ==========================================
     match /device_sessions/{sessionId} {
-      // Masaüstü terminali oturum açabilmesi ve webin onaylayabilmesi için
-      allow read, write: if true;
+      // Koleksiyon listeleme tamamen kapalıdır (oturum ele geçirme engeli)
+      allow list: if isAuthorizedUid();
+      // Yalnızca kriptografik yüksek entropili sessionId bilen tekil belgeyi okuyabilir
+      allow get: if sessionId.size() >= 16;
+
+      allow create: if sessionId.size() >= 16
+                    && (request.resource.data.status == "pending"
+                        || (isSignedIn()
+                            && request.resource.data.status == "authorized"
+                            && request.resource.data.uid == request.auth.uid));
+
+      allow update: if sessionId.size() >= 16
+                    && (
+                      (isSignedIn()
+                        && request.resource.data.status == "authorized"
+                        && request.resource.data.uid == request.auth.uid
+                        && (resource.data.status == "pending" || resource.data.uid == request.auth.uid))
+                      ||
+                      (resource.data.status == "authorized"
+                        && request.resource.data.status == "consumed"
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status", "consumedAt"]))
+                    );
+
+      allow delete: if isAuthorizedUid()
+                    || (sessionId.size() >= 16 && resource.data.status in ["authorized", "consumed"]);
+    }
+
+    match /device_pairings/{code} {
+      allow list: if isAuthorizedUid();
+      allow get: if code.size() >= 6;
+      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
+      allow update: if code.size() >= 6
+                    && resource.data.used != true
+                    && request.resource.data.used == true
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["used", "usedAt", "terminalType"]);
+      allow delete: if isAuthorizedUid();
     }
 
     // ==========================================
     // --- LİSANS İŞLEMLERİ (LİSANS ANAHTARLARI) ---
     // ==========================================
     match /licenses/{licenseId} {
-      // Lisans anahtarı kontrolü ve doğrulama için okuma izni
-      allow read: if true;
+      // Yalnızca bilinen anahtar tekil sorgulanabilir; toplu lisans listeleme sadece Yöneticidedir
+      allow get: if licenseId.size() >= 6;
+      allow list: if isAuthorizedUid();
 
-      // Kullanıcı yalnızca henüz kullanılmamış bir lisansı kendi adına aktive edebilir
-      allow update: if (isSignedIn()
-                        && resource.data.status == "unused"
-                        && request.resource.data.status == "activated"
-                        && request.resource.data.activatedBy == request.auth.uid)
+      // Kullanıcı veya doğrulanmış masaüstü terminali yalnızca henüz kullanılmamış bir lisansı aktive edebilir (yetki/süre alanlarını değiştiremez)
+      allow update: if (licenseId.size() >= 10
+                        && (resource.data.status == "unused" || resource.data.isUsed != true)
+                        && (request.resource.data.status == "activated" || request.resource.data.isUsed == true)
+                        && (
+                          (isSignedIn() && (request.resource.data.activatedBy == request.auth.uid || request.resource.data.activatedByUid == request.auth.uid))
+                          || (isNonEmptyString(request.resource.data.activatedBy) && request.resource.data.activatedBy.size() >= 4)
+                        )
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                            "status",
+                            "activatedBy",
+                            "activatedAt",
+                            "activatedEmail",
+                            "hardwareId",
+                            "isUsed",
+                            "activatedByUid"
+                          ]))
                     || isAuthorizedUid();
 
       // Lisans oluşturma ve silme yetkisi sadece Yöneticidedir
@@ -62,33 +106,37 @@ service cloud.firestore {
     // ==========================================
     match /artifacts/{artifactId} {
 
-      // KULLANICILAR KOLEKSİYONU
-      match /users/{userId} {
+      match /device_pairings/{code} {
+        allow list: if isAuthorizedUid();
+        allow get: if code.size() >= 6;
+        allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
+        allow update: if code.size() >= 6
+                      && resource.data.used != true
+                      && request.resource.data.used == true
+                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["used", "usedAt", "terminalType"]);
+        allow delete: if isAuthorizedUid();
+      }
 
-        // Masaüstü terminali ve Web uygulaması kullanıcı dokümanını senkronize edebilsin diye açık
+      // KULLANICILAR KOLEKSİYONU (Masaüstü cihaz akışı ve /api/sync uyumluluğu korunur)
+      match /users/{userId} {
         allow read, write: if true;
 
-        // 1. PROFİL VE FİRMA AYARLARI
         match /profile/{profileDocId} {
           allow read, write: if true;
         }
 
-        // 2. ÜRÜNLER (ENVANTER) KOLEKSİYONU
         match /products/{productId} {
           allow read, write: if true;
         }
 
-        // 3. SATIŞLAR KOLEKSİYONU
         match /sales/{saleId} {
           allow read, write: if true;
         }
 
-        // 4. KASA VE MUHASEBE DEFTERİ
         match /ledger/{entryId} {
           allow read, write: if true;
         }
 
-        // 5. MÜŞTERİLER VE CARİ HESAPLAR
         match /customers/{customerId} {
           allow read, write: if true;
 
@@ -101,22 +149,18 @@ service cloud.firestore {
           }
         }
 
-        // 6. UYGULAMA TERCİHLERİ VE AYARLARI
         match /settings/{settingId} {
           allow read, write: if true;
         }
 
-        // 7. MASTER YEDEKLEME DOKÜMANI
         match /master_backup/{backupId} {
           allow read, write: if true;
         }
 
-        // 8. MASTER SENKRONİZASYON (WEB & DESKTOP CACHE)
         match /sync_meta/{metaId} {
           allow read, write: if true;
         }
 
-        // 9. MİRAS FİNANSAL KAYITLAR
         match /legacy_incomes/{docId} {
           allow read, write: if true;
         }
@@ -124,22 +168,60 @@ service cloud.firestore {
           allow read, write: if true;
         }
 
-        // DİĞER TÜM ALT KOLEKSİYONLAR
         match /{other=**} {
           allow read, write: if true;
         }
       }
 
-      // ANKETLER KOLEKSİYONU
+      // ANKETLER KOLEKSİYONU (Yalnızca oturum açmış kendi kaydını yazabilir; dışarıdan silme/ezme kapalı)
       match /surveys/{surveyId} {
-        allow read, write: if true;
+        allow read: if true;
+        allow create, update: if isOwner(surveyId) || isAuthorizedUid();
+        allow delete: if isAuthorizedUid();
       }
+    }
+
+    // ==========================================
+    // --- SİSTEM POLİTİKASI & STOKPRO NOVA ---
+    // ==========================================
+    match /system_configs/app_policy {
+      allow get: if true;
+      allow list, write: if isAuthorizedUid();
+    }
+
+    match /system_configs/{configId} {
+      allow read: if isSignedIn();
+      allow write: if isAuthorizedUid();
+    }
+
+    match /nova_wallets/{userId} {
+      allow read: if isOwner(userId) || isAuthorizedUid();
+      allow write: if false;
+    }
+
+    match /nova_reservations/{reservationId} {
+      allow read: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow write: if false;
+    }
+
+    match /nova_sessions/{sessionId} {
+      allow read: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow write: if false;
+    }
+
+    match /nova_ledger/{entryId} {
+      allow read: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow write: if false;
+    }
+
+    match /nova_usage_logs/{logId} {
+      allow read: if isAuthorizedUid();
+      allow write: if false;
     }
 
     // ==========================================
     // --- GLOBAL ADMİN PANEL ERİŞİMİ ---
     // ==========================================
-    // Admin Dashboard (Collection Group Query) tüm verileri okuyup/yazabilir
     match /{document=**} {
       allow read, write: if isAuthorizedUid();
     }

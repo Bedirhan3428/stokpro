@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "../../../src/firebase";
+import { verifyAdminRequest } from "../../../src/utils/serverAdminAuth";
 import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 
-const AUTHORIZED_EMAIL = "abimer2350@gmail.com";
 const ARTIFACT_DOC_ID =
   process.env.NEXT_PUBLIC_FIREBASE_ARTIFACTS_COLLECTION ||
   process.env.REACT_APP_FIREBASE_ARTIFACTS_COLLECTION ||
@@ -37,11 +37,9 @@ function parseToTime(val) {
 
 export async function POST(req) {
   try {
-    const body = await req.json().catch(() => ({}));
-    const email = body?.email ? String(body.email).trim().toLowerCase() : "";
-
-    // SUNUCU TARAFI GÜVENLİK KONTROLÜ: E-posta abimer2350@gmail.com değilse 404 DÖN VE VERİYİ ASLA ÇEKME
-    if (!email || email !== AUTHORIZED_EMAIL.toLowerCase()) {
+    // SUNUCU TARAFI GÜVENLİK KONTROLÜ: Firebase ID Token kriptografik olarak doğrulanmadan veri asla çekilmez
+    const adminCheck = await verifyAdminRequest(req);
+    if (!adminCheck.authorized) {
       return new NextResponse(JSON.stringify({ error: "Sayfa bulunamadı." }), {
         status: 404,
         headers: { "Content-Type": "application/json" }

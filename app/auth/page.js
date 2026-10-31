@@ -3,25 +3,17 @@ import DeviceAuth from "../../src/components/DeviceAuth";
 
 export const metadata = {
   title: "Masaüstü Kasa Girişi | StokPro",
-  description: "StokPro Masaüstü Kasa Terminali için hızlı ve güvenli Google yetkilendirmesi.",
+  description: "StokPro Masaüstü Kasa Terminali için e-posta veya Google ile güvenli yetkilendirme.",
   robots: {
     index: false,
     follow: false,
-    nocache: true
-  }
+    nocache: true,
+  },
 };
 
 function AuthLoadingFallback() {
   return (
-    <div style={{
-      minHeight: "100vh",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      background: "var(--bg-app)",
-      color: "var(--text-muted)",
-      fontSize: "0.9rem"
-    }}>
+    <div className="min-h-screen w-full bg-[#0D0D11] text-zinc-400 flex items-center justify-center font-sans text-sm">
       Oturum doğrulanıyor...
     </div>
   );

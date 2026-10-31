@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getAuth, sendEmailVerification, applyActionCode, signOut } from "firebase/auth";
+import { FiMail, FiRefreshCw, FiLogOut, FiCheckCircle, FiAlertTriangle } from "react-icons/fi";
 
 export default function VerifyEmail() {
   const auth = getAuth();
@@ -31,7 +32,10 @@ export default function VerifyEmail() {
             return;
           }
         }
-        setStatus({ type: "success", msg: "E-posta doğrulandı. Giriş yaptıktan sonra devam edebilirsiniz." });
+        setStatus({
+          type: "success",
+          msg: "E-posta doğrulandı. Giriş yaptıktan sonra devam edebilirsiniz.",
+        });
       } catch (err) {
         setStatus({ type: "error", msg: err.message || "Doğrulama kodu işlenemedi." });
       } finally {
@@ -49,7 +53,7 @@ export default function VerifyEmail() {
     try {
       const actionCodeSettings = {
         url: "https://www.stokpro.shop/verify-email",
-        handleCodeInApp: true
+        handleCodeInApp: true,
       };
       await sendEmailVerification(user, actionCodeSettings);
       setStatus({ type: "success", msg: "Doğrulama e-postası tekrar gönderildi." });
@@ -91,137 +95,73 @@ export default function VerifyEmail() {
   }
 
   return (
-    <div className="fp-sayfa">
-      <style>{`
-        .fp-sayfa {
-          min-height: 100vh;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background-color: var(--bg-page, #f3f4f6);
-          font-family: 'Inter', sans-serif;
-          padding: 20px;
-        }
-        .fp-kapsul {
-          background: var(--card, #ffffff);
-          padding: 40px;
-          border-radius: 16px;
-          box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-          max-width: 480px;
-          width: 100%;
-          text-align: center;
-          border: 1px solid var(--border, #e5e7eb);
-        }
-        .fp-baslik {
-          font-size: 1.5rem;
-          font-weight: 800;
-          color: var(--text, #111827);
-          margin-bottom: 8px;
-        }
-        .fp-alt {
-          color: var(--subtext, #6b7280);
-          font-size: 0.95rem;
-          margin-bottom: 24px;
-        }
-        .fp-form {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-        .fp-btn {
-          width: 100%;
-          padding: 12px;
-          border-radius: 10px;
-          font-weight: 600;
-          cursor: pointer;
-          border: 1px solid var(--border, #e5e7eb);
-          background: var(--bg, #f9fafb);
-          color: var(--text, #374151);
-          transition: all 0.2s;
-        }
-        .fp-btn:hover:not(:disabled) {
-          transform: translateY(-1px);
-          filter: brightness(0.98);
-        }
-        .fp-btn:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-        .fp-btn-mavi {
-          background: #2563eb;
-          color: white;
-          border: none;
-        }
-        .fp-btn-mavi:hover:not(:disabled) {
-          background: #1d4ed8;
-        }
-        .fp-btn-kirmizi {
-          background: #fff1f2;
-          color: #e11d48;
-          border-color: #fecdd3;
-        }
-        .fp-btn-kirmizi:hover:not(:disabled) {
-          background: #ffe4e6;
-        }
-        .fp-durum {
-          padding: 12px;
-          border-radius: 8px;
-          font-size: 0.9rem;
-          margin-top: 10px;
-          background: #eff6ff;
-          color: #1e40af;
-          border: 1px solid #dbeafe;
-        }
-        .fp-hata {
-          background: #fef2f2;
-          color: #991b1b;
-          border-color: #fecaca;
-        }
-        .fp-basarili {
-          background: #f0fdf4;
-          color: #166534;
-          border-color: #bbf7d0;
-        }
-        .fp-mini {
-          font-size: 0.8rem;
-          color: var(--subtext, #9ca3af);
-          margin-top: 20px;
-        }
-      `}</style>
+    <div className="min-h-[calc(100vh-64px)] bg-[#F7F7F5] dark:bg-[#0D0D11] flex items-center justify-center px-4 py-12 font-sans">
+      <div className="w-full max-w-[440px] bg-white dark:bg-[#16161B] border border-[#E8E8E4] dark:border-white/10 rounded-3xl p-7 sm:p-9 shadow-[0_8px_30px_rgba(24,24,27,0.05)] dark:shadow-2xl text-center space-y-6">
+        <div className="space-y-2">
+          <div className="w-12 h-12 mx-auto rounded-2xl bg-[#F7F7F5] dark:bg-white/5 border border-[#E8E8E4] dark:border-white/10 text-[#A66B49] flex items-center justify-center">
+            <FiMail size={22} />
+          </div>
+          <h1 className="text-2xl font-extrabold text-[#18181B] dark:text-[#F7F7F5] tracking-tight pt-1">
+            E-posta Doğrulama
+          </h1>
+          <p className="font-mono text-xs text-[#71717A] dark:text-zinc-400">
+            {user?.email ? user.email : "Oturum bulunamadı. Lütfen tekrar giriş yapın."}
+          </p>
+        </div>
 
-      <div className="fp-kapsul">
-        <h3 className="fp-baslik">E-posta Doğrulama</h3>
-        <p className="fp-alt">
-          {user?.email ? `Hesap: ${user.email}` : "Oturum bulunamadı. Lütfen tekrar giriş yapın."}
-        </p>
-
-        <div className="fp-form">
-          <button className="fp-btn fp-btn-mavi" onClick={resend} disabled={loading || !user}>
+        <div className="space-y-2.5">
+          <button
+            type="button"
+            onClick={resend}
+            disabled={loading || !user}
+            className="w-full py-3.5 rounded-xl bg-[#18181B] hover:bg-[#27272A] dark:bg-[#A66B49] dark:hover:bg-[#8D583A] text-white font-bold text-sm transition cursor-pointer disabled:opacity-50"
+          >
             {loading ? "Gönderiliyor..." : "Doğrulama E-postasını Gönder"}
           </button>
 
-          <button className="fp-btn" onClick={refreshStatus} disabled={loading || !user}>
-            {loading ? "Yenileniyor..." : "Doğrulama Durumunu Yenile"}
+          <button
+            type="button"
+            onClick={refreshStatus}
+            disabled={loading || !user}
+            className="w-full py-3 rounded-xl bg-[#F7F7F5] hover:bg-[#ECECE8] dark:bg-white/5 dark:hover:bg-white/10 border border-[#E8E8E4] dark:border-white/10 text-[#18181B] dark:text-[#F7F7F5] font-semibold text-sm flex items-center justify-center gap-2 transition cursor-pointer disabled:opacity-50"
+          >
+            <FiRefreshCw size={15} />
+            <span>{loading ? "Yenileniyor..." : "Doğrulama Durumunu Yenile"}</span>
           </button>
 
-          <button 
-            className="fp-btn fp-btn-kirmizi" 
+          <button
+            type="button"
             onClick={cikisVeYonlendir}
             disabled={loading}
+            className="w-full py-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/15 border border-rose-500/20 text-rose-600 dark:text-rose-400 font-semibold text-xs flex items-center justify-center gap-2 transition cursor-pointer disabled:opacity-50"
           >
-            Çıkış Yap / Kayıt Ekranına Dön
+            <FiLogOut size={14} />
+            <span>Çıkış Yap / Kayıt Ekranına Dön</span>
           </button>
 
           {status && (
-            <div className={`fp-durum ${status.type === "error" ? "fp-hata" : status.type === "success" ? "fp-basarili" : ""}`}>
-              {status.msg}
+            <div
+              className={`p-3.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 border ${
+                status.type === "error"
+                  ? "bg-rose-500/10 border-rose-500/25 text-rose-700 dark:text-rose-300"
+                  : status.type === "success"
+                  ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-700 dark:text-emerald-300"
+                  : "bg-[#A66B49]/10 border-[#A66B49]/25 text-[#A66B49]"
+              }`}
+            >
+              {status.type === "error" ? (
+                <FiAlertTriangle className="shrink-0" size={15} />
+              ) : (
+                <FiCheckCircle className="shrink-0" size={15} />
+              )}
+              <span>{status.msg}</span>
             </div>
           )}
         </div>
 
-        <div className="fp-mini">
-          Doğrulama maili gelmediyse spam / gereksiz klasörünü kontrol edin.
-        </div>
+        <p className="text-[11px] text-[#71717A] dark:text-zinc-500">
+          E-posta ulaşmadıysa gereksiz (spam) klasörünü kontrol edin.
+        </p>
       </div>
     </div>
   );

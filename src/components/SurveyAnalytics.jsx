@@ -30,13 +30,23 @@ export default function SurveyAnalytics() {
   const [statusFilter, setStatusFilter] = useState("all");
 
   const fetchData = async () => {
-    if (!user || user.email?.toLowerCase() !== AUTHORIZED_EMAIL.toLowerCase()) return;
+    if (
+      !user ||
+      (user.email?.toLowerCase() !== AUTHORIZED_EMAIL.toLowerCase() &&
+        user.uid !== "p4h4hZYTtaPBk6kp1UUfRA7z2px2")
+    ) {
+      return;
+    }
     setRefreshing(true);
     try {
+      const idToken = await user.getIdToken();
       const res = await fetch("/api/anket", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: user.email })
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`
+        },
+        body: JSON.stringify({})
       });
 
       if (res.ok) {

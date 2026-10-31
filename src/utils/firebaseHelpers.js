@@ -161,22 +161,42 @@ export async function finalizeSaleTransaction({ items = [], paymentType = "cash"
   const activePayType = saleType || paymentType || "cash";
 
   const saleResult = await runTransaction(db, async (tx) => {
-    // 1. Ürün ID'lerini güvenli çöz (eski veriler ve yeni verilerle %100 uyumluluk)
+    // 1. Ürün ID'lerini, adetleri ve birim fiyatları doğrula; aynı ürün birden fazla satırda varsa kümülatif topla
     const validItems = items.map((it) => {
       const pId = String(it.productId || it.id || "").trim();
-      if (!pId) throw new Error(`Ürün ID'si bulunamadı (${it.name || 'Bilinmeyen Ürün'}).`);
+      if (!pId) throw new Error(`Ürün ID'si bulunamadı (${it.name || "Bilinmeyen Ürün"}).`);
+      const qty = Number(it.qty ?? 1);
+      const price = Number(it.price ?? 0);
+      if (!Number.isFinite(qty) || qty <= 0) {
+        throw new Error(`Geçersiz satış adedi (${it.name || pId}). Adet 0'dan büyük olmalıdır.`);
+      }
+      if (!Number.isFinite(price) || price < 0) {
+        throw new Error(`Geçersiz birim fiyat (${it.name || pId}). Fiyat negatif olamaz.`);
+      }
       return {
         id: pId,
         productId: pId,
         name: String(it.name || "Ürün").trim(),
-        qty: Number(it.qty || 1),
-        price: Number(it.price || 0)
+        qty,
+        price
       };
     });
 
-    const productRefs = validItems.map((it) => doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "products", it.productId));
+    const qtyByProductId = new Map();
+    for (const it of validItems) {
+      qtyByProductId.set(it.productId, (qtyByProductId.get(it.productId) || 0) + it.qty);
+    }
+
+    const uniqueProductEntries = Array.from(qtyByProductId.entries()).map(([productId, totalQty]) => ({
+      productId,
+      totalQty,
+      ref: doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "products", productId)
+    }));
+
     const productSnaps = [];
-    for (const pref of productRefs) productSnaps.push(await tx.get(pref));
+    for (const entry of uniqueProductEntries) {
+      productSnaps.push(await tx.get(entry.ref));
+    }
 
     let custRef = null;
     let custSnap = null;
@@ -189,16 +209,6 @@ export async function finalizeSaleTransaction({ items = [], paymentType = "cash"
       }
     }
 
-    // Stok güncellemeleri (Asla eksiye düşmez, en az 0 Adet olarak sabitlenir)
-    productSnaps.forEach((pSnap, i) => {
-      if (pSnap.exists()) {
-        const stok = Number(pSnap.data().stock || 0);
-        const yeniStok = Math.max(0, stok - validItems[i].qty);
-        tx.update(productRefs[i], { stock: yeniStok, updatedAt: new Date().toISOString() });
-      }
-    });
-
-    const saleRef = doc(collection(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "sales"));
     const saleItems = validItems.map((it) => ({
       id: it.id,
       productId: it.productId,
@@ -206,9 +216,23 @@ export async function finalizeSaleTransaction({ items = [], paymentType = "cash"
       qty: it.qty,
       price: it.price
     }));
-    const hesaplananToplam = saleItems.reduce((s, it) => s + (it.price * it.qty), 0);
+    const hesaplananToplam = saleItems.reduce((s, it) => s + it.price * it.qty, 0);
     const gelenToplam = totals?.total ?? totals?.subtotal ?? totals?.amount ?? total ?? null;
     const toplamTutar = Number(gelenToplam ?? hesaplananToplam ?? 0);
+    if (!Number.isFinite(toplamTutar) || toplamTutar < 0) {
+      throw new Error("Geçersiz satış toplam tutarı.");
+    }
+
+    // Stok güncellemeleri (tekil ürün bazında kümülatif düşüm; asla eksiye düşmez)
+    productSnaps.forEach((pSnap, i) => {
+      if (pSnap.exists()) {
+        const stok = Number(pSnap.data().stock || 0);
+        const yeniStok = Math.max(0, stok - uniqueProductEntries[i].totalQty);
+        tx.update(uniqueProductEntries[i].ref, { stock: yeniStok, updatedAt: new Date().toISOString() });
+      }
+    });
+
+    const saleRef = doc(collection(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "sales"));
 
     // Satış belgesi
     tx.set(saleRef, {
@@ -361,19 +385,101 @@ export async function deleteSale(saleId) {
   if (!saleId) throw new Error("saleId gerekli.");
 
   const saleRef = doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "sales", saleId);
-  await deleteDoc(saleRef);
 
-  const customersCol = collection(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "customers");
-  const custSnap = await getDocs(customersCol);
-  for (const c of custSnap.docs) {
-    const custSalesCol = collection(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "customers", c.id, "sales");
-    const q2 = query(custSalesCol, where("saleId", "==", saleId));
-    const snap2 = await getDocs(q2);
+  // Atomik olarak stokları iade et, veresiye ise cari bakiyesini tersine çevir ve satış kaydını sil
+  const deletedSaleCustomerId = await runTransaction(db, async (tx) => {
+    const saleSnap = await tx.get(saleRef);
+    if (!saleSnap.exists()) {
+      return null;
+    }
+
+    const saleData = saleSnap.data() || {};
+    const items = Array.isArray(saleData.items) ? saleData.items : [];
+    const qtyByProductId = new Map();
+    for (const it of items) {
+      const pId = String(it?.productId || it?.id || "").trim();
+      const qty = Number(it?.qty || 0);
+      if (pId && Number.isFinite(qty) && qty > 0) {
+        qtyByProductId.set(pId, (qtyByProductId.get(pId) || 0) + qty);
+      }
+    }
+
+    const prodEntries = Array.from(qtyByProductId.entries()).map(([productId, totalQty]) => ({
+      productId,
+      totalQty,
+      ref: doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "products", productId)
+    }));
+
+    const prodSnaps = [];
+    for (const entry of prodEntries) {
+      prodSnaps.push(await tx.get(entry.ref));
+    }
+
+    const isCredit =
+      (saleData.saleType === "credit" || saleData.paymentType === "credit") &&
+      Boolean(saleData.customerId);
+    const saleCustomerId = saleData.customerId ? String(saleData.customerId) : null;
+    const saleTotal = Number(saleData.total ?? saleData.totals?.total ?? 0);
+
+    let custRef = null;
+    let custSnap = null;
+    if (isCredit && saleCustomerId && Number.isFinite(saleTotal) && saleTotal > 0) {
+      custRef = doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "customers", saleCustomerId);
+      custSnap = await tx.get(custRef);
+    }
+
+    const nowIso = new Date().toISOString();
+    prodSnaps.forEach((pSnap, idx) => {
+      if (pSnap.exists()) {
+        const currentStock = Number(pSnap.data()?.stock || 0);
+        tx.update(prodEntries[idx].ref, {
+          stock: currentStock + prodEntries[idx].totalQty,
+          updatedAt: nowIso
+        });
+      }
+    });
+
+    if (custRef && custSnap && custSnap.exists()) {
+      const currentBalance = Number(custSnap.data()?.balance || 0);
+      tx.update(custRef, {
+        balance: currentBalance - saleTotal,
+        updatedAt: nowIso
+      });
+    }
+
+    tx.delete(saleRef);
+    return saleCustomerId;
+  });
+
+  if (deletedSaleCustomerId) {
+    const custSalesCol = collection(
+      db,
+      "artifacts",
+      ARTIFACT_DOC_ID,
+      "users",
+      uid,
+      "customers",
+      deletedSaleCustomerId,
+      "sales"
+    );
+    const snap2 = await getDocs(query(custSalesCol, where("saleId", "==", saleId)));
     for (const sdoc of snap2.docs) {
-      await deleteDoc(doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "customers", c.id, "sales", sdoc.id));
+      await deleteDoc(sdoc.ref);
+    }
+  } else {
+    const customersCol = collection(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "customers");
+    const custSnap = await getDocs(customersCol);
+    for (const c of custSnap.docs) {
+      const custSalesCol = collection(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "customers", c.id, "sales");
+      const q2 = query(custSalesCol, where("saleId", "==", saleId));
+      const snap2 = await getDocs(q2);
+      for (const sdoc of snap2.docs) {
+        await deleteDoc(doc(db, "artifacts", ARTIFACT_DOC_ID, "users", uid, "customers", c.id, "sales", sdoc.id));
+      }
     }
   }
 
+  invalidateAndRefreshMasterCache().catch(() => {});
   logUserActivity("SALE_DELETE", `Satış Silindi (ID: ${saleId})`, { saleId }).catch(() => {});
   return true;
 }
@@ -479,9 +585,12 @@ export async function deleteCustomer(customerId) {
     const colRef = collection(db, ...pathSegments);
     const snap = await getDocs(colRef);
     if (snap.empty) return 0;
-    const batch = writeBatch(db);
-    snap.docs.forEach((d) => batch.delete(doc(db, ...pathSegments, d.id)));
-    await batch.commit();
+    for (let i = 0; i < snap.docs.length; i += 400) {
+      const chunk = snap.docs.slice(i, i + 400);
+      const batch = writeBatch(db);
+      chunk.forEach((d) => batch.delete(doc(db, ...pathSegments, d.id)));
+      await batch.commit();
+    }
     return snap.size;
   }
 
@@ -710,11 +819,15 @@ export async function getUserProfile(targetUid = null) {
     needsUpdate = true;
   }
 
-  if (!data.subscriptionStatus || data.subscriptionStatus === "trial" || data.subscriptionStatus === "expired") {
+  if (!data.subscriptionStatus) {
     data.subscriptionStatus = "active_lifetime";
+    data.isUnlimited = true;
+    data.membershipStartDate = data.createdAt || new Date().toISOString();
     data.subscriptionEndDate = lifetimeIso;
     data.plan = "free_forever";
     updates.subscriptionStatus = "active_lifetime";
+    updates.isUnlimited = true;
+    updates.membershipStartDate = data.membershipStartDate;
     updates.subscriptionEndDate = lifetimeIso;
     updates.plan = "free_forever";
     needsUpdate = true;

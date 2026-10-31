@@ -2,18 +2,36 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import { db } from "../firebase";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import NotFound from "./NotFound";
 import { 
   FiUsers, FiActivity, FiClock, FiSmartphone, FiMonitor, 
   FiCheckCircle, FiAlertCircle, FiSearch, FiRefreshCw, FiDownload, 
   FiChevronRight, FiX, FiLayers, FiDollarSign, FiShoppingBag, 
   FiCalendar, FiHardDrive, FiBarChart2, FiShield, FiExternalLink, 
-  FiCopy, FiTrendingUp, FiZap, FiFileText, FiTag, FiLogIn, FiEye
+  FiCopy, FiTrendingUp, FiZap, FiFileText, FiTag, FiLogIn, FiEye,
+  FiKey, FiLock, FiUnlock
 } from "react-icons/fi";
 import * as XLSX from "xlsx";
 
 const AUTHORIZED_EMAIL = "abimer2350@gmail.com";
 const MASTER_ADMIN_UID = "p4h4hZYTtaPBk6kp1UUfRA7z2px2";
+const ARTIFACT_DOC_ID =
+  process.env.NEXT_PUBLIC_FIREBASE_ARTIFACTS_COLLECTION ||
+  process.env.REACT_APP_FIREBASE_ARTIFACTS_COLLECTION ||
+  "1:330292329201:web:d19827937fb863ea490750";
+
+function generateAdminLicenseKey() {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  let raw = "";
+  for (let i = 0; i < 16; i++) {
+    raw += alphabet[bytes[i] % alphabet.length];
+  }
+  return `SP-${raw.slice(0, 4)}-${raw.slice(4, 8)}-${raw.slice(8, 12)}-${raw.slice(12, 16)}`;
+}
 
 // Yardımcı: Süre formatlayıcı (Saniyeyi "X sa Y dk" formatına dönüştürür)
 function formatSeconds(sec) {
@@ -74,10 +92,27 @@ export default function AdminDashboard() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [userDetails, setUserDetails] = useState(null);
-  const [activeDetailTab, setActiveDetailTab] = useState("telemetry"); // telemetry, survey, logs, records
+  const [activeDetailTab, setActiveDetailTab] = useState("telemetry"); // telemetry, license, survey, logs, records
   const [activeRecordsSubTab, setActiveRecordsSubTab] = useState("products"); // products, sales, customers, ledger
   const [logTypeFilter, setLogTypeFilter] = useState("all");
   const [copiedUid, setCopiedUid] = useState(false);
+
+  // Uzaktan Politika & Lisans Yönetimi State
+  const [globalPolicy, setGlobalPolicy] = useState({
+    allowFreeUnlimited: true,
+    blockOnExpiry: false,
+    minDesktopVersion: "1.0.0",
+    forceUpdate: false,
+  });
+  const [policySaving, setPolicySaving] = useState(false);
+  const [policySavedMsg, setPolicySavedMsg] = useState("");
+  const [generatedKeyInfo, setGeneratedKeyInfo] = useState(null);
+  const [newKeyDays, setNewKeyDays] = useState("365"); // "0" = Sınırsız, "30", "365"
+  const [licenseSaving, setLicenseSaving] = useState(false);
+  const [licenseStatusMsg, setLicenseStatusMsg] = useState("");
+  const [customEndDateInput, setCustomEndDateInput] = useState("");
+  const [disableReasonInput, setDisableReasonInput] = useState("");
+  const [copiedLicenseKey, setCopiedLicenseKey] = useState(false);
 
   // Yetki Kontrolü
   const isUserAuthorized = useMemo(() => {
@@ -92,13 +127,14 @@ export default function AdminDashboard() {
     if (!user || !isUserAuthorized) return;
     setRefreshing(true);
     try {
+      const idToken = await user.getIdToken();
       const res = await fetch("/api/admin/users", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          requesterEmail: user.email,
-          requesterUid: user.uid
-        })
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`
+        },
+        body: JSON.stringify({})
       });
 
       if (res.ok) {
@@ -116,9 +152,216 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchGlobalPolicy = async () => {
+    if (!db || !isUserAuthorized) return;
+    try {
+      const policySnap = await getDoc(doc(db, "system_configs", "app_policy"));
+      if (policySnap.exists()) {
+        const d = policySnap.data() || {};
+        setGlobalPolicy({
+          allowFreeUnlimited: d.allowFreeUnlimited !== false,
+          blockOnExpiry: Boolean(d.blockOnExpiry),
+          minDesktopVersion: d.minDesktopVersion || "1.0.0",
+          forceUpdate: Boolean(d.forceUpdate),
+        });
+      }
+    } catch (err) {
+      console.warn("Genel politika okunamadı:", err);
+    }
+  };
+
+  const handleSaveGlobalPolicy = async (nextPolicyOverride = null) => {
+    if (!db || !isUserAuthorized) return;
+    const payload = nextPolicyOverride || globalPolicy;
+    setPolicySaving(true);
+    setPolicySavedMsg("");
+    try {
+      await setDoc(
+        doc(db, "system_configs", "app_policy"),
+        {
+          allowFreeUnlimited: Boolean(payload.allowFreeUnlimited),
+          blockOnExpiry: Boolean(payload.blockOnExpiry),
+          minDesktopVersion: String(payload.minDesktopVersion || "1.0.0").trim(),
+          forceUpdate: Boolean(payload.forceUpdate),
+          updatedAt: new Date().toISOString(),
+          updatedBy: user?.email || MASTER_ADMIN_UID,
+        },
+        { merge: true }
+      );
+      if (nextPolicyOverride) setGlobalPolicy(nextPolicyOverride);
+      setPolicySavedMsg("Kaydedildi");
+      setTimeout(() => setPolicySavedMsg(""), 2500);
+    } catch (err) {
+      alert("Politika kaydedilemedi: " + err.message);
+    } finally {
+      setPolicySaving(false);
+    }
+  };
+
+  const handleGenerateStandaloneKey = async () => {
+    if (!db || !isUserAuthorized) return;
+    setPolicySaving(true);
+    try {
+      const key = generateAdminLicenseKey();
+      const days = Number(newKeyDays || 0);
+      const isUnlimited = days <= 0;
+      const nowIso = new Date().toISOString();
+      await setDoc(doc(db, "licenses", key), {
+        key,
+        status: "unused",
+        isUsed: false,
+        isUnlimited,
+        durationDays: isUnlimited ? 0 : days,
+        createdAt: nowIso,
+        createdBy: user?.email || MASTER_ADMIN_UID,
+      });
+      setGeneratedKeyInfo({ key, isUnlimited, durationDays: days });
+      navigator.clipboard?.writeText(key).catch(() => {});
+    } catch (err) {
+      alert("Lisans anahtarı üretilemedi: " + err.message);
+    } finally {
+      setPolicySaving(false);
+    }
+  };
+
+  const updateTargetUserLicense = async (targetUid, updates, statusToast = "Güncellendi") => {
+    if (!db || !targetUid || !isUserAuthorized) return;
+    setLicenseSaving(true);
+    setLicenseStatusMsg("");
+    try {
+      const nowIso = new Date().toISOString();
+      const profRef = doc(db, "artifacts", ARTIFACT_DOC_ID, "users", targetUid, "profile", "user_doc");
+      await setDoc(profRef, { ...updates, updatedAt: nowIso }, { merge: true });
+
+      setUsersList((prev) =>
+        prev.map((item) => {
+          if (item.uid !== targetUid) return item;
+          const nextRemoteDisabled =
+            updates.remoteDisabled !== undefined ? updates.remoteDisabled : item.remoteDisabled;
+          const nextIsUnlimited =
+            updates.isUnlimited !== undefined ? updates.isUnlimited : item.isUnlimited;
+          const nextEndDate =
+            updates.subscriptionEndDate !== undefined
+              ? nextIsUnlimited
+                ? null
+                : updates.subscriptionEndDate
+              : item.subscriptionEndDate;
+          const nextExpired =
+            updates.subscriptionStatus === "expired" ||
+            (!nextIsUnlimited && nextEndDate && new Date(nextEndDate).getTime() < Date.now());
+          return {
+            ...item,
+            ...updates,
+            remoteDisabled: nextRemoteDisabled,
+            isUnlimited: nextIsUnlimited,
+            subscriptionEndDate: nextEndDate,
+            isLicenseExpired: nextExpired,
+            subscriptionStatus: nextRemoteDisabled
+              ? "suspended"
+              : nextExpired
+                ? "expired"
+                : nextIsUnlimited
+                  ? "active_lifetime"
+                  : "active",
+          };
+        })
+      );
+
+      setSelectedUser((prev) =>
+        prev && prev.uid === targetUid
+          ? {
+              ...prev,
+              ...updates,
+              subscriptionEndDate:
+                updates.isUnlimited === true
+                  ? null
+                  : updates.subscriptionEndDate !== undefined
+                    ? updates.subscriptionEndDate
+                    : prev.subscriptionEndDate,
+            }
+          : prev
+      );
+
+      setUserDetails((prev) =>
+        prev
+          ? {
+              ...prev,
+              profile: { ...(prev.profile || {}), ...updates },
+            }
+          : prev
+      );
+
+      setLicenseStatusMsg(statusToast);
+      setTimeout(() => setLicenseStatusMsg(""), 3000);
+    } catch (err) {
+      alert("Kullanıcı lisansı güncellenemedi: " + err.message);
+    } finally {
+      setLicenseSaving(false);
+    }
+  };
+
+  const handleAssignGeneratedKeyToUser = async (targetUser, durationDays) => {
+    if (!db || !targetUser?.uid || !isUserAuthorized) return;
+    setLicenseSaving(true);
+    try {
+      const key = generateAdminLicenseKey();
+      const now = new Date();
+      const nowIso = now.toISOString();
+      const isUnlimited = !durationDays || Number(durationDays) <= 0;
+      const endDate = new Date(now);
+      if (isUnlimited) {
+        endDate.setFullYear(endDate.getFullYear() + 100);
+      } else {
+        endDate.setDate(endDate.getDate() + Number(durationDays));
+      }
+      const endIso = endDate.toISOString();
+
+      await setDoc(doc(db, "licenses", key), {
+        key,
+        status: "activated",
+        isUsed: true,
+        isUnlimited,
+        durationDays: isUnlimited ? 0 : Number(durationDays),
+        targetUid: targetUser.uid,
+        activatedBy: targetUser.uid,
+        activatedByUid: targetUser.uid,
+        activatedEmail: targetUser.email || "",
+        activatedAt: nowIso,
+        createdAt: nowIso,
+        createdBy: user?.email || MASTER_ADMIN_UID,
+      });
+
+      await updateTargetUserLicense(
+        targetUser.uid,
+        {
+          licenseKey: key,
+          licenseKeyMasked: `${key.slice(0, 7)}-****-****-${key.slice(-4)}`,
+          licenseActivatedAt: nowIso,
+          membershipStartDate: targetUser.membershipStartDate || targetUser.createdAt || nowIso,
+          isUnlimited,
+          subscriptionEndDate: endIso,
+          subscriptionStatus: isUnlimited ? "active_lifetime" : "active",
+          remoteDisabled: false,
+          remoteDisabledReason: null,
+          adminGrantedUnlimited: isUnlimited,
+        },
+        "Lisans anahtarı üretildi ve tanımlandı"
+      );
+      if (!isUnlimited) {
+        setCustomEndDateInput(endIso.slice(0, 10));
+      } else {
+        setCustomEndDateInput("");
+      }
+    } catch (err) {
+      alert("Lisans atama hatası: " + err.message);
+      setLicenseSaving(false);
+    }
+  };
+
   useEffect(() => {
     if (isUserAuthorized) {
       fetchUsers();
+      fetchGlobalPolicy();
     }
   }, [isUserAuthorized]);
 
@@ -128,14 +371,21 @@ export default function AdminDashboard() {
     setDetailLoading(true);
     setUserDetails(null);
     setActiveDetailTab("telemetry");
+    setLicenseStatusMsg("");
+    setDisableReasonInput(targetUser.remoteDisabledReason || "");
+    setCustomEndDateInput(
+      targetUser.subscriptionEndDate ? String(targetUser.subscriptionEndDate).slice(0, 10) : ""
+    );
 
     try {
+      const idToken = await user.getIdToken();
       const res = await fetch("/api/admin/users", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`
+        },
         body: JSON.stringify({
-          requesterEmail: user.email,
-          requesterUid: user.uid,
           targetUid: targetUser.uid
         })
       });
@@ -219,6 +469,12 @@ export default function AdminDashboard() {
           matchesStatus = Number(u.salesCount || 0) > 0;
         } else if (statusFilter === "has_streak") {
           matchesStatus = Number(u.streakDays || 0) >= 2;
+        } else if (statusFilter === "remote_disabled") {
+          matchesStatus = Boolean(u.remoteDisabled);
+        } else if (statusFilter === "expired_license") {
+          matchesStatus = Boolean(u.isLicenseExpired);
+        } else if (statusFilter === "licensed") {
+          matchesStatus = Boolean(u.licenseKey);
         }
 
         return matchesSearch && matchesSector && matchesStatus;
@@ -355,6 +611,122 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      {/* GENEL ERİŞİM, GÜNCELLEME & LİSANS KONTROL ÇUBUĞU */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem", background: "var(--card-bg)", padding: "1rem 1.25rem", borderRadius: "0.75rem", border: "1px solid var(--border-color)" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "1rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <FiShield size={18} style={{ color: "#10b981" }} />
+            <span style={{ fontWeight: 800, fontSize: "0.85rem", color: "var(--text-main)" }}>Uzaktan Lisans Politikası</span>
+          </div>
+
+          <button
+            type="button"
+            disabled={policySaving}
+            onClick={() =>
+              handleSaveGlobalPolicy({
+                ...globalPolicy,
+                allowFreeUnlimited: !globalPolicy.allowFreeUnlimited,
+              })
+            }
+            style={{
+              padding: "0.45rem 0.85rem",
+              borderRadius: "0.5rem",
+              border: "1px solid",
+              borderColor: globalPolicy.allowFreeUnlimited ? "#10b981" : "#ef4444",
+              background: globalPolicy.allowFreeUnlimited ? "rgba(16, 185, 129, 0.1)" : "rgba(239, 68, 68, 0.1)",
+              color: globalPolicy.allowFreeUnlimited ? "#10b981" : "#ef4444",
+              fontWeight: 700,
+              fontSize: "0.8rem",
+              cursor: "pointer",
+            }}
+          >
+            Genel Sınırsız Kullanım: {globalPolicy.allowFreeUnlimited ? "AÇIK" : "KAPALI (Lisans Zorunlu)"}
+          </button>
+
+          <button
+            type="button"
+            disabled={policySaving}
+            onClick={() =>
+              handleSaveGlobalPolicy({
+                ...globalPolicy,
+                blockOnExpiry: !globalPolicy.blockOnExpiry,
+              })
+            }
+            style={{
+              padding: "0.45rem 0.85rem",
+              borderRadius: "0.5rem",
+              border: "1px solid var(--border-color)",
+              background: "var(--bg-main)",
+              color: globalPolicy.blockOnExpiry ? "#f59e0b" : "var(--text-main)",
+              fontWeight: 700,
+              fontSize: "0.8rem",
+              cursor: "pointer",
+            }}
+          >
+            Süre Bitimi: {globalPolicy.blockOnExpiry ? "Erişimi Kilitle" : "Uyarı Göster"}
+          </button>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+            <span style={{ fontSize: "0.78rem", color: "var(--text-muted)", fontWeight: 600 }}>Min Sürüm:</span>
+            <input
+              type="text"
+              value={globalPolicy.minDesktopVersion}
+              onChange={(e) => setGlobalPolicy((p) => ({ ...p, minDesktopVersion: e.target.value }))}
+              style={{ width: "74px", padding: "0.38rem 0.55rem", borderRadius: "0.4rem", border: "1px solid var(--border-color)", background: "var(--bg-main)", color: "var(--text-main)", fontFamily: "monospace", fontSize: "0.8rem", fontWeight: 700 }}
+            />
+            <button
+              type="button"
+              disabled={policySaving}
+              onClick={() => handleSaveGlobalPolicy()}
+              style={{ padding: "0.4rem 0.7rem", borderRadius: "0.4rem", border: "none", background: "#3b82f6", color: "#fff", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer" }}
+            >
+              Kaydet
+            </button>
+            {policySavedMsg && (
+              <span style={{ fontSize: "0.75rem", color: "#10b981", fontWeight: 700 }}>{policySavedMsg}</span>
+            )}
+          </div>
+        </div>
+
+        {/* Bağımsız Lisans Anahtarı Üretici */}
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "0.5rem" }}>
+          <select
+            value={newKeyDays}
+            onChange={(e) => setNewKeyDays(e.target.value)}
+            style={{ padding: "0.42rem 0.65rem", borderRadius: "0.45rem", border: "1px solid var(--border-color)", background: "var(--bg-main)", color: "var(--text-main)", fontSize: "0.8rem", fontWeight: 600 }}
+          >
+            <option value="30">30 Günlük Anahtar</option>
+            <option value="365">1 Yıllık Anahtar</option>
+            <option value="0">Sınırsız Anahtar</option>
+          </select>
+          <button
+            type="button"
+            disabled={policySaving}
+            onClick={handleGenerateStandaloneKey}
+            style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", padding: "0.45rem 0.85rem", borderRadius: "0.45rem", border: "1px solid #8b5cf6", background: "rgba(139, 92, 246, 0.12)", color: "#8b5cf6", fontSize: "0.8rem", fontWeight: 700, cursor: "pointer" }}
+          >
+            <FiKey size={14} />
+            Anahtar Üret
+          </button>
+          {generatedKeyInfo && (
+            <button
+              type="button"
+              onClick={() => {
+                navigator.clipboard?.writeText(generatedKeyInfo.key);
+                setCopiedLicenseKey(true);
+                setTimeout(() => setCopiedLicenseKey(false), 1800);
+              }}
+              style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", padding: "0.4rem 0.65rem", borderRadius: "0.45rem", border: "1px solid #10b981", background: "rgba(16, 185, 129, 0.1)", color: "#10b981", fontFamily: "monospace", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer" }}
+              title="Kopyalamak için tıklayın"
+            >
+              <span>{generatedKeyInfo.key}</span>
+              <FiCopy size={12} />
+              {copiedLicenseKey && <span>Kopyalandı</span>}
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* ARAMA VE FİLTRELEME ÇUBUĞU */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", alignItems: "center", marginBottom: "1rem", background: "var(--card-bg)", padding: "1rem", borderRadius: "0.75rem", border: "1px solid var(--border-color)" }}>
         <div style={{ flex: "1 1 280px", display: "flex", alignItems: "center", gap: "0.5rem", background: "var(--bg-main)", padding: "0.5rem 0.75rem", borderRadius: "0.5rem", border: "1px solid var(--border-color)" }}>
@@ -395,6 +767,9 @@ export default function AdminDashboard() {
           <option value="survey_completed">Anketi Tamamlayanlar</option>
           <option value="has_sales">Satış Kaydı Olanlar</option>
           <option value="has_streak">Süreklilik Serisi Olanlar (2+ gün)</option>
+          <option value="licensed">Lisans Anahtarı Tanımlı Olanlar</option>
+          <option value="expired_license">Üyelik Süresi Dolanlar</option>
+          <option value="remote_disabled">Uzaktan Kapatılanlar</option>
         </select>
 
         <select 
@@ -425,6 +800,7 @@ export default function AdminDashboard() {
                 <th style={{ padding: "0.85rem 1rem" }}>Son Aktiflik & Giriş</th>
                 <th style={{ padding: "0.85rem 1rem" }}>Aktif Süre & Süreklilik</th>
                 <th style={{ padding: "0.85rem 1rem" }}>Veri Girişleri</th>
+                <th style={{ padding: "0.85rem 1rem" }}>Lisans & Erişim</th>
                 <th style={{ padding: "0.85rem 1rem" }}>Cihaz & Ortam</th>
                 <th style={{ padding: "0.85rem 1rem", textAlign: "center" }}>Detaylı İncele</th>
               </tr>
@@ -432,7 +808,7 @@ export default function AdminDashboard() {
             <tbody>
               {filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: "center", padding: "3rem", color: "var(--text-muted)" }}>
+                  <td colSpan={8} style={{ textAlign: "center", padding: "3rem", color: "var(--text-muted)" }}>
                     Kriterlere uygun kullanıcı bulunamadı.
                   </td>
                 </tr>
@@ -526,6 +902,35 @@ export default function AdminDashboard() {
                           <div style={{ color: "#10b981", fontWeight: 700 }}>
                             {Number(u.totalSalesVolume || 0).toLocaleString("tr-TR")} ₺ Ciro
                           </div>
+                        </div>
+                      </td>
+
+                      {/* Lisans & Erişim */}
+                      <td style={{ padding: "0.85rem 1rem" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem", alignItems: "flex-start" }}>
+                          {u.remoteDisabled ? (
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem", padding: "0.2rem 0.5rem", borderRadius: "0.375rem", background: "rgba(239, 68, 68, 0.14)", color: "#ef4444", fontSize: "0.72rem", fontWeight: 800 }}>
+                              <FiLock size={11} />
+                              Uzaktan Kapatıldı
+                            </span>
+                          ) : u.isLicenseExpired ? (
+                            <span style={{ display: "inline-block", padding: "0.2rem 0.5rem", borderRadius: "0.375rem", background: "rgba(245, 158, 11, 0.14)", color: "#f59e0b", fontSize: "0.72rem", fontWeight: 800 }}>
+                              Süresi Doldu
+                            </span>
+                          ) : u.isUnlimited !== false ? (
+                            <span style={{ display: "inline-block", padding: "0.2rem 0.5rem", borderRadius: "0.375rem", background: "rgba(16, 185, 129, 0.12)", color: "#10b981", fontSize: "0.72rem", fontWeight: 800 }}>
+                              Sınırsız Üyelik
+                            </span>
+                          ) : (
+                            <span style={{ display: "inline-block", padding: "0.2rem 0.5rem", borderRadius: "0.375rem", background: "rgba(59, 130, 246, 0.12)", color: "#3b82f6", fontSize: "0.72rem", fontWeight: 800 }}>
+                              Süreli ({u.subscriptionEndDate ? new Date(u.subscriptionEndDate).toLocaleDateString("tr-TR") : "—"})
+                            </span>
+                          )}
+                          {u.licenseKey && (
+                            <span style={{ fontSize: "0.68rem", color: "var(--text-muted)", fontFamily: "monospace" }}>
+                              {u.licenseKey}
+                            </span>
+                          )}
                         </div>
                       </td>
 
@@ -685,6 +1090,25 @@ export default function AdminDashboard() {
                 Cihaz & Telemetri
               </button>
               <button 
+                onClick={() => setActiveDetailTab("license")}
+                style={{ 
+                  padding: "0.8rem 1.25rem", 
+                  border: "none", 
+                  borderBottom: activeDetailTab === "license" ? "2px solid #8b5cf6" : "2px solid transparent",
+                  background: "transparent", 
+                  color: activeDetailTab === "license" ? "#8b5cf6" : "var(--text-muted)",
+                  fontWeight: 700, 
+                  fontSize: "0.85rem", 
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.4rem"
+                }}
+              >
+                <FiKey size={16} />
+                Lisans & Erişim
+              </button>
+              <button 
                 onClick={() => setActiveDetailTab("survey")}
                 style={{ 
                   padding: "0.8rem 1.25rem", 
@@ -752,6 +1176,266 @@ export default function AdminDashboard() {
                 </div>
               ) : (
                 <>
+                  {/* TAB 0: LİSANS, ÜYELİK TARİHİ VE UZAKTAN ERİŞİM KONTROLÜ */}
+                  {activeDetailTab === "license" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                      {licenseStatusMsg && (
+                        <div style={{ padding: "0.65rem 1rem", borderRadius: "0.5rem", background: "rgba(16, 185, 129, 0.12)", border: "1px solid #10b981", color: "#10b981", fontSize: "0.82rem", fontWeight: 700 }}>
+                          {licenseStatusMsg}
+                        </div>
+                      )}
+
+                      {/* 1. Uzaktan Kapat / Aç */}
+                      <div style={{ background: "var(--bg-main)", padding: "1.25rem", borderRadius: "0.75rem", border: "1px solid var(--border-color)", display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.75rem" }}>
+                          <div>
+                            <h3 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 800, display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                              {selectedUser.remoteDisabled ? <FiLock size={16} style={{ color: "#ef4444" }} /> : <FiUnlock size={16} style={{ color: "#10b981" }} />}
+                              Uzaktan Erişim Durumu
+                            </h3>
+                            <span style={{ fontSize: "0.8rem", fontWeight: 700, color: selectedUser.remoteDisabled ? "#ef4444" : "#10b981" }}>
+                              {selectedUser.remoteDisabled ? "Kapatıldı (Askıda)" : "Aktif"}
+                            </span>
+                          </div>
+
+                          <button
+                            type="button"
+                            disabled={licenseSaving}
+                            onClick={() => {
+                              const nextDisabled = !selectedUser.remoteDisabled;
+                              updateTargetUserLicense(
+                                selectedUser.uid,
+                                {
+                                  remoteDisabled: nextDisabled,
+                                  remoteDisabledReason: nextDisabled ? (disableReasonInput.trim() || null) : null,
+                                  subscriptionStatus: nextDisabled
+                                    ? "suspended"
+                                    : selectedUser.isUnlimited !== false
+                                      ? "active_lifetime"
+                                      : "active",
+                                },
+                                nextDisabled ? "Kullanıcı erişimi uzaktan kapatıldı" : "Kullanıcı erişimi yeniden açıldı"
+                              );
+                            }}
+                            style={{
+                              padding: "0.55rem 1rem",
+                              borderRadius: "0.5rem",
+                              border: "none",
+                              background: selectedUser.remoteDisabled ? "#10b981" : "#ef4444",
+                              color: "#fff",
+                              fontWeight: 800,
+                              fontSize: "0.82rem",
+                              cursor: "pointer",
+                            }}
+                          >
+                            {selectedUser.remoteDisabled ? "Erişimi Yeniden Aç" : "Erişimi Uzaktan Kapat"}
+                          </button>
+                        </div>
+
+                        <input
+                          type="text"
+                          placeholder="Kapatma notu (opsiyonel)"
+                          value={disableReasonInput}
+                          onChange={(e) => setDisableReasonInput(e.target.value)}
+                          style={{ width: "100%", padding: "0.55rem 0.75rem", borderRadius: "0.5rem", border: "1px solid var(--border-color)", background: "var(--card-bg)", color: "var(--text-main)", fontSize: "0.82rem" }}
+                        />
+                      </div>
+
+                      {/* 2. Üyelik Süresi & Bitiş Tarihi */}
+                      <div style={{ background: "var(--bg-main)", padding: "1.25rem", borderRadius: "0.75rem", border: "1px solid var(--border-color)", display: "flex", flexDirection: "column", gap: "0.9rem" }}>
+                        <h3 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 800, display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                          <FiCalendar size={16} style={{ color: "#3b82f6" }} />
+                          Üyelik Tipi & Tarihleri
+                        </h3>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "0.75rem", fontSize: "0.82rem" }}>
+                          <div style={{ padding: "0.7rem", borderRadius: "0.5rem", background: "var(--card-bg)", border: "1px solid var(--border-color)" }}>
+                            <span style={{ color: "var(--text-muted)", fontSize: "0.72rem" }}>Üyelik Başlangıcı</span>
+                            <div style={{ fontWeight: 700, marginTop: "0.2rem" }}>
+                              {formatFullDate(selectedUser.membershipStartDate || selectedUser.createdAt)}
+                            </div>
+                          </div>
+                          <div style={{ padding: "0.7rem", borderRadius: "0.5rem", background: "var(--card-bg)", border: "1px solid var(--border-color)" }}>
+                            <span style={{ color: "var(--text-muted)", fontSize: "0.72rem" }}>Üyelik Bitiş Tarihi</span>
+                            <div style={{ fontWeight: 700, marginTop: "0.2rem", color: selectedUser.isLicenseExpired ? "#f59e0b" : "var(--text-main)" }}>
+                              {selectedUser.isUnlimited !== false
+                                ? "Sınırsız"
+                                : formatFullDate(selectedUser.subscriptionEndDate)}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+                          <button
+                            type="button"
+                            disabled={licenseSaving}
+                            onClick={() => {
+                              const life = new Date();
+                              life.setFullYear(life.getFullYear() + 100);
+                              setCustomEndDateInput("");
+                              updateTargetUserLicense(
+                                selectedUser.uid,
+                                {
+                                  isUnlimited: true,
+                                  adminGrantedUnlimited: true,
+                                  subscriptionStatus: "active_lifetime",
+                                  subscriptionEndDate: life.toISOString(),
+                                  remoteDisabled: false,
+                                },
+                                "Sınırsız üyelik tanımlandı"
+                              );
+                            }}
+                            style={{ padding: "0.45rem 0.8rem", borderRadius: "0.45rem", border: "1px solid #10b981", background: "rgba(16, 185, 129, 0.1)", color: "#10b981", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer" }}
+                          >
+                            Sınırsız Yap
+                          </button>
+
+                          <button
+                            type="button"
+                            disabled={licenseSaving}
+                            onClick={() => {
+                              const d = new Date(Date.now() + 30 * 86400000);
+                              const iso = d.toISOString();
+                              setCustomEndDateInput(iso.slice(0, 10));
+                              updateTargetUserLicense(
+                                selectedUser.uid,
+                                {
+                                  isUnlimited: false,
+                                  subscriptionStatus: "active",
+                                  subscriptionEndDate: iso,
+                                  remoteDisabled: false,
+                                },
+                                "30 günlük üyelik tanımlandı"
+                              );
+                            }}
+                            style={{ padding: "0.45rem 0.8rem", borderRadius: "0.45rem", border: "1px solid var(--border-color)", background: "var(--card-bg)", color: "var(--text-main)", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer" }}
+                          >
+                            +30 Gün
+                          </button>
+
+                          <button
+                            type="button"
+                            disabled={licenseSaving}
+                            onClick={() => {
+                              const d = new Date(Date.now() + 365 * 86400000);
+                              const iso = d.toISOString();
+                              setCustomEndDateInput(iso.slice(0, 10));
+                              updateTargetUserLicense(
+                                selectedUser.uid,
+                                {
+                                  isUnlimited: false,
+                                  subscriptionStatus: "active",
+                                  subscriptionEndDate: iso,
+                                  remoteDisabled: false,
+                                },
+                                "1 yıllık üyelik tanımlandı"
+                              );
+                            }}
+                            style={{ padding: "0.45rem 0.8rem", borderRadius: "0.45rem", border: "1px solid var(--border-color)", background: "var(--card-bg)", color: "var(--text-main)", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer" }}
+                          >
+                            +1 Yıl
+                          </button>
+
+                          <button
+                            type="button"
+                            disabled={licenseSaving}
+                            onClick={() => {
+                              const yesterday = new Date(Date.now() - 86400000).toISOString();
+                              setCustomEndDateInput(yesterday.slice(0, 10));
+                              updateTargetUserLicense(
+                                selectedUser.uid,
+                                {
+                                  isUnlimited: false,
+                                  subscriptionStatus: "expired",
+                                  subscriptionEndDate: yesterday,
+                                },
+                                "Üyelik süresi sonlandırıldı"
+                              );
+                            }}
+                            style={{ padding: "0.45rem 0.8rem", borderRadius: "0.45rem", border: "1px solid #f59e0b", background: "rgba(245, 158, 11, 0.1)", color: "#f59e0b", fontWeight: 700, fontSize: "0.78rem", cursor: "pointer" }}
+                          >
+                            Süreyi Bitir
+                          </button>
+                        </div>
+
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                          <input
+                            type="date"
+                            value={customEndDateInput}
+                            onChange={(e) => setCustomEndDateInput(e.target.value)}
+                            style={{ padding: "0.45rem 0.65rem", borderRadius: "0.45rem", border: "1px solid var(--border-color)", background: "var(--card-bg)", color: "var(--text-main)", fontSize: "0.82rem" }}
+                          />
+                          <button
+                            type="button"
+                            disabled={licenseSaving || !customEndDateInput}
+                            onClick={() => {
+                              const endIso = new Date(`${customEndDateInput}T23:59:59.000Z`).toISOString();
+                              const isPast = new Date(endIso).getTime() < Date.now();
+                              updateTargetUserLicense(
+                                selectedUser.uid,
+                                {
+                                  isUnlimited: false,
+                                  subscriptionStatus: isPast ? "expired" : "active",
+                                  subscriptionEndDate: endIso,
+                                },
+                                "Bitiş tarihi kaydedildi"
+                              );
+                            }}
+                            style={{ padding: "0.48rem 0.9rem", borderRadius: "0.45rem", border: "none", background: "#3b82f6", color: "#fff", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer" }}
+                          >
+                            Bitiş Tarihini Kaydet
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* 3. Lisans Anahtarı Tanımlama */}
+                      <div style={{ background: "var(--bg-main)", padding: "1.25rem", borderRadius: "0.75rem", border: "1px solid var(--border-color)", display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+                        <h3 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 800, display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                          <FiKey size={16} style={{ color: "#8b5cf6" }} />
+                          Lisans Anahtarı
+                        </h3>
+
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.7rem 0.9rem", borderRadius: "0.5rem", background: "var(--card-bg)", border: "1px solid var(--border-color)" }}>
+                          <span style={{ fontFamily: "monospace", fontSize: "0.88rem", fontWeight: 700 }}>
+                            {userDetails?.profile?.licenseKey || selectedUser.licenseKey || "Tanımlı anahtar yok"}
+                          </span>
+                          {(userDetails?.profile?.licenseKey || selectedUser.licenseKey) && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const k = userDetails?.profile?.licenseKey || selectedUser.licenseKey;
+                                navigator.clipboard?.writeText(k);
+                              }}
+                              style={{ background: "transparent", border: "none", color: "#3b82f6", cursor: "pointer", fontWeight: 700, fontSize: "0.78rem", display: "inline-flex", alignItems: "center", gap: "0.25rem" }}
+                            >
+                              <FiCopy size={13} />
+                              Kopyala
+                            </button>
+                          )}
+                        </div>
+
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+                          <button
+                            type="button"
+                            disabled={licenseSaving}
+                            onClick={() => handleAssignGeneratedKeyToUser(selectedUser, 365)}
+                            style={{ padding: "0.5rem 0.9rem", borderRadius: "0.45rem", border: "1px solid #8b5cf6", background: "rgba(139, 92, 246, 0.12)", color: "#8b5cf6", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer" }}
+                          >
+                            1 Yıllık Anahtar Üret & Ata
+                          </button>
+                          <button
+                            type="button"
+                            disabled={licenseSaving}
+                            onClick={() => handleAssignGeneratedKeyToUser(selectedUser, 0)}
+                            style={{ padding: "0.5rem 0.9rem", borderRadius: "0.45rem", border: "1px solid #10b981", background: "rgba(16, 185, 129, 0.1)", color: "#10b981", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer" }}
+                          >
+                            Sınırsız Anahtar Üret & Ata
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* TAB 1: TELEMETRİ, CİHAZ VE SÜREKLİLİK */}
                   {activeDetailTab === "telemetry" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>

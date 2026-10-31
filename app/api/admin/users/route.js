@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "../../../../src/firebase";
+import { verifyAdminRequest } from "../../../../src/utils/serverAdminAuth";
 import { 
   collection, 
   getDocs, 
@@ -10,20 +11,10 @@ import {
   limit 
 } from "firebase/firestore";
 
-const AUTHORIZED_EMAIL = "abimer2350@gmail.com";
-const MASTER_ADMIN_UID = "p4h4hZYTtaPBk6kp1UUfRA7z2px2";
 const ARTIFACT_DOC_ID =
   process.env.NEXT_PUBLIC_FIREBASE_ARTIFACTS_COLLECTION ||
   process.env.REACT_APP_FIREBASE_ARTIFACTS_COLLECTION ||
   "1:330292329201:web:d19827937fb863ea490750";
-
-function isAuthorized(email, uid) {
-  const normalizedEmail = String(email || "").trim().toLowerCase();
-  return (
-    normalizedEmail === AUTHORIZED_EMAIL.toLowerCase() ||
-    uid === MASTER_ADMIN_UID
-  );
-}
 
 function parseToDate(val) {
   if (!val) return null;
@@ -54,16 +45,24 @@ function parseToTime(val) {
 
 export async function POST(req) {
   try {
-    const body = await req.json().catch(() => ({}));
-    const { requesterEmail, requesterUid, targetUid } = body;
-
-    // GÜVENLİK PROTOKOLÜ: Sadece yetkili kullanıcı erişebilir, diğerlerine 404
-    if (!isAuthorized(requesterEmail, requesterUid)) {
+    // GÜVENLİK PROTOKOLÜ: Firebase ID Token kriptografik olarak sunucuda doğrulanır, yetkisizlere 404 döner
+    const adminCheck = await verifyAdminRequest(req);
+    if (!adminCheck.authorized) {
       return new NextResponse(JSON.stringify({ error: "Sayfa bulunamadı." }), {
         status: 404,
         headers: { "Content-Type": "application/json" }
       });
     }
+
+    const body = await req.json().catch(() => ({}));
+    const rawTargetUid = body?.targetUid ? String(body.targetUid).trim() : "";
+    if (rawTargetUid && !/^[A-Za-z0-9_-]{4,128}$/.test(rawTargetUid)) {
+      return new NextResponse(JSON.stringify({ error: "Geçersiz kullanıcı kimliği." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+    const targetUid = rawTargetUid || null;
 
     if (!db) {
       return new NextResponse(JSON.stringify({ error: "Veritabanı bağlantısı yok." }), {
@@ -238,6 +237,21 @@ export async function POST(req) {
           surveyCompletedCount++;
         }
 
+        const rawSubEnd = parseToDate(prof.subscriptionEndDate);
+        const isExplicitTimed =
+          prof.isUnlimited === false ||
+          (rawSubEnd && rawSubEnd.getUTCFullYear() < 2090 && prof.subscriptionStatus !== "active_lifetime");
+        const isUnlimited = !isExplicitTimed && prof.subscriptionStatus !== "expired";
+        const subscriptionEndDate = isUnlimited || !rawSubEnd ? null : rawSubEnd.toISOString();
+        const isLicenseExpired =
+          prof.subscriptionStatus === "expired" ||
+          (!isUnlimited && rawSubEnd && rawSubEnd.getTime() < now.getTime());
+        const remoteDisabled = Boolean(
+          prof.remoteDisabled === true ||
+            prof.subscriptionStatus === "suspended" ||
+            prof.subscriptionStatus === "disabled"
+        );
+
         return {
           uid,
           email,
@@ -259,7 +273,23 @@ export async function POST(req) {
           productsCount,
           salesCount,
           totalSalesVolume: salesVolume,
-          customersCount
+          customersCount,
+          subscriptionStatus: remoteDisabled
+            ? "suspended"
+            : isLicenseExpired
+              ? "expired"
+              : isUnlimited
+                ? "active_lifetime"
+                : "active",
+          isUnlimited,
+          isLicenseExpired,
+          membershipStartDate: parseToIso(prof.membershipStartDate || prof.licenseActivatedAt || prof.createdAt || uData.createdAt),
+          subscriptionEndDate,
+          licenseKey: prof.licenseKey || prof.productKey || null,
+          remoteDisabled,
+          remoteDisabledReason: prof.remoteDisabledReason || "",
+          blockOnExpiry: Boolean(prof.blockOnExpiry ?? false),
+          adminGrantedUnlimited: Boolean(prof.adminGrantedUnlimited ?? false)
         };
       })
     );

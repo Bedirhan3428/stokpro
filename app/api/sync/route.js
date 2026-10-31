@@ -1,18 +1,31 @@
 import { NextResponse } from 'next/server';
 import { db } from '../../../src/firebase';
 import { doc, getDoc, setDoc, writeBatch, collection, getDocs } from 'firebase/firestore';
-import { hashKeySync } from '../../../src/utils/cryptoUtils';
+import { hashKeySync, timingSafeEqualHex } from '../../../src/utils/cryptoUtils';
 
 const ARTIFACT_DOC_ID =
   process.env.NEXT_PUBLIC_FIREBASE_ARTIFACTS_COLLECTION ||
   process.env.REACT_APP_FIREBASE_ARTIFACTS_COLLECTION ||
   '1:330292329201:web:d19827937fb863ea490750';
 
+const MAX_INLINE_FIRESTORE_BYTES = 850_000;
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-requested-with',
 };
+
+function isSafeDocId(id) {
+  return (
+    typeof id === 'string' &&
+    id.length > 0 &&
+    id.length <= 256 &&
+    !id.includes('/') &&
+    id !== '.' &&
+    id !== '..'
+  );
+}
 
 export async function OPTIONS() {
   return new NextResponse(null, {
@@ -25,21 +38,30 @@ export async function POST(req) {
   try {
     const body = await req.json();
     const {
-      uid,
-      keyHash,
+      uid: rawUid,
+      keyHash: rawKeyHash,
       masterData,
       deletedProductIds = [],
       deletedCustomerIds = [],
     } = body || {};
 
-    if (!uid || !keyHash || !masterData) {
+    const uid = typeof rawUid === 'string' ? rawUid.trim() : '';
+    const keyHash = typeof rawKeyHash === 'string' ? rawKeyHash.trim().toLowerCase() : '';
+
+    if (
+      !uid ||
+      !/^[A-Za-z0-9_-]{6,128}$/.test(uid) ||
+      !/^[a-f0-9]{64}$/.test(keyHash) ||
+      !masterData ||
+      typeof masterData !== 'object'
+    ) {
       return NextResponse.json(
-        { error: 'Eksik parametreler (uid, keyHash ve masterData gereklidir).' },
+        { error: 'Eksik veya geçersiz parametreler (uid, 64-hex keyHash ve masterData gereklidir).' },
         { status: 400, headers: corsHeaders }
       );
     }
 
-    // 1. Kullanıcı Profili ve Yetki Doğrulaması (Firestore üzerinden)
+    // 1. Kullanıcı Profili ve Yetki Doğrulaması (Firestore üzerinden, sabit zamanlı karşılaştırma)
     const profileRef = doc(db, 'artifacts', ARTIFACT_DOC_ID, 'users', uid, 'profile', 'user_doc');
     const userRef = doc(db, 'artifacts', ARTIFACT_DOC_ID, 'users', uid);
 
@@ -51,31 +73,25 @@ export async function POST(req) {
     const pData = pSnap && pSnap.exists() ? pSnap.data() : null;
     const uData = uSnap && uSnap.exists() ? uSnap.data() : null;
 
-    let isAuthorized = false;
-
-    // Hash Kontrolü (terminalKeyHash veya productKeyHash)
-    if (pData?.terminalKeyHash && pData.terminalKeyHash === keyHash) {
-      isAuthorized = true;
-    } else if (uData?.terminalKeyHash && uData.terminalKeyHash === keyHash) {
-      isAuthorized = true;
-    } else if (pData?.productKeyHash && pData.productKeyHash === keyHash) {
-      isAuthorized = true;
-    } else if (uData?.productKeyHash && uData.productKeyHash === keyHash) {
-      isAuthorized = true;
-    } else if (keyHash === hashKeySync(uid)) {
-      // UID tabanlı acil durum eşleşmesi
-      isAuthorized = true;
-    } else if (pData?.terminalKey) {
+    const storedHashes = [];
+    if (pData?.terminalKeyHash) storedHashes.push(String(pData.terminalKeyHash));
+    if (uData?.terminalKeyHash) storedHashes.push(String(uData.terminalKeyHash));
+    if (pData?.productKeyHash) storedHashes.push(String(pData.productKeyHash));
+    if (uData?.productKeyHash) storedHashes.push(String(uData.productKeyHash));
+    if (pData?.terminalKey) {
       try {
-        if (hashKeySync(pData.terminalKey) === keyHash) isAuthorized = true;
+        storedHashes.push(hashKeySync(pData.terminalKey));
       } catch {}
-    } else if (uData?.terminalKey) {
+    }
+    if (uData?.terminalKey) {
       try {
-        if (hashKeySync(uData.terminalKey) === keyHash) isAuthorized = true;
+        storedHashes.push(hashKeySync(uData.terminalKey));
       } catch {}
     }
 
-    // 2. YETKİ DENETİMİ
+    const isAuthorized = storedHashes.some((stored) => timingSafeEqualHex(stored, keyHash));
+
+    // 2. YETKİ DENETİMİ (UID hash bypass tamamen kaldırıldı; fail-closed)
     if (!isAuthorized) {
       console.warn(`Yetkisiz senkronizasyon denemesi: UID ${uid}`);
       return NextResponse.json(
@@ -186,26 +202,32 @@ export async function POST(req) {
     for (let i = 0; i < allProducts.length; i += 400) {
       const chunk = allProducts.slice(i, i + 400);
       const batch = writeBatch(db);
+      let chunkOps = 0;
       for (const prod of chunk) {
-        if (prod.id) {
-          const pRef = doc(db, 'artifacts', ARTIFACT_DOC_ID, 'users', uid, 'products', prod.id);
-          batch.set(pRef, prod, { merge: true });
+        const prodId = prod?.id ? String(prod.id).trim() : '';
+        if (isSafeDocId(prodId)) {
+          const pRef = doc(db, 'artifacts', ARTIFACT_DOC_ID, 'users', uid, 'products', prodId);
+          batch.set(pRef, { ...prod, id: prodId }, { merge: true });
+          chunkOps++;
         }
       }
-      await batch.commit();
+      if (chunkOps > 0) await batch.commit();
     }
 
     // D) Masaüstünden Gelen Güncel Carileri Yaz
     for (let i = 0; i < allCustomers.length; i += 400) {
       const chunk = allCustomers.slice(i, i + 400);
       const batch = writeBatch(db);
+      let chunkOps = 0;
       for (const cust of chunk) {
-        if (cust.id) {
-          const cRef = doc(db, 'artifacts', ARTIFACT_DOC_ID, 'users', uid, 'customers', cust.id);
-          batch.set(cRef, cust, { merge: true });
+        const custId = cust?.id ? String(cust.id).trim() : '';
+        if (isSafeDocId(custId)) {
+          const cRef = doc(db, 'artifacts', ARTIFACT_DOC_ID, 'users', uid, 'customers', custId);
+          batch.set(cRef, { ...cust, id: custId }, { merge: true });
+          chunkOps++;
         }
       }
-      await batch.commit();
+      if (chunkOps > 0) await batch.commit();
     }
 
     // E) Master Dokümanlar (Tüm aktif ürünler = allProducts + newFromCloudProducts)
@@ -214,43 +236,74 @@ export async function POST(req) {
     const activeProductsCount = combinedProducts.filter((p) => p.isActive !== false && !p.deletedAt).length;
     const activeCustomersCount = combinedCustomers.filter((c) => c.isActive !== false && !c.deletedAt).length;
 
-    // 1. master_backup dokümanı
-    const masterBackupRef = doc(db, 'artifacts', ARTIFACT_DOC_ID, 'users', uid, 'master_backup', 'latest');
-    await setDoc(
-      masterBackupRef,
-      {
+    const masterJsonRef = doc(db, 'artifacts', ARTIFACT_DOC_ID, 'users', uid, 'sync_meta', 'master_json_doc');
+    const existingMasterSnap = await getDoc(masterJsonRef).catch(() => null);
+    const existingMasterData = existingMasterSnap && existingMasterSnap.exists() ? existingMasterSnap.data() : null;
+
+    const preservedSales =
+      Array.isArray(masterData.sales) && masterData.sales.length > 0
+        ? masterData.sales
+        : Array.isArray(existingMasterData?.sales)
+        ? existingMasterData.sales
+        : [];
+
+    const preservedExpenses =
+      Array.isArray(masterData.expenses) && masterData.expenses.length > 0
+        ? masterData.expenses
+        : Array.isArray(existingMasterData?.expenses)
+        ? existingMasterData.expenses
+        : [];
+
+    const serializedCombined = JSON.stringify({
+      ...masterData,
+      products: combinedProducts,
+      customers: combinedCustomers,
+      sales: preservedSales,
+      expenses: preservedExpenses,
+    });
+    const serializedByteLen = Buffer.byteLength(serializedCombined, 'utf8');
+
+    // 1. master_backup dokümanı (1 MiB Firestore doküman boyutu sınırına karşı korumalı)
+    try {
+      const masterBackupRef = doc(db, 'artifacts', ARTIFACT_DOC_ID, 'users', uid, 'master_backup', 'latest');
+      const backupPayload = {
         lastBackupAt,
         appVersion: masterData.appVersion || '1.0.0',
         productsCount: activeProductsCount,
         customersCount: activeCustomersCount,
-        salesCount: masterData.sales?.length || 0,
-        expensesCount: masterData.expenses?.length || 0,
-        masterJsonString: JSON.stringify({
-          ...masterData,
-          products: combinedProducts,
-          customers: combinedCustomers,
-        }),
-      },
-      { merge: true }
-    );
+        salesCount: preservedSales.length,
+        expensesCount: preservedExpenses.length,
+      };
+      if (serializedByteLen < MAX_INLINE_FIRESTORE_BYTES) {
+        backupPayload.masterJsonString = serializedCombined;
+      }
+      await setDoc(masterBackupRef, backupPayload, { merge: true });
+    } catch (backupErr) {
+      console.warn('master_backup/latest yazım uyarısı:', backupErr);
+    }
 
-    // 2. master_json_doc dokümanı (web 0ms cache)
-    const masterJsonRef = doc(db, 'artifacts', ARTIFACT_DOC_ID, 'users', uid, 'sync_meta', 'master_json_doc');
-    await setDoc(
-      masterJsonRef,
-      {
-        products: combinedProducts,
-        customers: combinedCustomers,
-        sales: masterData.sales || [],
-        expenses: masterData.expenses || [],
-        meta: {
-          lastSyncedAt: lastBackupAt,
-          versionTag: `v_server_${Date.now()}`,
-          source: 'two_way_smart_sync',
-        },
-      },
-      { merge: true }
-    );
+    // 2. master_json_doc dokümanı (web 0ms cache — sales/expenses ezilmez ve 1 MiB sınırı korunur)
+    if (serializedByteLen < MAX_INLINE_FIRESTORE_BYTES) {
+      try {
+        await setDoc(
+          masterJsonRef,
+          {
+            products: combinedProducts,
+            customers: combinedCustomers,
+            sales: preservedSales,
+            expenses: preservedExpenses,
+            meta: {
+              lastSyncedAt: lastBackupAt,
+              versionTag: `v_server_${Date.now()}`,
+              source: 'two_way_smart_sync',
+            },
+          },
+          { merge: true }
+        );
+      } catch (cacheErr) {
+        console.warn('master_json_doc yazım uyarısı:', cacheErr);
+      }
+    }
 
     // 3. version_doc (web cache invalidation)
     try {

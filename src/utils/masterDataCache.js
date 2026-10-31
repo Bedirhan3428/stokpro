@@ -32,10 +32,39 @@ const ARTIFACT_DOC_ID =
   process.env.REACT_APP_FIREBASE_ARTIFACTS_COLLECTION ||
   "1:330292329201:web:d19827937fb863ea490750";
 
-// BELLEK İÇİ ANLIK CACHE (MEMORY CACHE)
+// BELLEK İÇİ ANLIK CACHE (MEMORY CACHE — aktif kullanıcı UID ile izole edilir)
 let memoryStore = null;
+let memoryStoreUid = null;
 let listeners = new Set();
 let delayedSyncTimer = null;
+
+function ensureTenantMemoryIsolation(uid) {
+  const normalizedUid = uid || null;
+  if (memoryStoreUid !== normalizedUid) {
+    memoryStore = null;
+    memoryStoreUid = normalizedUid;
+    if (delayedSyncTimer) {
+      clearTimeout(delayedSyncTimer);
+      delayedSyncTimer = null;
+    }
+  }
+}
+
+export function clearMasterDataMemoryCache() {
+  memoryStore = null;
+  memoryStoreUid = null;
+  if (delayedSyncTimer) {
+    clearTimeout(delayedSyncTimer);
+    delayedSyncTimer = null;
+  }
+  notifyListeners();
+}
+
+if (typeof window !== "undefined" && auth && typeof auth.onAuthStateChanged === "function") {
+  auth.onAuthStateChanged((user) => {
+    ensureTenantMemoryIsolation(user?.uid || null);
+  });
+}
 
 function getCacheKey(uid) {
   return `stokpro_master_store_v2_${uid}`;
@@ -76,6 +105,8 @@ export function updateLocalStorageDirectly(updaterFn) {
   const uid = user?.uid;
   if (typeof window === "undefined") return null;
 
+  ensureTenantMemoryIsolation(uid);
+
   let current = memoryStore;
   if (!current && uid) {
     current = readLocalStorage(uid);
@@ -90,6 +121,7 @@ export function updateLocalStorageDirectly(updaterFn) {
     if (updated) {
       updated.meta = { ...updated.meta, lastSyncedAt: new Date().toISOString() };
       memoryStore = updated;
+      memoryStoreUid = uid || null;
       if (uid) {
         writeLocalStorage(uid, updated);
       }
@@ -112,6 +144,8 @@ export async function updateMasterJsonDocInFirebase(customStore = null) {
   const user = auth.currentUser;
   const uid = user?.uid;
   if (!uid) return;
+
+  ensureTenantMemoryIsolation(uid);
 
   try {
     const store = customStore || memoryStore || readLocalStorage(uid);
@@ -137,7 +171,9 @@ export async function updateMasterJsonDocInFirebase(customStore = null) {
       }
     };
 
-    await setDoc(masterJsonRef, payload, { merge: true });
+    if (JSON.stringify(payload).length < 850_000) {
+      await setDoc(masterJsonRef, payload, { merge: true });
+    }
     await setDoc(versionRef, { versionTag, updatedAt: new Date().toISOString() }, { merge: true });
   } catch (err) {
     console.warn("Master JSON Firestore güncelleme uyarısı:", err);
@@ -161,6 +197,8 @@ async function fetchFreshServerDataAndUpdateLocalStorage() {
   const user = auth.currentUser;
   const uid = user?.uid;
   if (!uid) return;
+
+  ensureTenantMemoryIsolation(uid);
 
   try {
     const [
@@ -243,7 +281,13 @@ async function fetchFreshServerDataAndUpdateLocalStorage() {
       }
     };
 
+    // Asenkron çekim sırasında kullanıcı değiştiyse (sign-out / hesap geçişi) önbelleği kirletme
+    if (auth.currentUser?.uid !== uid) {
+      return;
+    }
+
     memoryStore = newStore;
+    memoryStoreUid = uid;
     writeLocalStorage(uid, newStore);
 
     // Master JSON belgesini de sunucuda güncelle
@@ -263,8 +307,10 @@ export async function syncFullMasterStore(force = false) {
   const user = auth.currentUser;
   const uid = user?.uid;
   
+  ensureTenantMemoryIsolation(uid);
+
   if (!uid) {
-    return memoryStore || {
+    return {
       products: [], sales: [], customers: [], custPayments: [], incomes: [], expenses: [], ledger: [], profile: null, meta: {}
     };
   }
@@ -274,6 +320,7 @@ export async function syncFullMasterStore(force = false) {
     const local = readLocalStorage(uid);
     if (local) {
       memoryStore = local;
+      memoryStoreUid = uid;
       notifyListeners();
     }
   }
@@ -286,7 +333,9 @@ export async function syncFullMasterStore(force = false) {
 
   // 2. Zorlamalı senkronizasyon istenmişse sunucudan çek
   await fetchFreshServerDataAndUpdateLocalStorage();
-  return memoryStore;
+  return memoryStore || {
+    products: [], sales: [], customers: [], custPayments: [], incomes: [], expenses: [], ledger: [], profile: null, meta: {}
+  };
 }
 
 /**
@@ -301,9 +350,14 @@ export async function invalidateAndRefreshMasterCache() {
  * Anlık Bellekteki Master Veri Snapshot'ı (0ms Hızlı Açılış)
  */
 export function getMasterStoreSnapshot() {
-  if (!memoryStore) {
-    const uid = auth.currentUser?.uid;
-    if (uid) memoryStore = readLocalStorage(uid);
+  const uid = auth.currentUser?.uid || null;
+  ensureTenantMemoryIsolation(uid);
+  if (!memoryStore && uid) {
+    const local = readLocalStorage(uid);
+    if (local) {
+      memoryStore = local;
+      memoryStoreUid = uid;
+    }
   }
   return memoryStore || {
     products: [], sales: [], customers: [], custPayments: [], incomes: [], expenses: [], ledger: [], profile: null, meta: {}
