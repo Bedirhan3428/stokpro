@@ -1,12 +1,12 @@
 {
-    "version":  "1.0.2",
+    "version":  "1.0.3",
     "url":  "https://stokpro.shop/downloads/StokPro-POS-Full-Setup.exe",
-    "sha256":  "b9d41b2c19b86333c5eeab9b966fed79c355ffc6f616488fd0415a5110d88cd3",
-    "size":  7277635,
+    "sha256":  "64d814ee604396dced056c4ba2aa0589d36a3bcedd3d0791af2d17f29ae234eb",
+    "size":  7286662,
     "silentArgs":  [
                        "/S"
                    ],
     "mandatory":  false,
-    "releaseNotes":  "StokPro v1.0.2 - Resmi uygulama ikonlari ve derin baglanti iyilestirmeleri",
-    "publishedAt":  "2026-11-01T11:00:06Z"
+    "releaseNotes":  "StokPro v1.0.3 - Guncelleme dogrulama ve kararlilik surumu",
+    "publishedAt":  "2026-11-01T11:23:03Z"
 }
