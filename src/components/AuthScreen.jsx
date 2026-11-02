@@ -20,7 +20,13 @@ import {
   FiRefreshCw,
   FiUser,
 } from "react-icons/fi";
-import { sendPasswordResetEmail } from "firebase/auth";
+import {
+  sendPasswordResetEmail,
+  verifyPasswordResetCode,
+  confirmPasswordReset,
+  applyActionCode,
+  checkActionCode,
+} from "firebase/auth";
 import { doc, getDoc, updateDoc, setDoc, collection, getDocs } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import { useAuth } from "../contexts/AuthContext";
@@ -215,8 +221,17 @@ export default function AuthScreen() {
     return expiresParam && !Number.isNaN(n) ? n : null;
   }, [expiresParam]);
 
+  // Firebase e-posta bağlantıları (şifre sıfırlama, e-posta doğrulama, e-posta geri alma)
+  const oobCode = searchParams.get("oobCode") || "";
+  // Eski /reset-password?oobCode=... bağlantılarında mode yoktur
+  const actionMode = searchParams.get("mode") || (oobCode ? "resetPassword" : "");
+  const hasAction = Boolean(actionMode && oobCode && !deviceMode);
+
   const [tab, setTab] = useState(MODE_FROM_PARAM[searchParams.get("mod")] || "giris");
-  const [view, setView] = useState("form"); // form | anket | hesap | authorized | expired | invalid | license_error
+  const [view, setView] = useState(hasAction ? "action" : "form"); // form | action | anket | hesap | authorized | expired | invalid | license_error
+  const [action, setAction] = useState({ step: "loading", email: "" }); // loading | reset | reset_done | verified | recovered | failed
+  const [newPassword, setNewPassword] = useState("");
+  const [newPassword2, setNewPassword2] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
@@ -260,6 +275,82 @@ export default function AuthScreen() {
   useEffect(() => {
     if (!deviceMode && !authLoading && user && view === "form") setView("hesap");
   }, [deviceMode, authLoading, user, view]);
+
+  // E-postadaki bağlantının kodunu doğrula
+  useEffect(() => {
+    if (!hasAction) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        if (actionMode === "resetPassword") {
+          const mail = await verifyPasswordResetCode(auth, oobCode);
+          if (!cancelled) setAction({ step: "reset", email: mail });
+        } else if (actionMode === "verifyEmail") {
+          await applyActionCode(auth, oobCode);
+          if (auth.currentUser) await auth.currentUser.reload().catch(() => {});
+          if (!cancelled) setAction({ step: "verified", email: auth.currentUser?.email || "" });
+        } else if (actionMode === "recoverEmail") {
+          const info = await checkActionCode(auth, oobCode);
+          await applyActionCode(auth, oobCode);
+          if (!cancelled) setAction({ step: "recovered", email: info?.data?.email || "" });
+        } else {
+          if (!cancelled) setAction({ step: "failed", email: "", message: "Bu bağlantı tanınmadı." });
+        }
+      } catch (err) {
+        if (cancelled) return;
+        const expired = err?.code === "auth/expired-action-code";
+        const used = err?.code === "auth/invalid-action-code";
+        setAction({
+          step: "failed",
+          email: "",
+          message: expired
+            ? "Bu bağlantının süresi dolmuş."
+            : used
+            ? "Bu bağlantı geçersiz ya da daha önce kullanılmış."
+            : getFirebaseErrorMessage(err, "Bağlantı doğrulanamadı."),
+        });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [hasAction, actionMode, oobCode]);
+
+  function leaveAction(nextTab = "giris", prefillEmail = "") {
+    try {
+      window.history.replaceState(null, "", "/auth");
+    } catch {}
+    if (prefillEmail) setEmail(prefillEmail);
+    setPassword("");
+    setNewPassword("");
+    setNewPassword2("");
+    setError("");
+    setInfo("");
+    setTab(nextTab);
+    setView("form");
+  }
+
+  async function handleConfirmReset(e) {
+    e.preventDefault();
+    if (newPassword.length < 6) return setError("Şifre en az 6 karakter olmalı.");
+    if (newPassword !== newPassword2) return setError("Şifreler aynı değil.");
+    setBusy(true);
+    setError("");
+    try {
+      await confirmPasswordReset(auth, oobCode, newPassword);
+      setAction((a) => ({ ...a, step: "reset_done" }));
+    } catch (err) {
+      setError(
+        err?.code === "auth/weak-password"
+          ? "Şifre çok zayıf. Daha uzun bir şifre seçin."
+          : err?.code === "auth/expired-action-code" || err?.code === "auth/invalid-action-code"
+          ? "Bağlantının süresi dolmuş. Yeni bir sıfırlama bağlantısı isteyin."
+          : getFirebaseErrorMessage(err, "Şifre güncellenemedi.")
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
 
   function switchTab(next) {
     setTab(next);
@@ -491,7 +582,7 @@ export default function AuthScreen() {
     setError("");
     setInfo("");
     try {
-      await sendPasswordResetEmail(auth, email.trim());
+      await sendPasswordResetEmail(auth, email.trim(), { url: "https://stokpro.com.tr/auth" });
       setInfo("Şifre sıfırlama bağlantısını gönderdik. Gelen kutunuzu (ve gereksiz klasörünü) kontrol edin.");
     } catch (err) {
       setError(getFirebaseErrorMessage(err, "Bağlantı gönderilemedi."));
@@ -546,7 +637,114 @@ export default function AuthScreen() {
   /* ------------------------------ içerik ------------------------------ */
   let content;
 
-  if (view === "authorized") {
+  if (view === "action") {
+    const IconBox = ({ tone, children }) => (
+      <div
+        className={`mx-auto flex h-16 w-16 items-center justify-center rounded-2xl ${
+          tone === "ok"
+            ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+            : tone === "bad"
+            ? "bg-rose-500/15 text-rose-600 dark:text-rose-400"
+            : "bg-sp-caramel/15 text-sp-caramel"
+        }`}
+      >
+        {children}
+      </div>
+    );
+    if (action.step === "loading") {
+      content = (
+        <div className="space-y-4 text-center">
+          <IconBox>
+            <FiRefreshCw size={28} aria-hidden="true" className="animate-spin" />
+          </IconBox>
+          <p className="text-[15px] text-sp-graphite dark:text-zinc-400">Bağlantı kontrol ediliyor...</p>
+        </div>
+      );
+    } else if (action.step === "reset") {
+      content = (
+        <form onSubmit={handleConfirmReset} className="space-y-5" noValidate>
+          <div>
+            <h1 className="text-2xl font-extrabold tracking-tight text-sp-obsidian dark:text-white sm:text-[28px]">Yeni şifrenizi belirleyin</h1>
+            <p className="mt-2 text-[15px] text-sp-graphite dark:text-zinc-400">
+              <strong className="font-semibold text-sp-obsidian dark:text-white">{action.email}</strong> hesabı için yeni bir şifre seçin.
+            </p>
+          </div>
+          <Field
+            id="new-password"
+            label="Yeni şifre"
+            icon={FiLock}
+            type={showPassword ? "text" : "password"}
+            value={newPassword}
+            onChange={setNewPassword}
+            placeholder="En az 6 karakter"
+            autoComplete="new-password"
+            disabled={busy}
+            right={<PasswordToggle shown={showPassword} onToggle={() => setShowPassword((s) => !s)} />}
+          />
+          <Field
+            id="new-password-2"
+            label="Yeni şifre (tekrar)"
+            icon={FiLock}
+            type={showPassword ? "text" : "password"}
+            value={newPassword2}
+            onChange={setNewPassword2}
+            placeholder="Aynı şifreyi yazın"
+            autoComplete="new-password"
+            disabled={busy}
+          />
+          {error && <Notice>{error}</Notice>}
+          <PrimaryButton loading={busy} loadingText="Kaydediliyor...">Şifreyi güncelle</PrimaryButton>
+        </form>
+      );
+    } else if (action.step === "failed") {
+      content = (
+        <div className="space-y-6 text-center">
+          <IconBox tone="bad">
+            <FiAlertTriangle size={30} aria-hidden="true" />
+          </IconBox>
+          <div>
+            <h1 className="text-2xl font-extrabold tracking-tight text-sp-obsidian dark:text-white">Bağlantı kullanılamıyor</h1>
+            <p className="mt-2 text-[15px] leading-relaxed text-sp-graphite dark:text-zinc-400">
+              {action.message} E-postadaki bağlantılar tek kullanımlıktır ve kısa süre geçerlidir.
+            </p>
+          </div>
+          {actionMode === "resetPassword" ? (
+            <PrimaryButton type="button" onClick={() => leaveAction("sifre")}>Yeni sıfırlama bağlantısı iste</PrimaryButton>
+          ) : (
+            <PrimaryButton type="button" onClick={() => leaveAction("giris")}>Giriş ekranına git</PrimaryButton>
+          )}
+        </div>
+      );
+    } else {
+      const done = {
+        reset_done: ["Şifreniz güncellendi", "Yeni şifrenizle giriş yapabilirsiniz. Masaüstü uygulamasında da bu şifreyi kullanın."],
+        verified: ["E-postanız doğrulandı", "Teşekkürler. Hesabınız kullanıma hazır."],
+        recovered: [
+          "E-posta adresiniz geri alındı",
+          `Hesabınızın e-postası ${action.email ? action.email + " olarak " : ""}geri yüklendi. Güvenliğiniz için şifrenizi de değiştirmenizi öneririz.`,
+        ],
+      }[action.step];
+      content = (
+        <div className="space-y-6 text-center">
+          <IconBox tone="ok">
+            <FiCheckCircle size={32} aria-hidden="true" />
+          </IconBox>
+          <div>
+            <h1 className="text-2xl font-extrabold tracking-tight text-sp-obsidian dark:text-white">{done[0]}</h1>
+            <p className="mt-2 text-[15px] leading-relaxed text-sp-graphite dark:text-zinc-400">{done[1]}</p>
+          </div>
+          <PrimaryButton type="button" onClick={() => leaveAction("giris", action.email)}>
+            {user && action.step === "verified" ? "Devam et" : "Giriş yap"}
+          </PrimaryButton>
+          {action.step === "recovered" && (
+            <button type="button" onClick={() => leaveAction("sifre", action.email)} className="w-full cursor-pointer border-0 bg-transparent text-sm font-semibold text-sp-caramel hover:underline">
+              Şifremi değiştir
+            </button>
+          )}
+        </div>
+      );
+    }
+  } else if (view === "authorized") {
     content = (
       <div className="space-y-6 text-center">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
