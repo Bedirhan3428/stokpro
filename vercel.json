@@ -3,12 +3,12 @@
   "redirects": [
     {
       "source": "/((?!api/|downloads/).*)",
-      "destination": "https://stokpro.shop/$1",
+      "destination": "https://stokpro.com.tr/$1",
       "permanent": true,
       "has": [
         {
           "type": "host",
-          "value": "stokpro.vercel.app"
+          "value": "(stokpro\\.vercel\\.app|stokpro\\.shop|www\\.stokpro\\.shop)"
         }
       ]
     }

@@ -52,7 +52,7 @@ export default function VerifyEmail() {
     setLoading(true);
     try {
       const actionCodeSettings = {
-        url: "https://www.stokpro.shop/verify-email",
+        url: "https://stokpro.com.tr/verify-email",
         handleCodeInApp: true,
       };
       await sendEmailVerification(user, actionCodeSettings);
