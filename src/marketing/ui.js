@@ -122,7 +122,7 @@ export function MarketingFooter() {
           <strong className="text-sm font-bold text-sp-obsidian dark:text-sp-canvas">StokPro</strong>
           <ul className="mt-3 space-y-2 text-sm">
             <li><Link href="/indir" className="text-sp-graphite no-underline hover:text-sp-caramel dark:text-zinc-400">İndir</Link></li>
-            <li><Link href="/login" className="text-sp-graphite no-underline hover:text-sp-caramel dark:text-zinc-400">Giriş Yap</Link></li>
+            <li><Link href="/auth" className="text-sp-graphite no-underline hover:text-sp-caramel dark:text-zinc-400">Giriş Yap / Kayıt Ol</Link></li>
             <li><Link href="/privacy-policy" className="text-sp-graphite no-underline hover:text-sp-caramel dark:text-zinc-400">Gizlilik Politikası</Link></li>
             <li><Link href="/terms-of-service" className="text-sp-graphite no-underline hover:text-sp-caramel dark:text-zinc-400">Hizmet Şartları</Link></li>
           </ul>

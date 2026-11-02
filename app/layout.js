@@ -3,8 +3,6 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 
 import { AuthProvider } from "../src/contexts/AuthContext";
 import Navbar from "../src/components/Navbar";
-import TermsModal from "../src/components/TermsModal";
-import DesktopMigrationModal from "../src/components/DesktopMigrationModal";
 import TelemetryTracker from "../src/components/TelemetryTracker";
 
 const inter = Inter({
@@ -62,8 +60,6 @@ export default function RootLayout({ children }) {
       <body className="font-sans antialiased">
         <AuthProvider>
           <TelemetryTracker />
-          <TermsModal />
-          <DesktopMigrationModal />
           <Navbar />
           <main className="app-container">{children}</main>
         </AuthProvider>

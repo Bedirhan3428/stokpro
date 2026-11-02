@@ -28,7 +28,7 @@ export default function VerifyEmail() {
           await auth.currentUser.reload();
           if (auth.currentUser.emailVerified) {
             setStatus({ type: "success", msg: "E-posta doğrulandı, yönlendiriliyorsunuz..." });
-            setTimeout(() => router.replace("/dashboard"), 800);
+            setTimeout(() => router.replace("/auth"), 800);
             return;
           }
         }
@@ -70,7 +70,7 @@ export default function VerifyEmail() {
     try {
       await user.reload();
       if (user.emailVerified) {
-        router.replace("/dashboard");
+        router.replace("/auth");
       } else {
         setStatus({ type: "info", msg: "Henüz doğrulanmadı. Lütfen e-postanızı kontrol edin." });
       }
@@ -85,10 +85,10 @@ export default function VerifyEmail() {
     setLoading(true);
     try {
       await signOut(auth);
-      router.replace("/register");
+      router.replace("/auth?mod=kayit");
     } catch (err) {
       console.error("Çıkış hatası:", err);
-      router.replace("/register");
+      router.replace("/auth?mod=kayit");
     } finally {
       setLoading(false);
     }

@@ -52,7 +52,7 @@ export default function ResetPassword() {
     try {
       await confirmPasswordReset(auth, oobCode, password);
       setStatus({ type: "success", msg: "Parola güncellendi! Yönlendiriliyorsunuz..." });
-      setTimeout(() => router.replace("/login"), 1500);
+      setTimeout(() => router.replace("/auth"), 1500);
     } catch (err) {
       let message = "Parola güncellenemedi.";
       if (err.code === "auth/weak-password") message = "Parola çok zayıf.";
@@ -84,7 +84,7 @@ export default function ResetPassword() {
             </div>
             <button
               type="button"
-              onClick={() => router.push("/forgot-password")}
+              onClick={() => router.push("/auth?mod=sifre")}
               className="w-full py-3 rounded-xl bg-[#18181B] hover:bg-[#27272A] dark:bg-[#A66B49] dark:hover:bg-[#8D583A] text-white font-bold text-sm transition cursor-pointer"
             >
               Tekrar Dene

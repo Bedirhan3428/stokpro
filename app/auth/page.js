@@ -1,28 +1,17 @@
 import React, { Suspense } from "react";
-import DeviceAuth from "../../src/components/DeviceAuth";
+import AuthScreen from "../../src/components/AuthScreen";
 
 export const metadata = {
-  title: "Masaüstü Kasa Girişi | StokPro",
-  description: "StokPro Masaüstü Kasa Terminali için e-posta veya Google ile güvenli yetkilendirme.",
-  robots: {
-    index: false,
-    follow: false,
-    nocache: true,
-  },
+  title: "Giriş Yap veya Kayıt Ol",
+  description: "StokPro hesabınıza giriş yapın veya ücretsiz hesap oluşturun.",
+  alternates: { canonical: "/auth" },
+  robots: { index: false, follow: true },
 };
-
-function AuthLoadingFallback() {
-  return (
-    <div className="min-h-screen w-full bg-[#0D0D11] text-zinc-400 flex items-center justify-center font-sans text-sm">
-      Oturum doğrulanıyor...
-    </div>
-  );
-}
 
 export default function AuthPage() {
   return (
-    <Suspense fallback={<AuthLoadingFallback />}>
-      <DeviceAuth />
+    <Suspense fallback={<div className="min-h-screen bg-sp-canvas dark:bg-sp-deep" />}>
+      <AuthScreen />
     </Suspense>
   );
 }

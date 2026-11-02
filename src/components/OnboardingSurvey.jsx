@@ -146,11 +146,11 @@ export default function OnboardingSurvey({ onCompleted = null }) {
       if (onCompleted) {
         onCompleted(payload);
       } else {
-        router.push("/dashboard");
+        router.push("/auth");
       }
     } catch (err) {
       console.warn("Onboarding kaydı hatası:", err);
-      router.push("/dashboard");
+      router.push("/auth");
     } finally {
       setSaving(false);
     }
