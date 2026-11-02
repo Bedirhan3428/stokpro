@@ -5,7 +5,18 @@ import { usePathname } from "next/navigation";
 import { FiDownload, FiMonitor, FiX } from "react-icons/fi";
 
 const STORAGE_KEY = "stokpro_desktop_migration_notice_closed";
-const EXCLUDED_PATHS = ["/auth", "/privacy-policy", "/terms-of-service"];
+const EXCLUDED_PATHS = [
+  "/",
+  "/auth",
+  "/privacy-policy",
+  "/terms-of-service",
+  "/indir",
+  "/stok-takip-programi",
+  "/on-muhasebe-programi",
+  "/barkodlu-satis-programi",
+  "/cari-hesap-takip-programi",
+  "/market-programi",
+];
 
 export default function DesktopMigrationModal() {
   const pathname = usePathname();

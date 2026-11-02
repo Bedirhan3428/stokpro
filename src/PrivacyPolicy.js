@@ -11,12 +11,12 @@ export default function PrivacyPolicy() {
 
 Son Güncelleme Tarihi: 31 Temmuz 2026 (31.07.2026)
 Yürürlük Tarihi: 31 Temmuz 2026 (31.07.2026)
-Alan Adı / Platform: stokpro.shop
+Alan Adı / Platform: stokpro.com.tr
 Veri Sorumlusu: StokPro ("Şirket", "Platform", "Biz")
 İletişim: destek@stokpro.shop / iletisim@stokpro.shop
 
 1. GENEL BİLGİLENDİRME VE AMAÇ
-İşbu Gizlilik Politikası ve Kişisel Verilerin Korunması Aydınlatma Metni; StokPro platformunu (stokpro.shop ve bağlı web/mobil uygulamaları) ziyaret eden, üye olan, yazılım hizmetlerini kullanan gerçek ve tüzel kişilerin ("Kullanıcı", "Veri Sahibi") kişisel verilerinin ve ticari verilerinin 6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") ve ilgili sair mevzuata uygun olarak işlenmesini, saklanmasını ve korunmasını sağlamak amacıyla hazırlanmıştır.
+İşbu Gizlilik Politikası ve Kişisel Verilerin Korunması Aydınlatma Metni; StokPro platformunu (stokpro.com.tr ve bağlı web/mobil uygulamaları) ziyaret eden, üye olan, yazılım hizmetlerini kullanan gerçek ve tüzel kişilerin ("Kullanıcı", "Veri Sahibi") kişisel verilerinin ve ticari verilerinin 6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") ve ilgili sair mevzuata uygun olarak işlenmesini, saklanmasını ve korunmasını sağlamak amacıyla hazırlanmıştır.
 
 StokPro, verilerinizin gizliliğini ve güvenliğini en üst düzeyde tutmayı taahhüt eder. Platformu kullanarak, işbu metinde belirtilen veri toplama, işleme, saklama ve aktarım süreçlerini kabul etmiş sayılırsınız.
 
@@ -81,7 +81,7 @@ KVKK’nın 11. maddesi uyarınca, veri sahibi olarak aşağıdaki haklara sahip
 10. İLETİŞİM VE BAŞVURU KANALLARI
 KVKK kapsamındaki haklarınızı kullanmak, gizlilik politikamızla ilgili soru sormak veya veri silme talebinde bulunmak için bizimle iletişime geçebilirsiniz:
 E-posta: destek@stokpro.shop / iletisim@stokpro.shop
-Web Sitesi: https://www.stokpro.shop
+Web Sitesi: https://stokpro.com.tr
 
 Talepleriniz, başvurunun bize ulaşmasından itibaren en geç 30 (otuz) gün içerisinde ücretsiz olarak sonuçlandırılacaktır.`;
 

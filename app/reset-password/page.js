@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import ResetPassword from "../../src/components/ResetPassword";
 
 export const metadata = {
+  robots: { index: false, follow: false },
   title: "Şifre Sıfırla",
   description: "StokPro hesabınız için yeni şifrenizi belirleyin.",
 };

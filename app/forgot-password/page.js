@@ -1,6 +1,7 @@
 import ForgotPassword from "../../src/components/ForgotPassword";
 
 export const metadata = {
+  robots: { index: false, follow: false },
   title: "Şifremi Unuttum",
   description: "StokPro hesabınızın şifresini güvenli bir şekilde sıfırlayın.",
 };

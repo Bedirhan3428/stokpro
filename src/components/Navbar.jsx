@@ -20,6 +20,7 @@ import {
   FiDownload,
 } from "react-icons/fi";
 import { getMasterStoreSnapshot, subscribeToMasterStore } from "../utils/masterDataCache";
+import { LANDING_PAGES, NAV_LINKS } from "../marketing/content";
 
 const PUBLIC_PATHS = [
   "/",
@@ -30,6 +31,8 @@ const PUBLIC_PATHS = [
   "/verify-email",
   "/privacy-policy",
   "/terms-of-service",
+  "/indir",
+  ...Object.keys(LANDING_PAGES).map((slug) => `/${slug}`),
 ];
 
 export default function Navbar() {
@@ -146,15 +149,19 @@ export default function Navbar() {
             />
           </Link>
 
+          <nav aria-label="Ana menü" className="hidden lg:flex items-center gap-5">
+            {NAV_LINKS.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`text-sm font-semibold no-underline transition hover:text-[#A66B49] ${pathname === link.href ? "text-[#A66B49]" : "text-[#18181B] dark:text-zinc-200"}`}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+
           <div className="flex items-center gap-2 sm:gap-2.5">
-            <a
-              href="/downloads/StokPro-Setup.exe"
-              download="StokPro-Setup.exe"
-              className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-[#71717A] hover:text-[#18181B] dark:text-zinc-400 dark:hover:text-white hover:bg-[#F7F7F5] dark:hover:bg-white/5 transition no-underline"
-            >
-              <FiDownload size={14} className="text-[#A66B49]" />
-              <span>Masaüstü İndir</span>
-            </a>
 
             <button
               type="button"
@@ -168,21 +175,19 @@ export default function Navbar() {
             {pathname !== "/login" && (
               <Link
                 href="/login"
-                className="px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold text-[#18181B] dark:text-zinc-200 hover:bg-[#F7F7F5] dark:hover:bg-white/5 transition no-underline"
+                className="hidden sm:block whitespace-nowrap px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold text-[#18181B] dark:text-zinc-200 hover:bg-[#F7F7F5] dark:hover:bg-white/5 transition no-underline"
               >
                 Giriş Yap
               </Link>
             )}
 
-            {pathname !== "/register" && (
-              <Link
-                href="/register"
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#18181B] hover:bg-[#27272A] dark:bg-[#A66B49] dark:hover:bg-[#8D583A] text-white text-xs sm:text-sm font-bold transition no-underline shadow-sm"
-              >
-                <span>Kayıt Ol</span>
-                <FiArrowRight size={14} className="text-[#A66B49] dark:text-white" />
-              </Link>
-            )}
+            <Link
+              href="/indir"
+              className="inline-flex items-center gap-1.5 whitespace-nowrap px-3.5 py-2 rounded-lg bg-[#18181B] hover:bg-[#27272A] dark:bg-[#A66B49] dark:hover:bg-[#8D583A] text-white text-xs sm:text-sm font-bold transition no-underline shadow-sm"
+            >
+              <FiDownload size={14} className="text-[#E0A27C] dark:text-white" />
+              <span>Ücretsiz İndir</span>
+            </Link>
           </div>
         </div>
       </header>

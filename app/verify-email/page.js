@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import VerifyEmail from "../../src/components/VerifyEmail";
 
 export const metadata = {
+  robots: { index: false, follow: false },
   title: "E-posta Doğrulama",
   description: "StokPro hesabınızın e-posta doğrulamasını tamamlayın.",
 };

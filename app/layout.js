@@ -20,39 +20,33 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata = {
-  metadataBase: new URL("https://www.stokpro.shop"),
+  metadataBase: new URL("https://stokpro.com.tr"),
   title: {
-    default: "StokPro | Barkodlu Stok Takip Sistemi ve Ön Muhasebe Programı",
+    default: "StokPro | Stok Takip ve Ön Muhasebe Programı",
     template: "%s | StokPro",
   },
   description:
-    "StokPro ile barkodlu stok takibi, satış yönetimi ve ön muhasebe işlemlerinizi tek yerden kolayca yönetin. Küçük işletmeler için dijital çözüm.",
-  keywords: [
-    "stok takip",
-    "muhasebe sistemi",
-    "stok takip programı",
-    "barkodlu satış",
-    "envanter yönetimi",
-    "StokPro",
-    "ön muhasebe",
-  ],
+    "StokPro; stok takip, barkodlu satış, cari hesap, fatura ve kasa işlerinizi tek programda toplayan Windows programıdır.",
+  applicationName: "StokPro",
   icons: {
     icon: "/favicon.ico",
     apple: "/logo192.png",
   },
   manifest: "/manifest.json",
   openGraph: {
-    title: "StokPro | Barkodlu Stok Takip Sistemi ve Ön Muhasebe Programı",
-    description:
-      "Barkodlu stok takibi, satış yönetimi ve ön muhasebe işlemlerinizi tek yerden kolayca yönetin.",
-    url: "https://www.stokpro.shop",
     siteName: "StokPro",
     locale: "tr_TR",
     type: "website",
+    images: [{ url: "/og-stokpro.png", width: 1200, height: 630, alt: "StokPro: Stok takip ve ön muhasebe programı" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/og-stokpro.png"],
   },
   robots: {
     index: true,
     follow: true,
+    googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 },
   },
 };
 
@@ -60,8 +54,6 @@ export const viewport = {
   themeColor: "#18181B",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
 };
 
 export default function RootLayout({ children }) {

@@ -11,11 +11,11 @@ export default function TermsOfService() {
 
 Son Güncelleme Tarihi: 31 Temmuz 2026 (31.07.2026)
 Yürürlük Tarihi: 31 Temmuz 2026 (31.07.2026)
-Alan Adı / Platform: stokpro.shop
+Alan Adı / Platform: stokpro.com.tr
 İletişim: iletisim@stokpro.shop
 
 1. GENEL HÜKÜMLER VE TARAFLAR
-İşbu Hizmet Şartları ve Kullanım Koşulları Sözleşmesi ("Sözleşme"), StokPro ("Platform", "Şirket", "Biz") ile stokpro.shop alan adı ve bağlı alt alan adları veya mobil/web uygulamaları üzerinden sunulan hizmetlere erişen, üye olan veya kullanan gerçek ya da tüzel kişiler ("Kullanıcı", "Müşteri", "Siz") arasında akdedilmiştir.
+İşbu Hizmet Şartları ve Kullanım Koşulları Sözleşmesi ("Sözleşme"), StokPro ("Platform", "Şirket", "Biz") ile stokpro.com.tr alan adı ve bağlı alt alan adları veya mobil/web uygulamaları üzerinden sunulan hizmetlere erişen, üye olan veya kullanan gerçek ya da tüzel kişiler ("Kullanıcı", "Müşteri", "Siz") arasında akdedilmiştir.
 
 Platforma erişim sağlamanız, üyelik oluşturmanız veya hizmetleri kullanmanız, işbu Sözleşme’de yer alan tüm şartları okuduğunuzu, anladığınızı ve bu şartlarla gayrikabili rücu bağlı olduğunuzu kabul, beyan ve taahhüt ettiğiniz anlamına gelir. Sözleşme şartlarını kabul etmiyorsanız, Platformu ve sunulan hizmetleri kullanmamanız gerekmektedir.
 
@@ -74,13 +74,13 @@ YASAL UYARI: Mevzuatın izin verdiği azami ölçüde;
 - Hesap Kapatma Sonrası Veriler: Hesabı kapatılan veya aboneliği biten Kullanıcının verileri, yasal saklama süreleri hariç olmak üzere sistemden belirli bir süre sonra silinebilir veya anonimleştirilebilir.
 
 10. FİKRİ MÜLKIYET HAKLARI
-stokpro.shop alan adı, StokPro markası, logosu, yazılım kodları, arayüz tasarımları, veritabanı mimarisi, grafikleri, görselleri ve dokümantasyonları üzerindeki tüm telif, marka ve fikri mülkiyet hakları münhasıran StokPro’ya aittir. İşbu Sözleşme Kullanıcıya bu unsurlar üzerinde lisans hakkı dışında hiçbir mülkiyet hakkı devretmez.
+stokpro.com.tr alan adı, StokPro markası, logosu, yazılım kodları, arayüz tasarımları, veritabanı mimarisi, grafikleri, görselleri ve dokümantasyonları üzerindeki tüm telif, marka ve fikri mülkiyet hakları münhasıran StokPro’ya aittir. İşbu Sözleşme Kullanıcıya bu unsurlar üzerinde lisans hakkı dışında hiçbir mülkiyet hakkı devretmez.
 
 11. MÜCBİR SEBEPLER (FORCE MAJEURE)
 Deprem, yangın, doğal afetler, savaş, terör eylemleri, siber saldırılar, genel internet/altyapı kesintileri, hükümet kısıtlamaları veya yasal düzenleme değişiklikleri gibi tarafların kontrolü dışında gelişen mücbir sebep hallerinde, StokPro yükümlülüklerini yerine getirememekten veya geciktirmekten dolayı sorumlu tutulamaz.
 
 12. DEĞİŞİKLİKLER VE BİLDİRİMLER
-StokPro, işbu Sözleşme şartlarını, gizlilik politikasını veya hizmet koşullarını dilediği zaman modernize etme veya değiştirme hakkını saklı tutar. Güncellenmiş şartlar stokpro.shop üzerinde yayınlandığı andan itibaren yürürlüğe girer. Değişiklik sonrasında platformu kullanmaya devam etmeniz, yeni şartları kabul ettiğiniz anlamına gelir.
+StokPro, işbu Sözleşme şartlarını, gizlilik politikasını veya hizmet koşullarını dilediği zaman modernize etme veya değiştirme hakkını saklı tutar. Güncellenmiş şartlar stokpro.com.tr üzerinde yayınlandığı andan itibaren yürürlüğe girer. Değişiklik sonrasında platformu kullanmaya devam etmeniz, yeni şartları kabul ettiğiniz anlamına gelir.
 
 13. UYGULANACAK HUKUK VE YETKİLİ MAHKEME
 İşbu Sözleşme’nin uygulanmasında, yorumlanmasında ve Sözleşme’den doğabilecek tüm uyuşmazlıkların çözümünde Türkiye Cumhuriyeti Kanunları uygulanacaktır. Uyuşmazlıkların çözümünde İstanbul (Çağlayan) Mahkemeleri ve İcra Daireleri yetkilidir.
@@ -88,7 +88,7 @@ StokPro, işbu Sözleşme şartlarını, gizlilik politikasını veya hizmet ko�
 14. İLETİŞİM BİLGİLERİ
 Hizmet şartları, yasal talepleriniz veya kurumsal sorularınız için bizimle aşağıdaki kanallardan iletişime geçebilirsiniz:
 E-posta: iletisim@stokpro.shop
-Web Sitesi: https://www.stokpro.shop
+Web Sitesi: https://stokpro.com.tr
 
 StokPro platformunu kullanarak yukarıdaki şartları kabul etmiş sayılırsınız.`;
 

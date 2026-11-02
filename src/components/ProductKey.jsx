@@ -117,7 +117,7 @@ export default function ProductKeyPage() {
       <header className="hero">
         <p className="pill">StokPro Ücretsiz</p>
         <h1>Süresiz Erişim</h1>
-        <p className="subtitle">StokPro artık tamamen ücretsiz! Hemen lisansını aktif et ve kullanmaya başla.</p>
+        <p className="subtitle">StokPro 2028'e kadar ücretsiz! Hemen lisansını aktif et ve kullanmaya başla.</p>
       </header>
 
       <section className="cards" style={{ display: "flex", justifyContent: "center" }}>
@@ -125,7 +125,7 @@ export default function ProductKeyPage() {
         <article className="card highlight-border" style={{ maxWidth: "450px", width: "100%" }}>
           <div className="card-head">
             <h2>Tam Sürüm</h2>
-            <div className="tag tag-blue">Ömür Boyu Ücretsiz</div>
+            <div className="tag tag-blue">2028'e Kadar Ücretsiz</div>
           </div>
           <p className="desc">
             Kredi kartı gerekmez, süre sınırı yok. Tüm muhasebe ve stok özelliklerine sınırsız erişim sağlayın.

@@ -296,7 +296,7 @@ export default function InvoiceModal({ invoiceData: propInvoiceData, invoice: pr
           {/* HESAP TOPLAMLARI & KELİMELERİ ASLA BİRLEŞMEYEN NET DİPNOT METNİ */}
           <div className="flex flex-col-reverse sm:flex-row print:flex-row justify-between items-start pt-2 gap-4 sm:gap-2">
             <div style={{ fontSize: '0.8rem', color: '#555555', maxWidth: '340px', lineHeight: 1.6, wordSpacing: '2px' }}>
-              {sellerInfo.receiptFooterNote || "Bu belge StokPro® Otomasyonu (stokpro.shop) üzerinden dijital olarak oluşturulmuştur."}
+              {sellerInfo.receiptFooterNote || "Bu belge StokPro® Otomasyonu (stokpro.com.tr) üzerinden dijital olarak oluşturulmuştur."}
             </div>
 
             <div className="w-full sm:w-[240px] print:w-[240px] flex flex-col gap-1.5 text-sm">
