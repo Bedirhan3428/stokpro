@@ -189,25 +189,27 @@ service cloud.firestore {
     // ==========================================
     // Herkes yalnızca bilinen bir sayacı tam olarak 1 artırabilir; okuma sadece Yönetici.
     match /funnel_daily/{day} {
-      function counterOk(field) {
-        return !(field in request.resource.data)
-          || (field in resource.data && request.resource.data[field] == resource.data[field] + 1)
-          || (!(field in resource.data) && request.resource.data[field] == 1);
-      }
-      function onlyOneCounterChanged() {
-        return request.resource.data.diff(resource.data).affectedKeys().size() == 1;
-      }
       function keysOk() {
         return request.resource.data.keys().hasOnly(["day", "indirme_tik", "ilk_acilis", "gunluk_acilis", "giris"])
           && request.resource.data.day == day
           && day.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
       }
+      // Oluşturma: "day" + tam olarak bir sayaç, değeri 1
+      function createOk(f) {
+        return !(f in request.resource.data) || request.resource.data[f] == 1;
+      }
+      // Güncelleme: sayaç ya aynı kalır ya 1 artar ya da ilk kez 1 olur; aynı anda tek alan değişir
+      function updateOk(f) {
+        return !(f in request.resource.data)
+          || (f in resource.data && (request.resource.data[f] == resource.data[f] || request.resource.data[f] == resource.data[f] + 1))
+          || (!(f in resource.data) && request.resource.data[f] == 1);
+      }
       allow read: if isAuthorizedUid();
-      allow create: if keysOk()
-        && request.resource.data.keys().size() == 2
-        && counterOk("indirme_tik") && counterOk("ilk_acilis") && counterOk("gunluk_acilis") && counterOk("giris");
-      allow update: if keysOk() && onlyOneCounterChanged()
-        && counterOk("indirme_tik") && counterOk("ilk_acilis") && counterOk("gunluk_acilis") && counterOk("giris");
+      allow create: if keysOk() && request.resource.data.keys().size() == 2
+        && createOk("indirme_tik") && createOk("ilk_acilis") && createOk("gunluk_acilis") && createOk("giris");
+      allow update: if keysOk()
+        && request.resource.data.diff(resource.data).affectedKeys().size() == 1
+        && updateOk("indirme_tik") && updateOk("ilk_acilis") && updateOk("gunluk_acilis") && updateOk("giris");
       allow delete: if isAuthorizedUid();
     }
 
