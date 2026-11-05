@@ -1,12 +1,12 @@
 {
-    "version":  "1.0.4",
+    "version":  "1.0.5",
     "url":  "https://stokpro.com.tr/downloads/StokPro-POS-Full-Setup.exe",
-    "sha256":  "77a71ecb3352be7896f15dadd69b21301da5f5cde56a918d0978aa214d3d7ff8",
-    "size":  7273921,
+    "sha256":  "3323be17468268b615a0950de7851943bc1055d49436c7b0b9e921a1c78d9833",
+    "size":  7273159,
     "silentArgs":  [
                        "/S"
                    ],
     "mandatory":  false,
-    "releaseNotes":  "StokPro v1.0.4 - Performans ve kararlilik guncellemesi",
-    "publishedAt":  "2026-11-02T06:45:26Z"
+    "releaseNotes":  "Kullanim istatistikleri (kisisel veri yok) ve kararlilik",
+    "publishedAt":  "2026-11-05T16:32:29Z"
 }
