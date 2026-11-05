@@ -289,7 +289,11 @@ export async function POST(req) {
           remoteDisabled,
           remoteDisabledReason: prof.remoteDisabledReason || "",
           blockOnExpiry: Boolean(prof.blockOnExpiry ?? false),
-          adminGrantedUnlimited: Boolean(prof.adminGrantedUnlimited ?? false)
+          adminGrantedUnlimited: Boolean(prof.adminGrantedUnlimited ?? false),
+          // Masaüstü uygulamasının lisans kontrolünden gelen son görülme
+          desktopFirstSeenAt: parseToIso(prof.firstSeenAt),
+          desktopLastSeenAt: parseToIso(prof.lastSeenAt),
+          desktopVersion: prof.lastAppVersion || null
         };
       })
     );

@@ -41,7 +41,7 @@ export default function DownloadPage() {
         <div className="mt-7"><DownloadButton label="Çevrimiçi Yükleyiciyi İndir" /></div>
         <p className="mt-4 text-sm text-sp-graphite dark:text-zinc-400">
           Çevrimiçi yükleyici çalışmazsa{" "}
-          <a href={FULL_SETUP_URL} download className="font-semibold text-sp-caramel underline">tam kurulum dosyasını indirin</a>.
+          <a href={FULL_SETUP_URL} download data-funnel="indirme_tik" className="font-semibold text-sp-caramel underline">tam kurulum dosyasını indirin</a>.
         </p>
       </section>
 

@@ -39,6 +39,7 @@ export function DownloadButton({ dark = false, label = "Ücretsiz İndir" }) {
     <a
       href={SETUP_URL}
       download="StokPro-Setup.exe"
+      data-funnel="indirme_tik"
       className={`inline-flex items-center justify-center gap-2.5 rounded-xl px-7 py-3.5 text-base font-bold no-underline transition ${tone}`}
     >
       <FiDownload size={18} aria-hidden="true" />

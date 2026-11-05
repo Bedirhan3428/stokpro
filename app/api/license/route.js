@@ -190,6 +190,23 @@ export async function POST(req) {
 
     if (action === "check") {
       const tokenVerified = isTerminalVerified ? true : await verifyUserIdToken(req, uid);
+      // Masaüstü son görülme (günde en fazla bir yazma)
+      if (tokenVerified) {
+        const nowIso = new Date().toISOString();
+        const appVersion = String(body?.appVersion || "").slice(0, 20);
+        const seenToday = String(prof.lastSeenAt || "").slice(0, 10) === nowIso.slice(0, 10);
+        if (!seenToday || (appVersion && appVersion !== prof.lastAppVersion)) {
+          setDoc(
+            profRef,
+            {
+              lastSeenAt: nowIso,
+              ...(appVersion ? { lastAppVersion: appVersion } : {}),
+              ...(prof.firstSeenAt ? {} : { firstSeenAt: nowIso }),
+            },
+            { merge: true }
+          ).catch((e) => console.warn("Son görülme yazılamadı:", e?.message));
+        }
+      }
       return NextResponse.json(
         {
           success: true,

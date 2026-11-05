@@ -808,7 +808,7 @@ export default function AuthScreen() {
             <li>1. Kurulum dosyasını indirip çalıştırın.</li>
             <li>2. Programda "Giriş yap"a basın; bu sayfa açılır ve kasanız aynı hesapla açılır.</li>
           </ol>
-          <a href={SETUP_URL} download="StokPro-Setup.exe" className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-sp-obsidian py-3.5 text-[15px] font-bold text-white no-underline transition hover:bg-[#27272A] dark:bg-sp-caramel dark:hover:bg-sp-caramelDark">
+          <a href={SETUP_URL} download="StokPro-Setup.exe" data-funnel="indirme_tik" className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-sp-obsidian py-3.5 text-[15px] font-bold text-white no-underline transition hover:bg-[#27272A] dark:bg-sp-caramel dark:hover:bg-sp-caramelDark">
             <FiDownload aria-hidden="true" /> StokPro'yu indir (Windows)
           </a>
         </div>

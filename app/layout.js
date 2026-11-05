@@ -4,6 +4,8 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import { AuthProvider } from "../src/contexts/AuthContext";
 import Navbar from "../src/components/Navbar";
 import TelemetryTracker from "../src/components/TelemetryTracker";
+import FunnelTracker from "../src/components/FunnelTracker";
+import { Analytics } from "@vercel/analytics/next";
 
 const inter = Inter({
   subsets: ["latin", "latin-ext"],
@@ -60,9 +62,11 @@ export default function RootLayout({ children }) {
       <body className="font-sans antialiased">
         <AuthProvider>
           <TelemetryTracker />
+          <FunnelTracker />
           <Navbar />
           <main className="app-container">{children}</main>
         </AuthProvider>
+        <Analytics />
       </body>
     </html>
   );

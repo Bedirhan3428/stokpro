@@ -5,6 +5,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { db } from "../firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import NotFound from "./NotFound";
+import FunnelPanel from "./FunnelPanel";
 import { 
   FiUsers, FiActivity, FiClock, FiSmartphone, FiMonitor, 
   FiCheckCircle, FiAlertCircle, FiSearch, FiRefreshCw, FiDownload, 
@@ -552,6 +553,9 @@ export default function AdminDashboard() {
           </button>
         </div>
       </div>
+
+      {/* KULLANICI HUNİSİ */}
+      <FunnelPanel users={usersList} />
 
       {/* ÜST METRİK ŞERİDİ (KPI STATS) */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
